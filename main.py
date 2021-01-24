@@ -11,7 +11,6 @@ def mainloop():
         qbt.transfer_files_to_remote()
         exit()
         sleep(60)
-        pass
 
 
 mainloop()
