@@ -1,0 +1,11 @@
+# extensions to ignore
+
+
+# files to ignore
+# .gitignore
+
+
+# folders to ignore
+.idea/
+data_src/
+venv*/
