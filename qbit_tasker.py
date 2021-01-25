@@ -7,7 +7,7 @@ from re import findall
 from time import sleep
 import datetime
 import qbittorrentapi
-RUNNING, STOPPED = 'Running', 'Stopped'
+RUNNING, STOPPED, RESULT_QTY_PER_SEARCH = 'Running', 'Stopped', 15
 
 
 class QbitTasker:
@@ -41,6 +41,7 @@ class QbitTasker:
                     elif STOPPED in search_status:
                         self.search_cp[section_header]['search_running'] = 'no'
                         self.search_cp[section_header]['search_finished'] = 'yes'
+                    self.search_cp[section_header]['last_write'] = str(datetime.datetime.now())
                     continue
                 if _result_added:
                     continue
@@ -50,12 +51,15 @@ class QbitTasker:
                         if len(filtered_results) > 0:
                             if self._qbit_added_result_by_popularity(section_header, filtered_results):
                                 self.search_cp[section_header]['result_added'] = 'yes'
+                                self.search_cp[section_header]['last_write'] = str(datetime.datetime.now())
                     else:
                         self.search_cp[section_header]['search_finished'] = 'no'
                         self.search_cp[section_header]['search_queued'] = 'yes'
+                        self.search_cp[section_header]['last_write'] = str(datetime.datetime.now())
                     continue
                 else:
                     self.search_cp[section_header]['search_queued'] = 'yes'
+                    self.search_cp[section_header]['last_write'] = str(datetime.datetime.now())
             try:
                 with open(self.search_config_filename, 'w') as search_config_file:
                     self.search_cp.write(search_config_file)
@@ -163,6 +167,7 @@ class QbitTasker:
         if search_id == '':
             self.search_cp[section_header]['search_queued'] = 'yes'
             self.search_cp[section_header]['search_finished'] = 'no'
+            self.search_cp[section_header]['last_write'] = str(datetime.datetime.now())
             return False
         most_popular_results = self._qbit_get_most_popular_results(filtered_results)
         operation_results = list()
@@ -171,6 +176,7 @@ class QbitTasker:
                 result_url = result['fileUrl']
                 operation_result = self.qbt_client.torrents_add(urls=result_url, is_paused=True)
                 operation_results.append(operation_result)
+            del self.active_search_ids[section_header]
             return True
         return False
 
@@ -199,7 +205,7 @@ class QbitTasker:
             print(k_err)
 
     @staticmethod
-    def _qbit_get_most_popular_results(filtered_results, result_count=3) -> list:
+    def _qbit_get_most_popular_results(filtered_results, result_count=RESULT_QTY_PER_SEARCH) -> list:
         most_popular_results = list()
         if len(filtered_results) < result_count:
             result_count = len(filtered_results)
@@ -227,6 +233,7 @@ class QbitTasker:
         try:
             for section_header in self.search_cp.sections():
                 self.search_cp[section_header]['search_id'] = ''
+                self.search_cp[section_header]['last_write'] = str(datetime.datetime.now())
         except KeyError as k_err:
             print(k_err)
 
@@ -256,6 +263,7 @@ class QbitTasker:
                 self.search_cp[section_header]['search_running'] = 'yes'
                 self.search_cp[section_header]['search_finished'] = 'no'
                 self.search_cp[section_header]['result_added'] = 'no'
+                self.search_cp[section_header]['last_write'] = str(datetime.datetime.now())
                 self.active_search_ids[section_header] = job_id
         except KeyError as k_err:
             print('unable to process search job')
