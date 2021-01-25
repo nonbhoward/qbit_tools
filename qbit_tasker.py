@@ -6,7 +6,7 @@ from re import findall
 from time import sleep
 import datetime
 import qbittorrentapi
-RUNNING, STOPPED = 'Running', 'Stopped'
+RUNNING, STOPPED, RESULT_QTY_PER_SEARCH = 'Running', 'Stopped', 15
 
 
 class QbitTasker:
@@ -21,9 +21,9 @@ class QbitTasker:
 
     def initiate_and_monitor_searches(self):
         try:
-            sleep(15)
             for section_header in self.search_config.sections():
-                self.search_config[section_header]['last_accessed'] = str(datetime.datetime.now())
+                sleep(1)
+                self.search_config[section_header]['last_read'] = str(datetime.datetime.now())
                 _search_queued = self.search_config[section_header].getboolean('search_queued')
                 _search_running = self.search_config[section_header].getboolean('search_running')
                 _search_finished = self.search_config[section_header].getboolean('search_finished')
@@ -40,6 +40,7 @@ class QbitTasker:
                     elif STOPPED in search_status:
                         self.search_config[section_header]['search_running'] = 'no'
                         self.search_config[section_header]['search_finished'] = 'yes'
+                    self.search_config[section_header]['last_write'] = str(datetime.datetime.now())
                     continue
                 if _result_added:
                     continue
@@ -49,12 +50,15 @@ class QbitTasker:
                         if len(filtered_results) > 0:
                             if self._qbit_added_result_by_popularity(section_header, filtered_results):
                                 self.search_config[section_header]['result_added'] = 'yes'
+                                self.search_config[section_header]['last_write'] = str(datetime.datetime.now())
                     else:
                         self.search_config[section_header]['search_finished'] = 'no'
                         self.search_config[section_header]['search_queued'] = 'yes'
+                        self.search_config[section_header]['last_write'] = str(datetime.datetime.now())
                     continue
                 else:
                     self.search_config[section_header]['search_queued'] = 'yes'
+                    self.search_config[section_header]['last_write'] = str(datetime.datetime.now())
             try:
                 with open(self.search_config_filename, 'w') as search_config_file:
                     self.search_config.write(search_config_file)
@@ -145,12 +149,14 @@ class QbitTasker:
         if search_id == '':
             self.search_config[section_header]['search_queued'] = 'yes'
             self.search_config[section_header]['search_finished'] = 'no'
+            self.search_config[section_header]['last_write'] = str(datetime.datetime.now())
             return False
         most_popular_results = self._qbit_get_most_popular_results(filtered_results)
         if most_popular_results is not None:
             for result in most_popular_results:
                 result_url = result['fileUrl']
                 self.qbt_client.torrents_add(urls=result_url, is_paused=True)
+            del self.active_search_ids[section_header]
             return True
         return False
 
@@ -179,7 +185,7 @@ class QbitTasker:
             print(k_err)
 
     @staticmethod
-    def _qbit_get_most_popular_results(filtered_results, result_count=3) -> list:
+    def _qbit_get_most_popular_results(filtered_results, result_count=RESULT_QTY_PER_SEARCH) -> list:
         most_popular_results = list()
         if len(filtered_results) < result_count:
             result_count = len(filtered_results)
@@ -207,6 +213,7 @@ class QbitTasker:
         try:
             for section_header in self.search_config.sections():
                 self.search_config[section_header]['search_id'] = ''
+                self.search_config[section_header]['last_write'] = str(datetime.datetime.now())
         except KeyError as k_err:
             print(k_err)
 
@@ -236,6 +243,7 @@ class QbitTasker:
                 self.search_config[section_header]['search_running'] = 'yes'
                 self.search_config[section_header]['search_finished'] = 'no'
                 self.search_config[section_header]['result_added'] = 'no'
+                self.search_config[section_header]['last_write'] = str(datetime.datetime.now())
                 self.active_search_ids[section_header] = job_id
         except KeyError as k_err:
             print('unable to process search job')
