@@ -1,6 +1,7 @@
 from configparser import ConfigParser
 from data_src.SECRETS import *
 from os import getcwd
+from os.path import exists
 from pathlib2 import Path
 from re import findall
 from time import sleep
@@ -14,20 +15,20 @@ class QbitTasker:
         self.qbit_client_connected = True if self._client_is_connected() else False
         self.data_path = self._get_data_path()
         self.search_config_filename = self._get_search_config_filename()
-        self.search_config = self._get_search_config()
+        self.search_cp = self._get_search_cp()
         self._connection_time_start = datetime.datetime.now()
         self._qbit_reset_search_ids()
         self.active_search_ids = dict()
 
     def initiate_and_monitor_searches(self):
         try:
-            sleep(15)
-            for section_header in self.search_config.sections():
-                self.search_config[section_header]['last_accessed'] = str(datetime.datetime.now())
-                _search_queued = self.search_config[section_header].getboolean('search_queued')
-                _search_running = self.search_config[section_header].getboolean('search_running')
-                _search_finished = self.search_config[section_header].getboolean('search_finished')
-                _result_added = self.search_config[section_header].getboolean('result_added')
+            sleep(5)
+            for section_header in self.search_cp.sections():
+                self.search_cp[section_header]['last_accessed'] = str(datetime.datetime.now())
+                _search_queued = self.search_cp[section_header].getboolean('search_queued')
+                _search_running = self.search_cp[section_header].getboolean('search_running')
+                _search_finished = self.search_cp[section_header].getboolean('search_finished')
+                _result_added = self.search_cp[section_header].getboolean('result_added')
                 if _search_queued:
                     queue_full = self._qbit_search_queue_full()
                     if not queue_full:
@@ -36,10 +37,10 @@ class QbitTasker:
                 if _search_running:
                     search_status = self._qbit_get_search_status(section_header)
                     if search_status is None:
-                        self.search_config[section_header]['search_running'] = 'no'
+                        self.search_cp[section_header]['search_running'] = 'no'
                     elif STOPPED in search_status:
-                        self.search_config[section_header]['search_running'] = 'no'
-                        self.search_config[section_header]['search_finished'] = 'yes'
+                        self.search_cp[section_header]['search_running'] = 'no'
+                        self.search_cp[section_header]['search_finished'] = 'yes'
                     continue
                 if _result_added:
                     continue
@@ -48,16 +49,16 @@ class QbitTasker:
                     if filtered_results is not None:
                         if len(filtered_results) > 0:
                             if self._qbit_added_result_by_popularity(section_header, filtered_results):
-                                self.search_config[section_header]['result_added'] = 'yes'
+                                self.search_cp[section_header]['result_added'] = 'yes'
                     else:
-                        self.search_config[section_header]['search_finished'] = 'no'
-                        self.search_config[section_header]['search_queued'] = 'yes'
+                        self.search_cp[section_header]['search_finished'] = 'no'
+                        self.search_cp[section_header]['search_queued'] = 'yes'
                     continue
                 else:
-                    self.search_config[section_header]['search_queued'] = 'yes'
+                    self.search_cp[section_header]['search_queued'] = 'yes'
             try:
                 with open(self.search_config_filename, 'w') as search_config_file:
-                    self.search_config.write(search_config_file)
+                    self.search_cp.write(search_config_file)
             except OSError as o_err:
                 print(o_err)
         except KeyError as k_err:
@@ -90,6 +91,17 @@ class QbitTasker:
             pass
 
     @staticmethod
+    def _config_file_has_sections(config_parser) -> bool:
+        try:
+            config_file_section_count = len(config_parser.sections())
+            if config_file_section_count > 0:
+                return True
+            return False
+        except RuntimeError as r_err:
+            print('configuration file has no sections')
+            print(r_err)
+
+    @staticmethod
     def _get_data_directory_name() -> str:
         return 'data_src'
 
@@ -113,14 +125,20 @@ class QbitTasker:
             print(o_err)
             pass
 
-    def _get_search_config(self) -> ConfigParser:
+    def _get_search_cp(self) -> ConfigParser:
         """
         :return: ConfigParser containing configuration details
         """
         try:
-            cp = ConfigParser()
-            cp.read(filenames=self.search_config_filename)
-            return cp
+            if exists(self.search_config_filename):
+                cp = ConfigParser()
+                cp.read(filenames=self.search_config_filename)
+                if self._config_file_has_sections(cp):
+                    return cp
+                print('warning, configuration file has no sections')
+                return cp
+            else:
+                raise FileNotFoundError('search configuration does not exist')
         except FileNotFoundError as f_err:
             print(f_err)
             pass
@@ -143,14 +161,16 @@ class QbitTasker:
         """
         search_id = self.active_search_ids.get(section_header, '')
         if search_id == '':
-            self.search_config[section_header]['search_queued'] = 'yes'
-            self.search_config[section_header]['search_finished'] = 'no'
+            self.search_cp[section_header]['search_queued'] = 'yes'
+            self.search_cp[section_header]['search_finished'] = 'no'
             return False
         most_popular_results = self._qbit_get_most_popular_results(filtered_results)
+        operation_results = list()
         if most_popular_results is not None:
             for result in most_popular_results:
                 result_url = result['fileUrl']
-                self.qbt_client.torrents_add(urls=result_url, is_paused=True)
+                operation_result = self.qbt_client.torrents_add(urls=result_url, is_paused=True)
+                operation_results.append(operation_result)
             return True
         return False
 
@@ -161,12 +181,12 @@ class QbitTasker:
             results = self.qbt_client.search_results(search_id=search_id)
             for result in results['results']:
                 file_name = result['fileName']
-                search_pattern = self.search_config[section_header]['search_filter']
+                search_pattern = self.search_cp[section_header]['search_filter']
                 pattern_match = findall(search_pattern, file_name)
                 if pattern_match:
                     filtered_results.append(result)
             for result in results:
-                search_filter = self.search_config[section_header]['search_filter']
+                search_filter = self.search_cp[section_header]['search_filter']
                 # re.search with search_filter onto result name, delete non-matches
             return filtered_results
         return None
@@ -193,7 +213,7 @@ class QbitTasker:
 
     def _qbit_get_search_status(self, section_header) -> str:
         try:
-            search_id = self._strip_outside(self.search_config[section_header]['search_id'])
+            search_id = self._strip_outside(self.search_cp[section_header]['search_id'])
             job_state = None
             if not search_id == '':
                 job_status = self.qbt_client.search_status(search_id=search_id)
@@ -205,8 +225,8 @@ class QbitTasker:
 
     def _qbit_reset_search_ids(self):
         try:
-            for section_header in self.search_config.sections():
-                self.search_config[section_header]['search_id'] = ''
+            for section_header in self.search_cp.sections():
+                self.search_cp[section_header]['search_id'] = ''
         except KeyError as k_err:
             print(k_err)
 
@@ -221,21 +241,21 @@ class QbitTasker:
 
     def _qbit_start_search(self, section_header: str):
         try:
-            search_term = self._strip_outside(self.search_config[section_header]['search_term'])
+            search_term = self._strip_outside(self.search_cp[section_header]['search_term'])
             search_job = self.qbt_client.search.start(pattern=search_term, plugins='all', category='all')
             job_status = search_job.status()
             job_id = str(job_status.data[0]['id'])
-            self.search_config[section_header]['search_id'] = job_id
+            self.search_cp[section_header]['search_id'] = job_id
             self.active_search_ids[section_header] = job_id
             job_state = job_status.data[0]['status']
             # job_results_count = job_status.data[0]['total']
             if RUNNING in job_state:  # search started successfully
-                search_try_count = int(self.search_config[section_header]['search_attempts'])
-                self.search_config[section_header]['search_attempts'] = str(search_try_count + 1)
-                self.search_config[section_header]['search_queued'] = 'no'
-                self.search_config[section_header]['search_running'] = 'yes'
-                self.search_config[section_header]['search_finished'] = 'no'
-                self.search_config[section_header]['result_added'] = 'no'
+                search_try_count = int(self.search_cp[section_header]['search_attempts'])
+                self.search_cp[section_header]['search_attempts'] = str(search_try_count + 1)
+                self.search_cp[section_header]['search_queued'] = 'no'
+                self.search_cp[section_header]['search_running'] = 'yes'
+                self.search_cp[section_header]['search_finished'] = 'no'
+                self.search_cp[section_header]['result_added'] = 'no'
                 self.active_search_ids[section_header] = job_id
         except KeyError as k_err:
             print('unable to process search job')

@@ -9,7 +9,7 @@ def mainloop():
     while True:
         print('beginning new loop at {}'.format(datetime.now()))
         qbt.initiate_and_monitor_searches()
-        sleep(60)
+        sleep(5)
 
 
 def start_application():
