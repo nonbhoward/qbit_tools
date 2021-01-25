@@ -8,11 +8,8 @@ def mainloop():
     qbt = QbitTasker()
     while True:
         print('beginning new loop at {}'.format(datetime.now()))
-        qbt.begin_queued_searches()
-        qbt.parse_completed_searches()
-        qbt.check_watched_downloads()
-        qbt.transfer_files_to_remote()
-        sleep(2)
+        qbt.initiate_and_monitor_searches()
+        sleep(60)
 
 
 def start_application():
