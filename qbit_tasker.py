@@ -1,10 +1,9 @@
 from configparser import ConfigParser
 from data_src.SECRETS import *
-from json import dumps, loads
 from os import getcwd
-from os.path import exists
 from pathlib2 import Path
 from re import findall
+from time import sleep
 import datetime
 import qbittorrentapi
 RUNNING, STOPPED = 'Running', 'Stopped'
@@ -20,8 +19,9 @@ class QbitTasker:
         self._qbit_reset_search_ids()
         self.active_search_ids = dict()
 
-    def begin_queued_searches(self):
+    def initiate_and_monitor_searches(self):
         try:
+            sleep(15)
             for section_header in self.search_config.sections():
                 self.search_config[section_header]['last_accessed'] = str(datetime.datetime.now())
                 _search_queued = self.search_config[section_header].getboolean('search_queued')
@@ -41,6 +41,8 @@ class QbitTasker:
                         self.search_config[section_header]['search_running'] = 'no'
                         self.search_config[section_header]['search_finished'] = 'yes'
                     continue
+                if _result_added:
+                    continue
                 if _search_finished:
                     filtered_results = self._qbit_filter_results(section_header)
                     if filtered_results is not None:
@@ -50,8 +52,6 @@ class QbitTasker:
                     else:
                         self.search_config[section_header]['search_finished'] = 'no'
                         self.search_config[section_header]['search_queued'] = 'yes'
-                    continue
-                if _result_added:
                     continue
                 else:
                     self.search_config[section_header]['search_queued'] = 'yes'
@@ -146,10 +146,13 @@ class QbitTasker:
             self.search_config[section_header]['search_queued'] = 'yes'
             self.search_config[section_header]['search_finished'] = 'no'
             return False
-        most_popular_result = self._qbit_get_most_popular_result(filtered_results)
-        most_popular_result_url = most_popular_result['fileUrl']
-        result = self.qbt_client.torrents_add(urls=most_popular_result_url, is_paused=True)
-        return True
+        most_popular_results = self._qbit_get_most_popular_results(filtered_results)
+        if most_popular_results is not None:
+            for result in most_popular_results:
+                result_url = result['fileUrl']
+                self.qbt_client.torrents_add(urls=result_url, is_paused=True)
+            return True
+        return False
 
     def _qbit_filter_results(self, section_header: str):
         filtered_results = list()
@@ -176,10 +179,15 @@ class QbitTasker:
             print(k_err)
 
     @staticmethod
-    def _qbit_get_most_popular_result(filtered_results):
+    def _qbit_get_most_popular_results(filtered_results, result_count=3) -> list:
+        most_popular_results = list()
+        if len(filtered_results) < result_count:
+            result_count = len(filtered_results)
         try:
-            seed_sorted_list = sorted(filtered_results, key=lambda k: k['nbSeeders'], reverse=True)
-            return seed_sorted_list[0]
+            popularity_sorted_list = sorted(filtered_results, key=lambda k: k['nbSeeders'], reverse=True)
+            for index in range(result_count):
+                most_popular_results.append(popularity_sorted_list[index])
+            return most_popular_results
         except IndexError as i_err:
             print(i_err)
 
