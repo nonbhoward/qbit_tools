@@ -1,11 +1,13 @@
 from configparser import ConfigParser
+from data_src.SECRETS import *
 from json import dumps, loads
 from os import getcwd
 from os.path import exists
 from pathlib2 import Path
-from data_src.SECRETS import *
+from re import findall
 import datetime
 import qbittorrentapi
+RUNNING, STOPPED = 'Running', 'Stopped'
 
 
 class QbitTasker:
@@ -15,14 +17,52 @@ class QbitTasker:
         self.search_config_filename = self._get_search_config_filename()
         self.search_config = self._get_search_config()
         self._connection_time_start = datetime.datetime.now()
-        pass
+        self._qbit_reset_search_ids()
+        self.active_search_ids = dict()
 
     def begin_queued_searches(self):
-        """
-        use the data returned from the configuration file to begin searches
-        :return:
-        """
-        searches_to_queue = self._build_search_queue_from_config()
+        try:
+            for section_header in self.search_config.sections():
+                self.search_config[section_header]['last_accessed'] = str(datetime.datetime.now())
+                _search_queued = self.search_config[section_header].getboolean('search_queued')
+                _search_running = self.search_config[section_header].getboolean('search_running')
+                _search_finished = self.search_config[section_header].getboolean('search_finished')
+                _result_added = self.search_config[section_header].getboolean('result_added')
+                if _search_queued:
+                    queue_full = self._qbit_search_queue_full()
+                    if not queue_full:
+                        self._qbit_start_search(section_header)
+                        continue
+                if _search_running:
+                    search_status = self._qbit_get_search_status(section_header)
+                    if search_status is None:
+                        self.search_config[section_header]['search_running'] = 'no'
+                    elif STOPPED in search_status:
+                        self.search_config[section_header]['search_running'] = 'no'
+                        self.search_config[section_header]['search_finished'] = 'yes'
+                    continue
+                if _search_finished:
+                    filtered_results = self._qbit_filter_results(section_header)
+                    if filtered_results is not None:
+                        if len(filtered_results) > 0:
+                            if self._qbit_added_result_by_popularity(section_header, filtered_results):
+                                self.search_config[section_header]['result_added'] = 'yes'
+                    else:
+                        self.search_config[section_header]['search_finished'] = 'no'
+                        self.search_config[section_header]['search_queued'] = 'yes'
+                    continue
+                if _result_added:
+                    continue
+                else:
+                    self.search_config[section_header]['search_queued'] = 'yes'
+            try:
+                with open(self.search_config_filename, 'w') as search_config_file:
+                    self.search_config.write(search_config_file)
+            except OSError as o_err:
+                print(o_err)
+        except KeyError as k_err:
+            print(k_err)
+            pass
 
     def check_watched_downloads(self):
         pass
@@ -32,40 +72,6 @@ class QbitTasker:
 
     def transfer_files_to_remote(self):
         pass
-
-    def _build_search_queue_from_config(self) -> dict:
-        """
-        :return: dict containing search configuration details
-        """
-        searches_to_queue = dict()
-        try:
-            for section_header in self.search_config.sections():
-                _added = self.search_config[section_header].getboolean('torrent_added')
-                _search_finished = self.search_config[section_header].getboolean('search_finished')
-                _search_started = self.search_config[section_header].getboolean('search_started')
-                _search_timed_out = self.search_config[section_header].getboolean('search_timeout')
-                _search_in_progress = self.search_config[section_header].getboolean('search_in_progress')
-                _search_queued = self.search_config[section_header].getboolean('search_queued')
-                if _added:
-                    continue
-                if _search_finished:
-                    if self._qbit_added_result_by_popularity():
-                        self.search_config[section_header]['torrent_added'] = 'yes'
-                    continue
-                if _search_started and not _search_timed_out:
-                    self.search_config[section_header]['search_in_progress'] = 'no'
-                    if section_header in self.active_search_ids[section_header]:
-                        self.search_config[section_header]['search_in_progress'] = 'yes'
-                    continue
-                if _search_queued:
-                    if isinstance(self._qbit_started_search(section_header), qbittorrentapi.Search):
-                        self.search_config[section_header]['search_started'] = 'yes'
-                    continue
-            with open(self.search_config_filename, 'w') as search_config_file:
-                self.search_config.write(search_config_file)
-        except KeyError as k_err:
-            print(k_err)
-            pass
 
     def _client_is_connected(self) -> bool:
         """
@@ -130,46 +136,101 @@ class QbitTasker:
             print(o_err)
             pass
 
-    def _qbit_added_result_by_popularity(self, section_header: str) -> bool:
+    def _qbit_added_result_by_popularity(self, section_header: str, filtered_results) -> bool:
         """
         parse the results returned by the search term & filter, attempt to add new result to local stored results
         :return: bool, success or failure of adding new result to local stored results
         """
-        for result in self.qbt_client.search_results():
+        search_id = self.active_search_ids.get(section_header, '')
+        if search_id == '':
+            self.search_config[section_header]['search_queued'] = 'yes'
+            self.search_config[section_header]['search_finished'] = 'no'
+            return False
+        most_popular_result = self._qbit_get_most_popular_result(filtered_results)
+        most_popular_result_url = most_popular_result['fileUrl']
+        result = self.qbt_client.torrents_add(urls=most_popular_result_url, is_paused=True)
+        return True
+
+    def _qbit_filter_results(self, section_header: str):
+        filtered_results = list()
+        search_id = self._qbit_get_active_search_id(section_header)
+        if search_id is not None and not search_id == '':
+            results = self.qbt_client.search_results(search_id=search_id)
+            for result in results['results']:
+                file_name = result['fileName']
+                search_pattern = self.search_config[section_header]['search_filter']
+                pattern_match = findall(search_pattern, file_name)
+                if pattern_match:
+                    filtered_results.append(result)
+            for result in results:
+                search_filter = self.search_config[section_header]['search_filter']
+                # re.search with search_filter onto result name, delete non-matches
+            return filtered_results
+        return None
+
+    def _qbit_get_active_search_id(self, section_header) -> str:
+        try:
+            active_search_id = self.active_search_ids.get(section_header)
+            return active_search_id
+        except KeyError as k_err:
+            print(k_err)
+
+    @staticmethod
+    def _qbit_get_most_popular_result(filtered_results):
+        try:
+            seed_sorted_list = sorted(filtered_results, key=lambda k: k['nbSeeders'], reverse=True)
+            return seed_sorted_list[0]
+        except IndexError as i_err:
+            print(i_err)
+
+    def _qbit_get_search_status(self, section_header) -> str:
+        try:
+            search_id = self._strip_outside(self.search_config[section_header]['search_id'])
+            job_state = None
+            if not search_id == '':
+                job_status = self.qbt_client.search_status(search_id=search_id)
+                job_state = job_status.data[0]['status']
+            return job_state
+        except ConnectionError as c_err:
+            print('unable to process search status')
+            print(c_err)
+
+    def _qbit_reset_search_ids(self):
+        try:
+            for section_header in self.search_config.sections():
+                self.search_config[section_header]['search_id'] = ''
+        except KeyError as k_err:
+            print(k_err)
+
+    def _qbit_search_queue_full(self) -> bool:
+        try:
+            active_search_count = len(self.active_search_ids.keys())
+            if active_search_count < 5:
+                return False
             return True
-        self._qbit_started_search(section_header)
-        return False
+        except RuntimeError as r_err:
+            print(r_err)
 
-    def _qbit_get_search_status_by_id(self, search_id) -> str:
-        pass
-
-    def _qbit_started_search(self, section_header: str) -> qbittorrentapi.Search:
-        self.active_search_ids = dict()
+    def _qbit_start_search(self, section_header: str):
         try:
             search_term = self._strip_outside(self.search_config[section_header]['search_term'])
-            search_job = self.qbt_client.search.start(pattern=section_header,
-                                                      plugins='all',
-                                                      category='all')
+            search_job = self.qbt_client.search.start(pattern=search_term, plugins='all', category='all')
             job_status = search_job.status()
-            job_id = job_status.data[0]['id']
+            job_id = str(job_status.data[0]['id'])
+            self.search_config[section_header]['search_id'] = job_id
+            self.active_search_ids[section_header] = job_id
             job_state = job_status.data[0]['status']
-            job_results_count = job_status.data[0]['total']
-        except ConnectionError as c_err:
-            print('unable to communicate request to client')
-            print(c_err)
-        try:
-            if job_status == 200:  # search started successfully
-                self.search_config[section_header]['search_started'] = 'yes'
-                search_id = loads(search_job)
-                self.active_search_ids[section_header] = search_id
-                return search_job
-            elif job_status == 409:  # maximum searches reached
-                self.search_config[section_header]['search_started'] = 'no'
-                return False
-            else:
-                raise Exception('unknown reponse from client')
+            # job_results_count = job_status.data[0]['total']
+            if RUNNING in job_state:  # search started successfully
+                search_try_count = int(self.search_config[section_header]['search_attempts'])
+                self.search_config[section_header]['search_attempts'] = str(search_try_count + 1)
+                self.search_config[section_header]['search_queued'] = 'no'
+                self.search_config[section_header]['search_running'] = 'yes'
+                self.search_config[section_header]['search_finished'] = 'no'
+                self.search_config[section_header]['result_added'] = 'no'
+                self.active_search_ids[section_header] = job_id
         except KeyError as k_err:
-            print('unable to decode json')
+            print('unable to process search job')
             print(k_err)
 
     @staticmethod
