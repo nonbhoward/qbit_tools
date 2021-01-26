@@ -202,7 +202,7 @@ class QbitTasker:
         """
         search_id = self.active_search_ids.get(section_header, '')
         if search_id == '':
-            self._update_search_states(QUEUED)
+            self._update_search_states(section_header, QUEUED)
             return False
         most_popular_results = self._qbit_get_most_popular_results(filtered_results)
         count_before = self._qbit_count_all_torrents()
