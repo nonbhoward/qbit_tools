@@ -1,5 +1,5 @@
+# qbit_tools
+automatically acquire the latest linux images  
+
 # searches.cfg
-the sections under each section header are ranked in order of perceived importance at the time of writing  
-
-open to feedback
-
+a configuration file containing sets of search terms and regex filters  
