@@ -12,7 +12,6 @@ def mainloop():
     while True:
         event = 'new loop starting at {}'.format(datetime.now())
         ml.log_event(event=event, announce=True)
-        print(event)
         qbit.initiate_and_monitor_searches()
         sleep(5)
 
