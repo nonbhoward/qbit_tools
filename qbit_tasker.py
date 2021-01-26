@@ -28,9 +28,12 @@ class QbitTasker:
     def initiate_and_monitor_searches(self):
         ml.log_event('check search status..')
         try:
-            sleep(5)
             for section_header in self.search_cp.sections():
+                if self._qbit_all_searches_concluded():
+                    ml.log_event('all searches concluded, program shutdown imminent')
+                    exit()
                 _search_queued, _search_running, _search_stopped, _search_concluded = self._get_search_states(section_header)
+                sleep(5)
                 if _search_queued:
                     if not self._qbit_search_queue_full():
                         self._qbit_start_search(section_header)
@@ -43,8 +46,7 @@ class QbitTasker:
                 elif _search_stopped:
                     filtered_results, filtered_results_count = self._qbit_filter_results(section_header)
                     if filtered_results is not None and filtered_results_count > 0:
-                        if self._qbit_added_result_by_popularity(section_header, filtered_results):
-                            self._update_search_states(section_header, CONCLUDED)
+                        self._qbit_add_results_by_popularity(section_header, filtered_results)
                     else:
                         self._update_search_states(section_header, QUEUED)
                 elif _search_concluded:
@@ -204,7 +206,7 @@ class QbitTasker:
             ml.log_event(event)
             print(str(r_err) + event)
 
-    def _qbit_added_result_by_popularity(self, section_header: str, filtered_results) -> bool:
+    def _qbit_add_results_by_popularity(self, section_header: str, filtered_results) -> bool:
         """
         parse the results returned by the search term & filter, attempt to add new result to local stored results
         :return: bool, success or failure of adding new result to local stored results
@@ -228,6 +230,13 @@ class QbitTasker:
                 self.search_cp[section_header]['results_added']) + results_added)
             if self._qbit_search_yielded_required_results(section_header):
                 self._update_search_states(section_header, CONCLUDED)
+
+    def _qbit_all_searches_concluded(self) -> bool:
+        concluded = list()
+        for section in self.search_cp.sections():
+            for key in self.search_cp[section]:
+                test1 = self.search_cp[section][key]
+                print('potato')
 
     def _qbit_count_all_torrents(self) -> int:
         try:
