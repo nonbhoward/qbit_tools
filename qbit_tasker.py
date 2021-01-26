@@ -29,9 +29,6 @@ class QbitTasker:
         ml.log_event('check search status..')
         try:
             for section_header in self.search_cp.sections():
-                if self._qbit_all_searches_concluded():
-                    ml.log_event('all searches concluded, program shutdown imminent')
-                    exit()
                 _search_queued, _search_running, _search_stopped, _search_concluded = self._get_search_states(section_header)
                 sleep(5)
                 if _search_queued:
@@ -59,10 +56,9 @@ class QbitTasker:
                     self.search_cp.write(search_config_file)
                 ml.log_event('writing events to file: {}'.format(search_config_file), event_completed=True)
             except OSError as o_err:
-                print(o_err)
+                ml.log_event(o_err)
         except KeyError as k_err:
-            print(k_err)
-            pass
+            ml.log_event(k_err)
 
     def transfer_files_to_remote(self):
         pass
@@ -80,8 +76,7 @@ class QbitTasker:
                 return True
             return False
         except RuntimeError as r_err:
-            print(r_err)
-            pass
+            ml.log_event(r_err)
 
     @staticmethod
     def _config_file_has_sections(config_parser) -> bool:
@@ -91,29 +86,28 @@ class QbitTasker:
                 return True
             return False
         except RuntimeError as r_err:
-            print('configuration file has no sections')
-            print(r_err)
+            ml.log_event('{}: configuration file has no sections'.format(r_err))
 
     def _config_get_search_term(self, section_header):
         try:
             search_term = self.search_cp[section_header]['search_term']
             return search_term
         except KeyError as k_err:
-            print(k_err)
+            ml.log_event(k_err)
 
     def _config_increment_search_try_counter(self, section_header):
         try:
             search_try_count = int(self.search_cp[section_header]['search_attempts'])
             self.search_cp[section_header]['search_attempts'] = str(search_try_count + 1)
         except KeyError as k_err:
-            print(k_err)
+            ml.log_event(k_err)
 
     def _config_set_search_id_as_active(self, section_header, search_id):
         try:
             self.search_cp[section_header]['search_id'] = search_id
             self.active_search_ids[section_header] = search_id
         except KeyError as k_err:
-            print(k_err)
+            ml.log_event(k_err)
 
     def _config_set_search_id_as_inactive(self, section_header, search_id):
         try:
@@ -121,7 +115,7 @@ class QbitTasker:
                 self.search_cp[section_header]['search_id'] = str(0)
                 del self.active_search_ids[section_header]
         except KeyError as k_err:
-            print(k_err)
+            ml.log_event(k_err)
 
     @staticmethod
     def _get_data_directory_name() -> str:
@@ -136,16 +130,14 @@ class QbitTasker:
             data_path = Path(project_path, self._get_data_directory_name())
             return data_path
         except OSError as o_err:
-            print(o_err)
-            pass
+            ml.log_event(o_err)
 
     @staticmethod
     def _get_project_path() -> Path:
         try:
             return Path(getcwd())
         except OSError as o_err:
-            print(o_err)
-            pass
+            ml.log_event(o_err)
 
     def _get_search_cp(self) -> ConfigParser:
         """
@@ -157,13 +149,12 @@ class QbitTasker:
                 cp.read(filenames=self.search_config_filename)
                 if self._config_file_has_sections(cp):
                     return cp
-                print('warning, configuration file has no sections')
+                ml.log_event('warning, configuration file has no sections')
                 return cp
             else:
                 raise FileNotFoundError('search configuration does not exist')
         except FileNotFoundError as f_err:
-            print(f_err)
-            pass
+            ml.log_event(f_err)
 
     def _get_search_config_filename(self) -> str:
         """
@@ -173,8 +164,7 @@ class QbitTasker:
             search_config_filename = Path(self.data_path, 'searches.cfg')
             return search_config_filename
         except OSError as o_err:
-            print(o_err)
-            pass
+            ml.log_event(o_err)
 
     def _get_search_states(self, section_header) -> tuple:
         """
@@ -192,7 +182,7 @@ class QbitTasker:
                 section_header, _search_queued, _search_running, _search_stopped, _search_concluded))
             return _search_queued, _search_running, _search_stopped, _search_concluded
         except KeyError as k_err:
-            print(k_err)
+            ml.log_event(k_err)
 
     @staticmethod
     def _pattern_matches(search_pattern, file_name) -> bool:
@@ -203,8 +193,7 @@ class QbitTasker:
             return False
         except RuntimeError as r_err:
             event = 'error with regex, search_pattern: {} file_name: {}'.format(search_pattern, file_name)
-            ml.log_event(event)
-            print(str(r_err) + event)
+            ml.log_event(str(r_err) + event)
 
     def _qbit_add_results_by_popularity(self, section_header: str, filtered_results) -> bool:
         """
@@ -232,11 +221,19 @@ class QbitTasker:
                 self._update_search_states(section_header, CONCLUDED)
 
     def _qbit_all_searches_concluded(self) -> bool:
-        concluded = list()
-        for section in self.search_cp.sections():
-            for key in self.search_cp[section]:
-                test1 = self.search_cp[section][key]
-                print('potato')
+        # TODO would be nice to exit if all jobs exceed set limits
+        try:
+            concluded = list()
+            for section in self.search_cp.sections():
+                for key in self.search_cp[section]:
+                    if key == 'search_concluded':
+                        search_concluded = self.search_cp[section].getboolean(key)
+                        concluded.append(search_concluded)
+            if all(concluded):
+                return True
+            return False
+        except KeyError as k_err:
+            ml.log_event(k_err)
 
     def _qbit_count_all_torrents(self) -> int:
         try:
@@ -245,7 +242,7 @@ class QbitTasker:
                 local_result_count = len(self.qbit_client.torrents.info().data)
             return local_result_count
         except RuntimeError as r_err:
-            print(r_err)
+            ml.log_event(r_err)
 
     def _qbit_create_search_job(self, pattern, plugins, category) -> tuple:
         try:
@@ -256,7 +253,7 @@ class QbitTasker:
             _count = _status.data[0]['total']
             return _job, _status, _state, _id, _count
         except ConnectionError as c_err:
-            print(c_err)
+            ml.log_event(c_err)
 
     def _qbit_filter_results(self, section_header: str):
         filtered_results_count, filtered_results, results = 0, list(), self._qbit_get_search_results(section_header)
@@ -275,7 +272,7 @@ class QbitTasker:
             active_search_id = self.active_search_ids.get(section_header)
             return active_search_id
         except KeyError as k_err:
-            print(k_err)
+            ml.log_event(k_err)
 
     @staticmethod
     def _qbit_get_most_popular_results(filtered_results, result_count=RESULT_QTY_PER_SEARCH) -> list:
@@ -288,7 +285,7 @@ class QbitTasker:
                 most_popular_results.append(popularity_sorted_list[index])
             return most_popular_results
         except IndexError as i_err:
-            print(i_err)
+            ml.log_event(i_err)
 
     def _qbit_get_search_results(self, section_header):
         try:
@@ -298,7 +295,7 @@ class QbitTasker:
                 return results
             return None
         except KeyError as k_err:
-            print(k_err)
+            ml.log_event(k_err)
 
     def _qbit_get_search_status(self, section_header) -> str:
         """
@@ -319,7 +316,6 @@ class QbitTasker:
         except ConnectionError as c_err:
             event = 'unable to process search for section: {}'.format(section_header)
             ml.log_event(event)
-            print(event)
 
     def _qbit_reset_search_ids(self):
         """
@@ -331,7 +327,7 @@ class QbitTasker:
                 ml.log_event('reset search_id for section: {}'.format(section_header))
                 self._update_search_states(section_header, RESET)
         except KeyError as k_err:
-            print(k_err)
+            ml.log_event(k_err)
 
     def _qbit_search_queue_full(self) -> bool:
         try:
@@ -340,7 +336,7 @@ class QbitTasker:
                 return False
             return True
         except RuntimeError as r_err:
-            print(r_err)
+            ml.log_event(r_err)
 
     def _qbit_search_yielded_required_results(self, section_header) -> bool:
         """
@@ -357,7 +353,7 @@ class QbitTasker:
                 return True
             return False
         except KeyError as k_err:
-            print(k_err)
+            ml.log_event(k_err)
 
     def _qbit_start_search(self, section_header: str):
         try:
@@ -368,8 +364,7 @@ class QbitTasker:
                 self._config_set_search_id_as_active(section_header, search_id)
                 self._update_search_states(section_header, STARTING)
         except KeyError as k_err:
-            print('unable to process search job')
-            print(k_err)
+            ml.log_event('{}: unable to process search job'.format(k_err))
 
     @staticmethod
     def _strip_outside(str_to_strip: str) -> str:
@@ -381,8 +376,7 @@ class QbitTasker:
             stripped_string = str_to_strip.replace('\'', '')
             return stripped_string
         except RuntimeError as r_err:
-            print(r_err)
-            pass
+            ml.log_event(r_err)
 
     def _update_search_states(self, section_header, job_state):
         try:
@@ -412,7 +406,7 @@ class QbitTasker:
                 pass
             self.search_cp[section_header]['last_write'] = str(datetime.datetime.now())
         except KeyError as k_err:
-            print(k_err)
+            ml.log_event(k_err)
 
 
 if __name__ == '__main__':
