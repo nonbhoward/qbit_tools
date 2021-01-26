@@ -1,12 +1,15 @@
 # extensions to ignore
+*.log
 
 
 # files to ignore
 # .gitignore
+minimalog
+searches_reset.cfg
+SECRETS.py
 
 
 # folders to ignore
 __pycache__/
 .idea/
-data_src/
 venv*/
