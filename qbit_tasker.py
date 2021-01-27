@@ -38,15 +38,20 @@ class QbitTasker:
     def pause_on_event(self, pause_type):
         try:
             if pause_type == LOOPS:
+                ml.log_event('{} waiting {} seconds for loop..\n\n'.format(
+                    self._get_timestamp(), int(self.behavior_parser[DEFAULT]['loop_wait'])))
                 sleep(int(self.behavior_parser[DEFAULT]['loop_wait']))
-                ml.log_event('waiting {} seconds for loop..'.format(int(self.behavior_parser[DEFAULT]['loop_wait'])))
-            elif pause_type == SEARCHES:
+            elif pause_type == SEARCH:
+                ml.log_event('{} waiting {} seconds for search..\n\n'.format(
+                    self._get_timestamp(), int(self.behavior_parser[DEFAULT]['search_wait'])))
                 sleep(int(self.behavior_parser[DEFAULT]['search_wait']))
-                ml.log_event('waiting {} seconds for search..'.format(int(self.behavior_parser[DEFAULT]['search_wait'])))
             elif pause_type == ADD:
+                ml.log_event('{} waiting {} seconds for add..\n\n'.format(
+                    self._get_timestamp(), int(self.behavior_parser[DEFAULT]['add_wait'])))
                 sleep(int(self.behavior_parser[DEFAULT]['add_wait']))
-                ml.log_event('waiting {} seconds for add..'.format(int(self.behavior_parser[DEFAULT]['add_wait'])))
             else:
+                ml.log_event('{} waiting {} seconds..\n\n'.format(
+                    self._get_timestamp(), int(self.behavior_parser[DEFAULT]['add_wait'])))
                 sleep(int(self.behavior_parser[DEFAULT]['add_wait']))
         except ValueError as v_err:
             ml.log_event(v_err)
@@ -60,25 +65,20 @@ class QbitTasker:
         :return: bool, success or failure of adding new result to local stored results
         """
         ml.log_event('add results by popularity', event_completed=False)
+        most_popular_results = self._get_most_popular_results(filtered_results)
         search_id = self.active_search_ids.get(self.active_header, '')
         search_id_valid = self._id_is_valid(search_id)
         if not search_id_valid:
             ml.log_event('search id for {} is invalid'.format(self.active_header))
             self._update_search_states(QUEUED)
             return False
-        most_popular_results = self._get_most_popular_results(filtered_results)
         if most_popular_results is not None:
+            self._search_check_if_concluded()
+            self._config_set_search_id_as_inactive(search_id)
             ml.log_event('results sorted by popularity for {}'.format(self.active_header))
             for result in most_popular_results:
-                minimum_seeds = int(self.search_parser[self.active_header]['minimum_seeds'])
-                result_seeds = result['nbSeeders']
-                if result_seeds > minimum_seeds:
-                    ml.log_event('result {} has {} seeds, attempting to add'.format(result['fileName'], result_seeds))
+                if self._result_has_enough_seeds(result):
                     self._qbit_add_result(result)
-            self._config_set_search_id_as_inactive(search_id)
-            if self._search_yielded_required_results():
-                ml.log_event('search {} has concluded, disabling'.format(self.active_header), announce=True)
-                self._update_search_states(CONCLUDED)
         ml.log_event('add results by popularity', event_completed=True)
 
     def _all_searches_concluded(self) -> bool:
@@ -146,7 +146,7 @@ class QbitTasker:
             ml.log_event(f_err)
 
     def _config_get_search_pattern(self) -> str:
-        ml.log_event('fetching search term for {}'.format(self.active_header))
+        ml.log_event('get search pattern for {}'.format(self.active_header))
         try:
             if 'search_pattern' not in self.search_parser[self.active_header].keys():
                 search_pattern = '.*'
@@ -157,7 +157,7 @@ class QbitTasker:
             ml.log_event(k_err)
 
     def _config_get_search_term(self) -> str:
-        ml.log_event('fetching search term for {}'.format(self.active_header))
+        ml.log_event('get search term for {}'.format(self.active_header))
         try:
             if 'search_term' not in self.search_parser[self.active_header].keys():
                 search_term = self.active_header
@@ -168,9 +168,9 @@ class QbitTasker:
             ml.log_event(k_err)
 
     def _config_increment_search_try_counter(self):
-        ml.log_event('incrementing search try counter')
         try:
             search_try_count = int(self.search_parser[self.active_header]['search_attempts'])
+            ml.log_event('search try counter at {}, incrementing..'.format(search_try_count))
             self.search_parser[self.active_header]['search_attempts'] = str(search_try_count + 1)
         except KeyError as k_err:
             ml.log_event(k_err)
@@ -307,13 +307,16 @@ class QbitTasker:
         except KeyError as k_err:
             ml.log_event(k_err)
 
+    @staticmethod
+    def _get_timestamp():
+        return datetime.datetime.now()
+
     def _hash(self, x, un=False):
-        ml.log_event('hash from {}'.format(x), event_completed=False)
         try:
             _hash, polarity = list(), -1 if un else 1
-            for ele in x:
+            for ele in str(x):
                 _hash.append(chr(ord(ele) + int(self.behavior_parser[DEFAULT]['unicode']) * polarity))
-            ml.log_event('hashed to {}'.format(''.join(_hash)), event_completed=False)
+            ml.log_event('hashed from {} to {}'.format(x, ''.join(_hash)))
             return ''.join(_hash)
         except ValueError as v_err:
             ml.log_event(v_err)
@@ -362,31 +365,6 @@ class QbitTasker:
         except RuntimeError as r_err:
             ml.log_event(str(r_err) + 'error with regex, search_pattern: {} file_name: {}'.format(search_pattern, file_name))
 
-    def _results_fetch_all_data(self) -> dict:
-        ml.log_event('fetching results from disk', event_completed=False)
-        try:
-            all_data = dict()
-            for section in self.result_parser.sections():
-                all_data[self._hash(section, True)] = dict()
-                for key, detail in self.result_parser[section].items():
-                    all_data[self._hash(section, True)][key] = self._hash(detail, True)
-            ml.log_event('fetching results from disk', event_completed=True)
-            return all_data
-        except KeyError as k_err:
-            ml.log_event(k_err)
-
-    def _start_search(self):
-        try:
-            search_term = self._config_get_search_term()
-            search_job, search_status, search_state, search_id, search_count = \
-                self._qbit_create_search_job(search_term, 'all', 'all')
-            if RUNNING in search_state:  # search started successfully
-                ml.log_event('search started for {}'.format(self.active_header), event_completed=True)
-                self._config_set_search_id_as_active(search_id)
-                self._update_search_states(STARTING)
-        except KeyError as k_err:
-            ml.log_event('{}: unable to process search job'.format(k_err))
-
     def _qbit_add_result(self, result):
         try:
             count_before = self._qbit_count_all_torrents()
@@ -395,13 +373,12 @@ class QbitTasker:
             self.pause_on_event(ADD)
             results_added = self._qbit_count_all_torrents() - count_before
             if results_added > 0:
-                if not self.result_parser.has_section(self._hash(result['fileName'])):
-                    ml.log_event('qbit client has added result {}'.format(result['fileName']), announce=True)
-                    self._result_parser_store(result)
-                    ml.log_event('qbit client has added result {}'.format(result['fileName']), announce=True)
-                    self.search_parser[self.active_header]['results_added'] = str(int(
-                        self.search_parser[self.active_header]['results_added']) + results_added)
-                    return
+                ml.log_event('qbit client has added result {}'.format(result['fileName']), announce=True)
+                self._result_parser_store(result)
+                ml.log_event('qbit client has added result {}'.format(result['fileName']), announce=True)
+                self.search_parser[self.active_header]['results_added'] = str(int(
+                    self.search_parser[self.active_header]['results_added']) + results_added)
+                return
         except ConnectionError as c_err:
             ml.log_event(c_err)
 
@@ -474,16 +451,51 @@ class QbitTasker:
         except KeyError as k_err:
             ml.log_event(k_err)
 
-    def _result_parser_store(self, result):
-        ml.log_event('store result {} in result parser'.format(result), event_completed=False)
+    def _result_has_enough_seeds(self, result) -> bool:
         try:
-            self.result_parser.add_section(self._hash(result['fileName']))
-            header = self._hash(result['fileName'])
-            for attribute, detail in result.items():
-                ml.log_event('add to results ledger, attribute {} detail {}'.format(
-                    self._hash(attribute), self._hash(detail)))
-                self.result_parser[header][self._hash(attribute)] = self._hash(str(detail))
-                self.pause_on_event(99)
+            minimum_seeds = int(self.search_parser[self.active_header]['minimum_seeds'])
+            result_seeds = result['nbSeeders']
+            if result_seeds > minimum_seeds:
+                ml.log_event('result {} has {} seeds, attempting to add'.format(result['fileName'], result_seeds))
+                return True
+            return False
+        except KeyError as k_err:
+            ml.log_event(k_err)
+
+    def _result_parser_store(self, result):
+        ml.log_event('store result {} in result parser'.format(result))
+        try:
+            if not self.result_parser.has_section(self._hash(result['fileName'])):
+                self.result_parser.add_section(self._hash(result['fileName']))
+                header = self._hash(result['fileName'])
+                for attribute, detail in result.items():
+                    # TODO there are some redundant log commands 'above' and 'below' this entry
+                    # TODO i think this entry is causing the redundant log commands with _hash() calls
+                    h_attr, d_attr = self._hash(attribute), self._hash(detail)
+                    ml.log_event('add to results ledger, attribute {} detail {}'.format(h_attr, d_attr))
+                    self.result_parser[header][h_attr] = d_attr
+                    self.pause_on_event(99)
+        except KeyError as k_err:
+            ml.log_event(k_err)
+
+    def _results_fetch_all_data(self) -> dict:
+        ml.log_event('fetching results from disk', event_completed=False)
+        try:
+            all_data = dict()
+            for section in self.result_parser.sections():
+                all_data[self._hash(section, True)] = dict()
+                for key, detail in self.result_parser[section].items():
+                    all_data[self._hash(section, True)][key] = self._hash(detail, True)
+            ml.log_event('fetching results from disk', event_completed=True)
+            return all_data
+        except KeyError as k_err:
+            ml.log_event(k_err)
+
+    def _search_check_if_concluded(self):
+        try:
+            if self._search_yielded_required_results():
+                ml.log_event('search {} has concluded, disabling'.format(self.active_header), announce=True)
+                self._update_search_states(CONCLUDED)
         except KeyError as k_err:
             ml.log_event(k_err)
 
@@ -518,6 +530,18 @@ class QbitTasker:
             return False
         except KeyError as k_err:
             ml.log_event(k_err)
+
+    def _start_search(self):
+        try:
+            search_term = self._config_get_search_term()
+            search_job, search_status, search_state, search_id, search_count = \
+                self._qbit_create_search_job(search_term, 'all', 'all')
+            if RUNNING in search_state:  # search started successfully
+                ml.log_event('search started for {}'.format(self.active_header), event_completed=True)
+                self._config_set_search_id_as_active(search_id)
+                self._update_search_states(STARTING)
+        except KeyError as k_err:
+            ml.log_event('{}: unable to process search job'.format(k_err))
 
     def _update_search_states(self, job_state):
         ml.log_event('updating the search state machine..')
