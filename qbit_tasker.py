@@ -369,18 +369,6 @@ class QbitTasker:
         except KeyError as k_err:
             ml.log_event('{}: unable to process search job'.format(k_err))
 
-    @staticmethod
-    def _strip_outside(str_to_strip: str) -> str:
-        """
-        :param str_to_strip: raw string with quotes
-        :return: string with quotes stripped
-        """
-        try:
-            stripped_string = str_to_strip.replace('\'', '')
-            return stripped_string
-        except RuntimeError as r_err:
-            ml.log_event(r_err)
-
     def _update_search_states(self, job_state):
         try:
             if job_state == RESET or job_state == QUEUED:
