@@ -31,7 +31,7 @@ class QbitTasker:
             for section_header in self.search_cp.sections():
                 sleep(15)
                 self.active_header = section_header
-                self._manage_state_updates(self._get_search_states())
+                self._manage_state_updates(self._get_search_state())
             try:
                 with open(self.search_config_filename, 'w') as search_config_file:
                     ml.log_event('writing events to file: {}'.format(search_config_file), event_completed=False)
@@ -148,7 +148,7 @@ class QbitTasker:
         except OSError as o_err:
             ml.log_event(o_err)
 
-    def _get_search_states(self) -> tuple:
+    def _get_search_state(self) -> tuple:
         """
         :param section_header: the section of the configuration file to read
         :return: search states
@@ -166,16 +166,14 @@ class QbitTasker:
         except KeyError as k_err:
             ml.log_event(k_err)
 
-    def _manage_state_updates(self, states):
-        _search_queued, _search_running, _search_stopped, _search_concluded = states
-        if _search_queued:
-            if not self._qbit_search_queue_full():
-                self._qbit_start_search()
+    def _manage_state_updates(self, section_states):
+        _search_queued, _search_running, _search_stopped, _search_concluded = section_states
+        if _search_queued and not self._qbit_search_queue_full():
+            self._qbit_start_search()
         elif _search_running:
-            search_state = self._qbit_get_search_status()
-            if search_state is None:
+            if self._qbit_get_search_status() is None:
                 self._update_search_states(RESET)
-            elif STOPPED in search_state:
+            elif STOPPED in self._qbit_get_search_status():
                 self._update_search_states(STOPPED)
         elif _search_stopped:
             filtered_results, filtered_results_count = self._qbit_filter_results()
