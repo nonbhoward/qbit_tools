@@ -1,7 +1,7 @@
+from data_src.CONSTANTS import *
 from datetime import datetime
 from minimalog.minimal_log import MinimalLog
 from qbit_tasker import QbitTasker
-from time import sleep
 ml = MinimalLog()
 
 
@@ -12,7 +12,7 @@ def mainloop():
     while True:
         ml.log_event(event='new loop starting at {}'.format(datetime.now(), announce=True))
         qbit.initiate_and_monitor_searches()
-        sleep(1)
+        qbit.pause_between(LOOPS)
 
 
 def start_application():
