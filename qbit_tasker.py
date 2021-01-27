@@ -390,7 +390,7 @@ class QbitTasker:
     def _qbit_add_result(self, result):
         try:
             count_before = self._qbit_count_all_torrents()
-            ml.log_event('local machine has {} stored results before add attempt..'.format(count_before))
+            ml.log_event('local machine has {} stored results before add attempt..'.format(count_before), announce=True)
             self.qbit_client.torrents_add(urls=result['fileUrl'], is_paused=True)
             self.pause_on_event(ADD)
             results_added = self._qbit_count_all_torrents() - count_before
@@ -480,9 +480,10 @@ class QbitTasker:
             self.result_parser.add_section(self._hash(result['fileName']))
             header = self._hash(result['fileName'])
             for attribute, detail in result.items():
+                ml.log_event('add to results ledger, attribute {} detail {}'.format(
+                    self._hash(attribute), self._hash(detail)))
                 self.result_parser[header][self._hash(attribute)] = self._hash(str(detail))
-                self.pause_on_event()
-            ml.log_event('store result {} in result parser'.format(result), event_completed=True)
+                self.pause_on_event(99)
         except KeyError as k_err:
             ml.log_event(k_err)
 
