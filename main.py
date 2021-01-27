@@ -12,7 +12,9 @@ def mainloop():
     while True:
         ml.log_event(event='new loop starting at {}'.format(datetime.now(), announce=True))
         qbit.initiate_and_monitor_searches()
-        qbit.pause_between(LOOPS)
+        # if qbit._config_file_has_sections(qbit.result_parser):
+        #     result_dict = qbit._results_fetch_all_data()
+        qbit.pause_on_event(LOOPS)
 
 
 def start_application():
