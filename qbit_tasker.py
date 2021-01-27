@@ -22,34 +22,16 @@ class QbitTasker:
         self.search_cp = self._get_search_cp()
         self._connection_time_start = datetime.datetime.now()
         self._qbit_reset_search_ids()
-        self.active_search_ids = dict()
+        self.active_search_ids, self.active_header = dict(), ''
         ml.log_event('initialize {}'.format(self.__class__), event_completed=True)
 
     def initiate_and_monitor_searches(self):
         ml.log_event('check search status..')
         try:
             for section_header in self.search_cp.sections():
-                _search_queued, _search_running, _search_stopped, _search_concluded = self._get_search_states(section_header)
-                sleep(5)
-                if _search_queued:
-                    if not self._qbit_search_queue_full():
-                        self._qbit_start_search(section_header)
-                elif _search_running:
-                    search_state = self._qbit_get_search_status(section_header)
-                    if search_state is None:
-                        self._update_search_states(section_header, RESET)
-                    elif STOPPED in search_state:
-                        self._update_search_states(section_header, STOPPED)
-                elif _search_stopped:
-                    filtered_results, filtered_results_count = self._qbit_filter_results(section_header)
-                    if filtered_results is not None and filtered_results_count > 0:
-                        self._qbit_add_results_by_popularity(section_header, filtered_results)
-                    else:
-                        self._update_search_states(section_header, QUEUED)
-                elif _search_concluded:
-                    pass
-                else:
-                    self._update_search_states(section_header, QUEUED)
+                sleep(15)
+                self.active_header = section_header
+                self._manage_state_updates(self._get_search_states())
             try:
                 with open(self.search_config_filename, 'w') as search_config_file:
                     ml.log_event('writing events to file: {}'.format(search_config_file), event_completed=False)
@@ -88,32 +70,32 @@ class QbitTasker:
         except RuntimeError as r_err:
             ml.log_event('{}: configuration file has no sections'.format(r_err))
 
-    def _config_get_search_term(self, section_header):
+    def _config_get_search_term(self) -> str:
         try:
-            search_term = self.search_cp[section_header]['search_term']
+            search_term = self.search_cp[self.active_header]['search_term']
             return search_term
         except KeyError as k_err:
             ml.log_event(k_err)
 
-    def _config_increment_search_try_counter(self, section_header):
+    def _config_increment_search_try_counter(self):
         try:
-            search_try_count = int(self.search_cp[section_header]['search_attempts'])
-            self.search_cp[section_header]['search_attempts'] = str(search_try_count + 1)
+            search_try_count = int(self.search_cp[self.active_header]['search_attempts'])
+            self.search_cp[self.active_header]['search_attempts'] = str(search_try_count + 1)
         except KeyError as k_err:
             ml.log_event(k_err)
 
-    def _config_set_search_id_as_active(self, section_header, search_id):
+    def _config_set_search_id_as_active(self, search_id):
         try:
-            self.search_cp[section_header]['search_id'] = search_id
-            self.active_search_ids[section_header] = search_id
+            self.search_cp[self.active_header]['search_id'] = search_id
+            self.active_search_ids[self.active_header] = search_id
         except KeyError as k_err:
             ml.log_event(k_err)
 
-    def _config_set_search_id_as_inactive(self, section_header, search_id):
+    def _config_set_search_id_as_inactive(self, search_id):
         try:
-            if search_id == self.active_search_ids[section_header]:
-                self.search_cp[section_header]['search_id'] = str(0)
-                del self.active_search_ids[section_header]
+            if search_id == self.active_search_ids[self.active_header]:
+                self.search_cp[self.active_header]['search_id'] = str(0)
+                del self.active_search_ids[self.active_header]
         except KeyError as k_err:
             ml.log_event(k_err)
 
@@ -166,23 +148,45 @@ class QbitTasker:
         except OSError as o_err:
             ml.log_event(o_err)
 
-    def _get_search_states(self, section_header) -> tuple:
+    def _get_search_states(self) -> tuple:
         """
         :param section_header: the section of the configuration file to read
         :return: search states
         """
         try:
-            ml.log_event('get search state for section: {}'.format(section_header))
-            self.search_cp[section_header]['last_read'] = str(datetime.datetime.now())
-            _search_queued = self.search_cp[section_header].getboolean('search_queued')
-            _search_running = self.search_cp[section_header].getboolean('search_running')
-            _search_stopped = self.search_cp[section_header].getboolean('search_stopped')
-            _search_concluded = self.search_cp[section_header].getboolean('search_concluded')
+            ml.log_event('get search state for section: {}'.format(self.active_header))
+            self.search_cp[self.active_header]['last_read'] = str(datetime.datetime.now())
+            _search_queued = self.search_cp[self.active_header].getboolean('search_queued')
+            _search_running = self.search_cp[self.active_header].getboolean('search_running')
+            _search_stopped = self.search_cp[self.active_header].getboolean('search_stopped')
+            _search_concluded = self.search_cp[self.active_header].getboolean('search_concluded')
             ml.log_event('search state for {}: \nqueued: {}\nrunning: {}\nfinished: {}\nadded: {}'.format(
-                section_header, _search_queued, _search_running, _search_stopped, _search_concluded))
+                self.active_header, _search_queued, _search_running, _search_stopped, _search_concluded))
             return _search_queued, _search_running, _search_stopped, _search_concluded
         except KeyError as k_err:
             ml.log_event(k_err)
+
+    def _manage_state_updates(self, states):
+        _search_queued, _search_running, _search_stopped, _search_concluded = states
+        if _search_queued:
+            if not self._qbit_search_queue_full():
+                self._qbit_start_search()
+        elif _search_running:
+            search_state = self._qbit_get_search_status()
+            if search_state is None:
+                self._update_search_states(RESET)
+            elif STOPPED in search_state:
+                self._update_search_states(STOPPED)
+        elif _search_stopped:
+            filtered_results, filtered_results_count = self._qbit_filter_results()
+            if filtered_results is not None and filtered_results_count > 0:
+                self._qbit_add_results_by_popularity(filtered_results)
+            else:
+                self._update_search_states(QUEUED)
+        elif _search_concluded:
+            pass
+        else:
+            self._update_search_states(QUEUED)
 
     @staticmethod
     def _pattern_matches(search_pattern, file_name) -> bool:
@@ -195,30 +199,30 @@ class QbitTasker:
             event = 'error with regex, search_pattern: {} file_name: {}'.format(search_pattern, file_name)
             ml.log_event(str(r_err) + event)
 
-    def _qbit_add_results_by_popularity(self, section_header: str, filtered_results) -> bool:
+    def _qbit_add_results_by_popularity(self, filtered_results) -> bool:
         """
         parse the results returned by the search term & filter, attempt to add new result to local stored results
         :return: bool, success or failure of adding new result to local stored results
         """
-        search_id = self.active_search_ids.get(section_header, '')
+        search_id = self.active_search_ids.get(self.active_header, '')
         if search_id == '':
-            self._update_search_states(section_header, QUEUED)
+            self._update_search_states(QUEUED)
             return False
         most_popular_results = self._qbit_get_most_popular_results(filtered_results)
         count_before = self._qbit_count_all_torrents()
         if most_popular_results is not None:
             for result in most_popular_results:
                 result_url, result_seeds = result['fileUrl'], result['nbSeeders']
-                minimum_seeds = int(self.search_cp[section_header]['minimum_seeds'])
+                minimum_seeds = int(self.search_cp[self.active_header]['minimum_seeds'])
                 if result_seeds > minimum_seeds:
                     self.qbit_client.torrents_add(urls=result_url, is_paused=True)
-            self._config_set_search_id_as_inactive(section_header, search_id)
+            self._config_set_search_id_as_inactive(search_id)
             count_after = self._qbit_count_all_torrents()
             results_added = count_after - count_before
-            self.search_cp[section_header]['results_added'] = str(int(
-                self.search_cp[section_header]['results_added']) + results_added)
-            if self._qbit_search_yielded_required_results(section_header):
-                self._update_search_states(section_header, CONCLUDED)
+            self.search_cp[self.active_header]['results_added'] = str(int(
+                self.search_cp[self.active_header]['results_added']) + results_added)
+            if self._qbit_search_yielded_required_results():
+                self._update_search_states(CONCLUDED)
 
     def _qbit_all_searches_concluded(self) -> bool:
         # TODO would be nice to exit if all jobs exceed set limits
@@ -255,21 +259,21 @@ class QbitTasker:
         except ConnectionError as c_err:
             ml.log_event(c_err)
 
-    def _qbit_filter_results(self, section_header: str):
-        filtered_results_count, filtered_results, results = 0, list(), self._qbit_get_search_results(section_header)
+    def _qbit_filter_results(self):
+        filtered_results_count, filtered_results, results = 0, list(), self._qbit_get_search_results()
         if results is None:
             return None, 0
         for result in results['results']:
             file_name = result['fileName']
-            search_pattern = self.search_cp[section_header]['search_filter']
+            search_pattern = self.search_cp[self.active_header]['search_filter']
             if self._pattern_matches(search_pattern, file_name):
                 filtered_results.append(result)
                 filtered_results_count += 1
         return filtered_results, filtered_results_count
 
-    def _qbit_get_active_search_id(self, section_header) -> str:
+    def _qbit_get_active_search_id(self) -> str:
         try:
-            active_search_id = self.active_search_ids.get(section_header)
+            active_search_id = self.active_search_ids.get(self.active_header)
             return active_search_id
         except KeyError as k_err:
             ml.log_event(k_err)
@@ -287,9 +291,9 @@ class QbitTasker:
         except IndexError as i_err:
             ml.log_event(i_err)
 
-    def _qbit_get_search_results(self, section_header):
+    def _qbit_get_search_results(self):
         try:
-            search_id = self._qbit_get_active_search_id(section_header)
+            search_id = self._qbit_get_active_search_id()
             if search_id is not None and search_id is not EMPTY:  #TODO 'is not' is known bad syntax, testing
                 results = self.qbit_client.search_results(search_id)
                 return results
@@ -297,24 +301,23 @@ class QbitTasker:
         except KeyError as k_err:
             ml.log_event(k_err)
 
-    def _qbit_get_search_status(self, section_header) -> str:
+    def _qbit_get_search_status(self) -> str:
         """
-        :param section_header: the section to read
         :return: the status of the search at search_id
         """
         try:
-            ml.log_event('checking search status for section: {}'.format(section_header))
-            search_id, search_status = self.search_cp[section_header]['search_id'], None
+            ml.log_event('checking search status for section: {}'.format(self.active_header))
+            search_id, search_status = self.search_cp[self.active_header]['search_id'], None
             if not search_id == '':
                 ml.log_event('getting search status for section: {} with search_id: {}'.format(
-                    section_header, search_id))
+                    self.active_header, search_id))
                 if search_id in self.active_search_ids.values():
                     ongoing_search = self.qbit_client.search_status(search_id=search_id)
                     search_status = ongoing_search.data[0]['status']
-            ml.log_event('search status for section: {} is {}'.format(section_header, search_status))
+            ml.log_event('search status for section: {} is {}'.format(self.active_header, search_status))
             return search_status
         except ConnectionError as c_err:
-            event = 'unable to process search for section: {}'.format(section_header)
+            event = 'unable to process search for section: {}'.format(self.active_header)
             ml.log_event(event)
 
     def _qbit_reset_search_ids(self):
@@ -324,8 +327,9 @@ class QbitTasker:
         """
         try:
             for section_header in self.search_cp.sections():
+                self.active_header = section_header
                 ml.log_event('reset search_id for section: {}'.format(section_header))
-                self._update_search_states(section_header, RESET)
+                self._update_search_states(RESET)
         except KeyError as k_err:
             ml.log_event(k_err)
 
@@ -338,31 +342,30 @@ class QbitTasker:
         except RuntimeError as r_err:
             ml.log_event(r_err)
 
-    def _qbit_search_yielded_required_results(self, section_header) -> bool:
+    def _qbit_search_yielded_required_results(self) -> bool:
         """
         decides if search is ready to be marked as completed (ADDED)
-        :param section_header: configuration key
         :return: bool, search completed
         """
         try:
-            attempted = int(self.search_cp[section_header]['search_attempts'])
-            maximum_attempts = int(self.search_cp[section_header]['maximum_search_attempts'])
-            added = int(self.search_cp[section_header]['results_added'])
-            required = int(self.search_cp[section_header]['results_required'])
+            attempted = int(self.search_cp[self.active_header]['search_attempts'])
+            maximum_attempts = int(self.search_cp[self.active_header]['maximum_search_attempts'])
+            added = int(self.search_cp[self.active_header]['results_added'])
+            required = int(self.search_cp[self.active_header]['results_required'])
             if added > required or attempted > maximum_attempts:
                 return True
             return False
         except KeyError as k_err:
             ml.log_event(k_err)
 
-    def _qbit_start_search(self, section_header: str):
+    def _qbit_start_search(self):
         try:
-            search_term = self._config_get_search_term(section_header)
+            search_term = self._config_get_search_term()
             search_job, search_status, search_state, search_id, search_count = \
                 self._qbit_create_search_job(search_term, 'all', 'all')
             if RUNNING in search_state:  # search started successfully
-                self._config_set_search_id_as_active(section_header, search_id)
-                self._update_search_states(section_header, STARTING)
+                self._config_set_search_id_as_active(search_id)
+                self._update_search_states(STARTING)
         except KeyError as k_err:
             ml.log_event('{}: unable to process search job'.format(k_err))
 
@@ -378,33 +381,33 @@ class QbitTasker:
         except RuntimeError as r_err:
             ml.log_event(r_err)
 
-    def _update_search_states(self, section_header, job_state):
+    def _update_search_states(self, job_state):
         try:
             if job_state == RESET or job_state == QUEUED:
                 self.search_cp.remove_section('search_id')
-                self.search_cp[section_header]['search_queued'] = YES
-                self.search_cp[section_header]['search_running'] = NO
-                self.search_cp[section_header]['search_stopped'] = NO
-                self.search_cp[section_header]['search_concluded'] = NO
+                self.search_cp[self.active_header]['search_queued'] = YES
+                self.search_cp[self.active_header]['search_running'] = NO
+                self.search_cp[self.active_header]['search_stopped'] = NO
+                self.search_cp[self.active_header]['search_concluded'] = NO
             elif job_state == STARTING:
-                self.search_cp[section_header]['search_queued'] = NO
-                self.search_cp[section_header]['search_running'] = YES
-                self.search_cp[section_header]['search_stopped'] = NO
-                self.search_cp[section_header]['search_concluded'] = NO
-                self._config_increment_search_try_counter(section_header)
+                self.search_cp[self.active_header]['search_queued'] = NO
+                self.search_cp[self.active_header]['search_running'] = YES
+                self.search_cp[self.active_header]['search_stopped'] = NO
+                self.search_cp[self.active_header]['search_concluded'] = NO
+                self._config_increment_search_try_counter()
             elif job_state == STOPPED:
-                self.search_cp[section_header]['search_queued'] = NO
-                self.search_cp[section_header]['search_running'] = NO
-                self.search_cp[section_header]['search_stopped'] = YES
-                self.search_cp[section_header]['search_concluded'] = NO
+                self.search_cp[self.active_header]['search_queued'] = NO
+                self.search_cp[self.active_header]['search_running'] = NO
+                self.search_cp[self.active_header]['search_stopped'] = YES
+                self.search_cp[self.active_header]['search_concluded'] = NO
             elif job_state == CONCLUDED:
-                self.search_cp[section_header]['search_queued'] = NO
-                self.search_cp[section_header]['search_running'] = NO
-                self.search_cp[section_header]['search_stopped'] = NO
-                self.search_cp[section_header]['search_concluded'] = YES
+                self.search_cp[self.active_header]['search_queued'] = NO
+                self.search_cp[self.active_header]['search_running'] = NO
+                self.search_cp[self.active_header]['search_stopped'] = NO
+                self.search_cp[self.active_header]['search_concluded'] = YES
             else:
                 pass
-            self.search_cp[section_header]['last_write'] = str(datetime.datetime.now())
+            self.search_cp[self.active_header]['last_write'] = str(datetime.datetime.now())
         except KeyError as k_err:
             ml.log_event(k_err)
 

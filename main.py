@@ -12,7 +12,7 @@ def mainloop():
     while True:
         ml.log_event(event='new loop starting at {}'.format(datetime.now(), announce=True))
         qbit.initiate_and_monitor_searches()
-        sleep(60)
+        sleep(1)
 
 
 def start_application():
