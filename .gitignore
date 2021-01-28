@@ -1,5 +1,5 @@
 # extensions to ignore
-*.cfg
+# *.cfg
 *.log
 
 
@@ -7,7 +7,7 @@
 # .gitignore
 minimalog
 searches_reset.cfg
-SECRETS.py
+*CRED*
 
 
 # folders to ignore
