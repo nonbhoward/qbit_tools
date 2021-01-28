@@ -313,11 +313,10 @@ class QbitTasker:
 
     def _hash(self, x, un=False):
         try:
-            _hash, polarity = list(), -1 if un else 1
-            for ele in str(x):
-                _hash.append(chr(ord(ele) + int(self.behavior_parser[DEFAULT]['unicode']) * polarity))
-            ml.log_event('hashed from {} to {}'.format(x, ''.join(_hash)))
-            return ''.join(_hash)
+            _pol = -1 if un else 1
+            _hash = ''.join([chr(ord(e) + int(self.behavior_parser[DEFAULT]['unicode']) * _pol) for e in str(x) if x])
+            ml.log_event('hashed from {} to {}'.format(x, _hash))
+            return _hash
         except ValueError as v_err:
             ml.log_event(v_err)
 
