@@ -1,19 +1,20 @@
-from configuration_reader import UserSettings as bKey
+from configuration_reader import MAIN_LOOP
 from datetime import datetime
 from minimalog.minimal_log import MinimalLog
 from qbit_bot import QbitTasker
 ml = MinimalLog()
-behavior_keys = bKey()
 
 
 def mainloop():
-    ml.log_event('main loop has started..', announce=True)
+    ml.log_event('main loop has started..')
     start_application()
     qbit = QbitTasker()
     while True:
         ml.log_event(event='new loop starting at {}'.format(datetime.now(), announce=True))
         qbit.initiate_and_monitor_searches()
-        qbit.pause_on_event(behavior_keys.wait_between_main_loops)
+        qbit.increment_loop_count()
+        ml.log_event('main loop has ended, {} total loops..'.format(qbit.main_loop_count))
+        qbit.pause_on_event(MAIN_LOOP)
 
 
 def start_application():
