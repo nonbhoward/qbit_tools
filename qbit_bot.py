@@ -1,22 +1,17 @@
-from data_src.configuration_reader import *
-from data_src.WEB_API_CREDENTIALS import HOST, USER, PASS
+from configuration_reader import *
 from minimalog.minimal_log import MinimalLog
 from re import findall
 from time import sleep
+from user_configuration.WEB_API_CREDENTIALS import HOST, USER, PASS
 import datetime
 import qbittorrentapi
-behavior_key, config_file, config_path, results_key, search_key = bKey(), cFile(), cPath(), rKey(), sKey()
 
 
 class QbitTasker:
     def __init__(self):
         ml.log_event('initialize {}'.format(self.__class__), event_completed=False, announce=True)
         self.qbit_client_connected = True if self._client_is_connected() else False
-        self.data_path = self._get_data_path()
-        self.search_config_filename, self.result_config_filename, self.behavior_config_filename = \
-            self._get_config_filename(SEARCH), self._get_config_filename(RESULT), self._get_config_filename(BEHAVIOR)
-        self.search_parser, self.result_parser, self.behavior_parser = \
-            self._config_get_parser(SEARCH), self._config_get_parser(RESULT), self._config_get_parser(SETTINGS)
+        self.user_settings = get_user_settings()
         self._connection_time_start = datetime.datetime.now()
         self._reset_search_ids()
         self.active_search_ids, self.active_header = dict(), ''
@@ -118,18 +113,6 @@ class QbitTasker:
             return False
         except RuntimeError as r_err:
             ml.log_event(r_err)
-
-    @staticmethod
-    def _config_file_has_sections(config_parser) -> bool:
-        ml.log_event('check if config for {} has sections'.format(config_parser), False)
-        try:
-            config_file_section_count = len(config_parser.sections())
-            if config_file_section_count > 0:
-                ml.log_event('check if config for {} has sections'.format(config_parser), True)
-                return True
-            return False
-        except RuntimeError as r_err:
-            ml.log_event('{}: configuration file has no sections'.format(r_err))
 
     def _config_get_search_pattern(self) -> str:
         ml.log_event('get search pattern for {}'.format(self.active_header))
