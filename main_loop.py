@@ -1,7 +1,7 @@
-from data_src.configuration_file_reader import UserSettings as bKey
+from data_src.configuration_reader import UserSettings as bKey
 from datetime import datetime
 from minimalog.minimal_log import MinimalLog
-from qbit_tasker import QbitTasker
+from qbit_bot import QbitTasker
 ml = MinimalLog()
 behavior_keys = bKey()
 
@@ -18,6 +18,17 @@ def mainloop():
 
 def start_application():
     while not _application_started():
+        start_application()
+        _wait_for_application_start()
+        pass
+
+
+def _application_started() -> bool:
+    return False
+
+
+def _wait_for_application_start():
+    pass
 
 
 mainloop()

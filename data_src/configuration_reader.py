@@ -9,8 +9,8 @@ from pathlib2 import Path
 ml = MinimalLog(__name__)
 # TODO besides imports the first program call is here, could be done better?
 DATA_PATH_DIR_NAME = 'data_src'
-METADATA_OF_ADDED_TORRENTS_FILE_NAME = 'metadata_of_added_torrents.cfg'
-SEARCH_JOB_DETAILS_FILE_NAME = 'search_job_details.cfg'
+METADATA_OF_ADDED_TORRENTS_FILE_NAME = 'metadata.cfg'
+SEARCH_JOB_DETAILS_FILE_NAME = 'search_details.cfg'
 USER_CONFIG_FILE_NAME = 'user_configuration.cfg'
 
 # Key for the DEFAULT section of all config parsers

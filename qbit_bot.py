@@ -1,4 +1,4 @@
-from data_src.configuration_file_reader import *
+from data_src.configuration_reader import *
 from data_src.WEB_API_CREDENTIALS import HOST, USER, PASS
 from minimalog.minimal_log import MinimalLog
 from re import findall
