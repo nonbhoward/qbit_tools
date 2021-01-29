@@ -1,5 +1,5 @@
 from configuration_reader import *
-from datetime import datetime as time
+from datetime import datetime
 from minimalog.minimal_log import MinimalLog
 from re import findall
 from time import sleep
@@ -13,7 +13,7 @@ class QbitTasker:
         self.main_loop_count = 0
         self.qbit_client_connected = True if self._client_is_connected() else False
         self.config = get_user_configuration()
-        self._connection_time_start = time.now()
+        self._connection_time_start = datetime.now()
         self._reset_search_ids()
         self.active_search_ids, self.active_header = dict(), ''
         ml.log_event('initialize {}'.format(self.__class__), event_completed=True, announce=True)
@@ -157,9 +157,8 @@ class QbitTasker:
         if results is None:
             return None, 0
         # TODO revisit this
-        for result in results[results_key.results]:
+        for result in results(META_RESULTS):
             file_name = result[META_NAME]
-            file_name = result[results_key.name]
             search_pattern = self._config_get_search_pattern()
             if self._pattern_matches(search_pattern, file_name):
                 filtered_results.append(result)
@@ -180,10 +179,10 @@ class QbitTasker:
         ml.log_event('get most popular results from {} up to count {}'.format(
             filtered_results, expected_search_result_count), event_completed=False)
         found_result_count = len(filtered_results)
-        expected_search_result_count = found_result_count if not \
-            _enough_results_in_(filtered_results) else expected_search_result_count
+        if not _enough_results_in_(filtered_results, expected_search_result_count):
+            expected_search_result_count = found_result_count
         try:
-            popularity_sorted_list = sorted(filtered_results, key=lambda k: k[results_key.seeders], reverse=True)
+            popularity_sorted_list = sorted(filtered_results, key=lambda k: k[PRIORITY], reverse=True)
             most_popular_results = list()
             for index in range(expected_search_result_count):
                 # TODO should do some debug here to and see if indexes are working as expected
@@ -206,10 +205,10 @@ class QbitTasker:
         ml.log_event('get search state for {}'.format(self.active_header))
         try:
             self.config.parsers[SEARCH][self.active_header][LAST_READ] = str(datetime.now())
-            _search_queued = self.search_parser[self.active_header].getboolean(search_key.queued)
-            _search_running = self.search_parser[self.active_header].getboolean(search_key.running)
-            _search_stopped = self.search_parser[self.active_header].getboolean(search_key.stopped)
-            _search_concluded = self.search_parser[self.active_header].getboolean(search_key.concluded)
+            _search_queued = self.config.parsers[self.active_header].getboolean(QUEUED)
+            _search_running = self.config.parsers[self.active_header].getboolean(RUNNING)
+            _search_stopped = self.config.parsers[self.active_header].getboolean(STOPPED)
+            _search_concluded = self.config.parsers[self.active_header].getboolean(CONCLUDED)
             ml.log_event('\n\nsearch state for {}: \nqueued: {}\nrunning: {}\nstopped: {}\nconcluded: {}\n\n'.format(
                 self.active_header, _search_queued, _search_running, _search_stopped, _search_concluded))
             return _search_queued, _search_running, _search_stopped, _search_concluded
@@ -219,7 +218,7 @@ class QbitTasker:
     def _hash(self, x, un=False):
         try:
             _pol = -1 if un else 1
-            _hash = ''.join([chr(ord(e) + int(self.behavior_parser[DEFAULT][behavior_key.unicode_shift_offset]) * _pol) for e in str(x) if x])
+            _hash = ''.join([chr(ord(e) + int(self.config.parsers[USER_CONFIG][UNI_SHIFT])) * _pol for e in str(x) if x])
             ml.log_event('hashed from {} to {}'.format(x, _hash))
             return _hash
         except ValueError as v_err:
@@ -240,12 +239,12 @@ class QbitTasker:
             self._start_search()  # search is in queue and queue has room, attempt to start this search
         elif _search_running:
             _search_status = self._qbit_get_search_status()
-            if search_key.running in _search_status:
+            if RUNNING in _search_status:
                 pass  # search is ongoing, do nothing
-            elif search_key.stopped in _search_status:
-                self._update_search_states(search_key.stopped)  # mark search as stopped (finished)
+            elif STOPPED in _search_status:
+                self._update_search_states(STOPPED)  # mark search as stopped (finished)
             else:
-                self._update_search_states(search_key.queued)  # search status unexpected, re-queue this search
+                self._update_search_states(QUEUED)  # search status unexpected, re-queue this search
         elif _search_stopped:
             filtered_results, filtered_results_count = self._filter_results()
             if filtered_results is not None and filtered_results_count > 0:
@@ -284,8 +283,8 @@ class QbitTasker:
                 ml.log_event('qbit client has added result {}'.format(result['fileName']), announce=True)
                 self._result_parser_store(result)
                 ml.log_event('qbit client has added result {}'.format(result['fileName']), announce=True)
-                self.search_parser[self.active_header]['results_added'] = str(int(
-                    self.search_parser[self.active_header]['results_added']) + results_added)
+                self.config.parsers[self.active_header][RESULTS_ADDED] = str(int(
+                    self.config.parsers[self.active_header][RESULTS_ADDED]) + results_added)
                 return
         except ConnectionError as c_err:
             ml.log_event(c_err, level=ml.ERROR)
@@ -538,9 +537,10 @@ class QbitTasker:
             ml.log_event(k_err)
 
 
-def _enough_results_in_(filtered_results, expected_results):
+def _enough_results_in_(filtered_results, expected_result_count):
     try:
-        if len(filtered_results) < expected_results:
+        filtered_results_count = len(filtered_results)
+        if filtered_results_count < expected_result_count:
             return False
         return True
     except ValueError as v_err:
