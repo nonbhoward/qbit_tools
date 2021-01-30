@@ -16,6 +16,17 @@ class APIStateKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.APIStateKeys
         self.STOPPED = 'Stopped'  # this is a web api status return value, indicates search is or has stopped
 
 
+class MetaDataKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
+    def __init__(self):
+        # keys for reading & writing metadata info
+        # TODO get all of these keys from next debug run
+        self.META_DEMAND = 'nbPeers'
+        self.META_NAME = 'fileName'
+        self.META_RESULTS = 'results'
+        self.META_SUPPLY = 'nbSeeders'
+        self.META_URL = 'fileUrl'
+
+
 class MiscKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.MiscKeys
     def __init__(self):
         # keys to label/organize
@@ -42,31 +53,15 @@ class ParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.ParserKeys
         self.YES = 'yes'
 
 
-class PauseKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.PauseKeys
-    def __init__(self):
-        # keys for controlling pause_type
-        self.ADD = 'add'
-        self.MAIN_LOOP = 'loops'
-        self.SEARCH = 'search'  # key with two uses, 1. controlling pause type, 2. keying parser
-        self.STARTING = 'starting'
-
-
-class SearchKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.SearchKeys
-    def __init__(self):
-        # keys for reading & writing values for the search config parser's end reason key, can be changed
-        self.REQUIRED_RESULTS_FOUND = 'required results found!'
-        self.TIMED_OUT = 'search timed out!'
-
-
-class MetaDataKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
-    def __init__(self):
-        # keys for reading & writing metadata info
-        # TODO get all of these keys from next debug run
-        self.META_DEMAND = 'nbPeers'
-        self.META_NAME = 'fileName'
-        self.META_RESULTS = 'results'
-        self.META_SUPPLY = 'nbSeeders'
-        self.META_URL = 'fileUrl'
+# class PauseKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.PauseKeys
+#     def __init__(self):
+#         # TODO aren't these already implemented in UserConfigKeys()? reduntant?
+#         # keys for controlling pause_type
+#         self.ADD_RESULT = 'add_result_pause'
+#         self.MAIN_LOOP = 'main_loop_pause'
+#         self.OTHER = 'other_pause_reason'
+#         self.SEARCH_STATUS_CHECK = 'search_status_check_pause'
+#         self.START_UP = 'start_up_pause'
 
 
 class SearchDetailKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
@@ -86,6 +81,13 @@ class SearchDetailKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.SEARCH_TERM = 'search_term'
 
 
+class SearchKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.SearchKeys
+    def __init__(self):
+        # keys for reading & writing values for the search config parser's end reason key, can be changed
+        self.REQUIRED_RESULTS_FOUND = 'required results found!'
+        self.TIMED_OUT = 'search timed out!'
+
+
 class SearchStateKeys:  # Configuration.HardCoded.KeyRing.SearchStateKeys
     def __init__(self):
         # keys for the search details state machine on disk, can be changed
@@ -98,11 +100,13 @@ class SearchStateKeys:  # Configuration.HardCoded.KeyRing.SearchStateKeys
 class UserConfigKeys:  # Configuration.HardCoded.KeyRing.UserConfigKeys
     def __init__(self):
         # keys for reading & writing user configuration
-        self.ADD_WAIT = 'seconds_to_wait_after_each_torrent_add_attempt'
-        self.PRIORITY = 'metadata_priority'
+        # program wait times
+        self.ADD_RESULT_WAIT = 'seconds_to_wait_after_each_torrent_add_attempt'
         self.MAIN_LOOP_WAIT = 'seconds_to_wait_after_each_main_loop'
         self.OTHER_WAIT = 'seconds_to_wait_for_other_reason'
         self.SEARCH_CHECK_WAIT = 'seconds_to_wait_after_each_search_status_check'
+        # other user settings
+        self.PRIORITY = 'metadata_priority'
         self.UNI_CHAR_COUNT = 'unicode_total_character_count'
         self.UNI_SHIFT = 'unicode_shift_offset_for_scrambling_results_cfg_file'
 
@@ -130,7 +134,7 @@ class KeyRing:  # Configuration.HardCoded.KeyRing
         self.metadata_keys = MetaDataKeys()
         self.misc_keys = MiscKeys()
         self.parser_keys = ParserKeys()
-        self.pause_keys = PauseKeys()
+        # self.pause_keys = PauseKeys()
         self.search_detail_keys = SearchDetailKeys()
         self.search_state_keys = SearchStateKeys()
         self.user_config_keys = UserConfigKeys()
@@ -255,7 +259,7 @@ class ProjectFiles:  # Configuration.ProjectFiles
 
 ##### ##### ##### ##### ##### ##### ##### ###### TIER 0 CLASS ###### ##### ##### ##### ##### ##### ##### ######
 class Configuration:  # ROOT @ Configuration
-    def __init__(self, parse_all_project_files=False):
+    def __init__(self, parse_all_project_files=False):  # FYI, module entry point is here
         self.hardcoded = HardCoded()
         self.paths = Paths(self)
         if parse_all_project_files:
