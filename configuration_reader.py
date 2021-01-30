@@ -3,115 +3,203 @@ from minimalog.minimal_log import MinimalLog
 from os import getcwd, remove, walk
 from pathlib2 import Path
 ml = MinimalLog(__name__)
-# project directory names, cannot be changed
-CONFIG_PATH_DIR_NAME = 'user_configuration'
-DATA_PATH_DIR_NAME = 'data_src'
-# project file names, cannot be changed
-METADATA_FILE_NAME = 'metadata.cfg'
-SEARCH_DETAILS_FILE_NAME = 'search_details.cfg'
-USER_CONFIG_FILE_NAME = 'user_configuration.cfg'
-# keys for Configuration().paths, can be changed
-DATA_PATH = 'data_path'
-PROJECT_PATH = 'project_path'
-USER_CONFIG_PATH = 'user_config_path'
-# keys for Configuration().files, can be changed
-PROJECT_FILES = 'project_files'
-USER_CONFIG_FILES = 'user_config_files'
-# keys for Configuration().parsers, can be changed
-METADATA = 'metadata'
-SEARCH = 'search'
-USER_CONFIG = 'user_config'
-# key for the DEFAULT section of all config parsers, cannot be changed
-DEFAULT = 'DEFAULT'
-# keys for reading & writing boolean values for all config parsers, cannot be changed
-NO = 'no'
-YES = 'yes'
-# keys for reading & writing values for the search config parser's end reason key, can be changed
-REQUIRED_RESULTS_FOUND = 'required results found!'
-TIMED_OUT = 'timed out!'
-# keys for the state machine in memory, half can be changed
-QUEUED = 'queued'  # this indicates that the search should be started soon
-RUNNING = 'Running'  # this is a web api status return value, indicates search is running
-STOPPED = 'Stopped'  # this is a web api status return value, indicates search is or has stopped
-CONCLUDED = 'concluded'  # this indicates that the search will not start again
-# keys for the search details state machine on disk, can be changed
-SEARCH_QUEUED = 'search_queued'
-SEARCH_RUNNING = 'search_running'
-SEARCH_STOPPED = 'search_stopped'
-SEARCH_CONCLUDED = 'search_concluded'
-# keys for reading & writing metadata info
-META_DEMAND = 'nbPeers'
-META_NAME = 'fileName'
-META_RESULTS = 'results'
-META_SUPPLY = 'nbSeeders'
-META_URL = 'fileurl'
-# keys for reading & writing user configuration
-ADD_WAIT = 'seconds_to_wait_after_each_torrent_add_attempt'
-PRIORITY = 'metadata_priority'
-MAIN_LOOP_WAIT = 'seconds_to_wait_after_each_main_loop'
-OTHER_WAIT = 'seconds_to_wait_for_other_reason'
-SEARCH_CHECK_WAIT = 'seconds_to_wait_after_each_search_status_check'
-UNI_CHAR_COUNT = 'unicode_total_character_count'
-UNI_SHIFT = 'unicode_shift_offset_for_scrambling_results_cfg_file'
-# keys for reading & writing search details
-AVG_SEEDS = 'average_seed_count'
-EXPECTED_RESULT_COUNT = 'expected_search_result_count'
-FILENAME_REGEX = 'regex_filter_for_filename'
-LAST_READ = 'last_read'
-LAST_WRITE = 'last_write'
-MAX_SEARCH_ATTEMPTS = 'maximum_search_attempts'
-MIN_SEEDS = 'minimum_seeds'
-RESULTS_ADDED = 'results_added'
-RESULTS_REQUIRED = 'results_required'
-SEARCH_ATTEMPT_COUNT = 'search_attempt_count'
-SEARCH_ID = 'search_id'
-SEARCH_TERM = 'search_term'
-# keys for controlling pause_type
-ADD = 'add'
-MAIN_LOOP = 'loops'
-SEARCH = SEARCH  # key with two uses, 1. controlling pause type, 2. keying parser
-STARTING = 'starting'
-# keys to label/organize
-EMPTY = ''
-RESET = 'reset'
-SEARCHES = 'searches'
+
+
+class Paths:
+    def __init__(self):
+        # project directory names, cannot be changed
+        self.CONFIG_PATH_DIR_NAME = 'user_configuration'
+        self.DATA_PATH_DIR_NAME = 'data_src'
+
+
+class ConfigFiles:
+    def __init__(self):
+        # project file names, cannot be changed
+        self.METADATA_FILE_NAME = 'metadata.cfg'
+        self.SEARCH_DETAILS_FILE_NAME = 'search_details.cfg'
+        self.USER_CONFIG_FILE_NAME = 'user_configuration.cfg'
+
+
+class PathKeys:
+    def __init__(self):
+        # keys for Configuration().paths, can be changed
+        self.DATA_PATH = 'data_path'
+        self.PROJECT_PATH = 'project_path'
+        self.USER_CONFIG_PATH = 'user_config_path'
+
+
+class ConfigFileKeys:
+    def __init__(self):
+        # keys for Configuration().files, can be changed
+        self.PROJECT_FILES = 'project_files'
+        self.USER_CONFIG_FILES = 'user_config_files'
+
+
+class ParserKeys:
+    def __init__(self):
+        # keys for Configuration().parsers, can be changed
+        self.METADATA = 'metadata'
+        self.SEARCH = 'search'  # key with two uses, 1. controlling pause type, 2. keying parser
+        self.USER_CONFIG = 'user_config'
+        # key for the DEFAULT section of all config parsers, cannot be changed
+        self. DEFAULT = 'DEFAULT'
+        # keys for reading & writing boolean values for all config parsers, cannot be changed
+        self.NO = 'no'
+        self.YES = 'yes'
+
+
+class SearchKeys:
+    def __init__(self):
+        # keys for reading & writing values for the search config parser's end reason key, can be changed
+        self.REQUIRED_RESULTS_FOUND = 'required results found!'
+        self.TIMED_OUT = 'timed out!'
+
+
+class APIStateKeys:
+    def __init__(self):
+        # keys for the state machine, some from API responses, in memory, half can be changed
+        self.QUEUED = 'queued'  # this indicates that the search should be started soon
+        self.RUNNING = 'Running'  # this is a web api status return value, indicates search is running
+        self.STOPPED = 'Stopped'  # this is a web api status return value, indicates search is or has stopped
+        self.CONCLUDED = 'concluded'  # this indicates that the search will not start again
+
+
+class SearchStateKeys:
+    def __init__(self):
+        # keys for the search details state machine on disk, can be changed
+        self.SEARCH_QUEUED = 'search_queued'
+        self.SEARCH_RUNNING = 'search_running'
+        self.SEARCH_STOPPED = 'search_stopped'
+        self.SEARCH_CONCLUDED = 'search_concluded'
+
+
+class MetaDataKeys:
+    def __init__(self):
+        # keys for reading & writing metadata info
+        # TODO get all of these keys from nextx debug run
+        self.META_DEMAND = 'nbPeers'
+        self.META_NAME = 'fileName'
+        self.META_RESULTS = 'results'
+        self.META_SUPPLY = 'nbSeeders'
+        self.META_URL = 'fileurl'
+
+
+class UserConfigKeys:
+    def __init__(self):
+        # keys for reading & writing user configuration
+        self.ADD_WAIT = 'seconds_to_wait_after_each_torrent_add_attempt'
+        self.PRIORITY = 'metadata_priority'
+        self.MAIN_LOOP_WAIT = 'seconds_to_wait_after_each_main_loop'
+        self.OTHER_WAIT = 'seconds_to_wait_for_other_reason'
+        self.SEARCH_CHECK_WAIT = 'seconds_to_wait_after_each_search_status_check'
+        self.UNI_CHAR_COUNT = 'unicode_total_character_count'
+        self.UNI_SHIFT = 'unicode_shift_offset_for_scrambling_results_cfg_file'
+
+
+class SearchDetailKeys:
+    def __init__(self):
+        # keys for reading & writing search details
+        self.AVG_SEEDS = 'average_seed_count'
+        self.EXPECTED_RESULT_COUNT = 'expected_search_result_count'
+        self.FILENAME_REGEX = 'regex_filter_for_filename'
+        self.LAST_READ = 'last_read'
+        self.LAST_WRITE = 'last_write'
+        self.MAX_SEARCH_ATTEMPTS = 'maximum_search_attempts'
+        self.MIN_SEEDS = 'minimum_seeds'
+        self.RESULTS_ADDED = 'results_added'
+        self.RESULTS_REQUIRED = 'results_required'
+        self.SEARCH_ATTEMPT_COUNT = 'search_attempt_count'
+        self.SEARCH_ID = 'search_id'
+        self.SEARCH_TERM = 'search_term'
+
+
+class PauseKeys:
+    def __init__(self):
+        # keys for controlling pause_type
+        self.ADD = 'add'
+        self.MAIN_LOOP = 'loops'
+        self.SEARCH = 'search'  # key with two uses, 1. controlling pause type, 2. keying parser
+        self.STARTING = 'starting'
+
+
+class MiscKeys:
+    def __init__(self):
+        # keys to label/organize
+        self.EMPTY = ''
+        self.RESET = 'reset'
+        self.SEARCHES = 'searches'
+
+
+class HardCoded:  # meta class
+    def __init__(self):
+        self.property = {
+            'path': Paths(),
+            'file': ConfigFiles()
+        }
+
+
+class KeyRing:  # meta class
+    def __init__(self):
+        self.ring = {
+            'path': PathKeys(),
+            'config_file': ConfigFileKeys(),
+            'parser': ParserKeys(),
+            'search': SearchKeys(),
+            'state': APIStateKeys(),
+            'search_state': SearchStateKeys(),
+            'metadata': MetaDataKeys(),
+            'user_config': UserConfigKeys(),
+            'search_detail': SearchDetailKeys(),
+            'pause': PauseKeys(),
+            'misc': MiscKeys()
+        }
 
 
 class Configuration:
     def __init__(self, clean_up=False):
+        self.key = KeyRing()
+        self.hardcoded = HardCoded()
         # set paths
+        path_key = self.key.ring['path']
         self.paths = {
-            PROJECT_PATH: _get_project_path(),
-            DATA_PATH: _get_data_path(),
-            USER_CONFIG_PATH: _get_user_config_path()
+            path_key.PROJECT_PATH: _get_project_path(),
+            path_key.DATA_PATH: _get_data_path(self),
+            path_key.USER_CONFIG_PATH: _get_user_config_path(self)
         }
         # set expected config files
+        config_key = self.key.ring['config']
         self.files = {
-            USER_CONFIG_FILES: _get_expected_config_files(),
-            PROJECT_FILES: _get_all_files_in_project_path()
+            config_key.USER_CONFIG_FILES: _get_expected_config_files_as_paths(self),
+            config_key.PROJECT_FILES: _get_all_files_in_project_path()
         }
         # set parsers
+        parser_key = self.key.ring['parser']
+        hardcoded = self.hardcoded
         self.parsers = {
-            METADATA: _get_parser(self.files[USER_CONFIG_FILES][METADATA_FILE_NAME]),
-            SEARCH: _get_parser(self.files[USER_CONFIG_FILES][SEARCH_DETAILS_FILE_NAME]),
-            USER_CONFIG: _get_parser(self.files[USER_CONFIG_FILES][USER_CONFIG_FILE_NAME])
+            parser_key.METADATA: _get_parser(hardcoded.property['file'].METADATA_FILE_NAME),
+            parser_key.SEARCH: _get_parser(hardcoded.property['file'].SEARCH_DETAILS_FILE_NAME),
+            parser_key.USER_CONFIG: _get_parser(hardcoded.property['file'].USER_CONFIG_FILE_NAME)
         }
         if clean_up:
             self.cleanup_project_path()
 
     def cleanup_project_path(self):
         try:
-            self._cleanup_path(Path(DATA_PATH_DIR_NAME))
-            self._cleanup_path(Path(CONFIG_PATH_DIR_NAME))
+            hardcoded = self.hardcoded
+            data_path_name = hardcoded.property['path'].DATA_PATH_DIR_NAME
+            config_path_name = hardcoded.property['path'].CONFIG_PATH_DIR_NAME
+            self._cleanup_path(Path(data_path_name))
+            self._cleanup_path(Path(config_path_name))
             pass
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
     def _cleanup_path(self, path_to_clean: Path):
         try:
+            key = self.key
             files_in_path = _get_all_files_in_path(path_to_clean)
             for file in files_in_path:
-                expected_config_file_names = self.files[USER_CONFIG_FILES]
+                expected_config_file_names = key.ring['config'].USER_CONFIG_FILES
                 if file not in expected_config_file_names:
                     remove(file)
         except Exception as e_err:
@@ -125,6 +213,7 @@ def _config_file_has_sections(config_parser) -> bool:
         if config_file_section_count > 0:
             ml.log_event('check if config for {} has sections'.format(config_parser), True)
             return True
+        ml.log_event('config file has no sections!'.format(config_parser), ml.WARNING, announce=True)
         return False
     except RuntimeError as r_err:
         ml.log_event('{}: configuration file has no sections'.format(r_err))
@@ -141,29 +230,29 @@ def _get_all_files_in_project_path():
         ml.log_event(e_err)
 
 
-def _get_user_config_path() -> Path:
+def _get_user_config_path(configuration: Configuration) -> Path:
     """
     :return: data path as path object
     """
     try:
         ml.log_event('get data path', event_completed=True)
-        return Path(_get_project_path(), CONFIG_PATH_DIR_NAME)
+        return Path(_get_project_path(), configuration.hardcoded.property['path'].CONFIG_PATH_DIR_NAME)
     except OSError as o_err:
         ml.log_event(o_err)
 
 
-def _get_data_path() -> Path:
+def _get_data_path(configuration: Configuration) -> Path:
     """
     :return: data path as path object
     """
     try:
         ml.log_event('get data path', event_completed=True)
-        return Path(_get_project_path(), DATA_PATH_DIR_NAME)
+        return Path(_get_project_path(), configuration.hardcoded.property['path'].DATA_PATH_DIR_NAME)
     except OSError as o_err:
         ml.log_event(o_err)
 
 
-def _get_expected_config_files() -> dict:
+def _get_expected_config_files_as_paths(configuration: Configuration) -> dict:
     """
     :return: built path from hardcoded filename
     """
@@ -171,14 +260,18 @@ def _get_expected_config_files() -> dict:
     try:
         # get project root path
         project_path = _get_project_path()
+        configuration.hardcoded.property['path'].
         # get sub paths
-        data_path = Path(project_path, DATA_PATH_DIR_NAME)
-        user_config_path = Path(project_path, CONFIG_PATH_DIR_NAME)
+        data_path = Path(project_path, configuration.hardcoded.property['path'].DATA_PATH_DIR_NAME)
+        user_config_path = Path(project_path, configuration.hardcoded.property['path'].CONFIG_PATH_DIR_NAME)
         # get paths to config files
+        metadata_fn = configuration.hardcoded.property['file'].METADATA_FILE_NAME
+        search_detail_fn = configuration.hardcoded.property['file'].SEARCH_DETAILS_FILE_NAME
+        user_config_fn = configuration.hardcoded.property['file'].USER_CONFIG_FILE_NAME
         config_files = {
-            METADATA_FILE_NAME: Path(data_path, METADATA_FILE_NAME),
-            SEARCH_DETAILS_FILE_NAME: Path(data_path, SEARCH_DETAILS_FILE_NAME),
-            USER_CONFIG_FILE_NAME: Path(user_config_path, USER_CONFIG_FILE_NAME)
+            metadata_fn: Path(data_path, metadata_fn),
+            search_detail_fn: Path(data_path, search_detail_fn),
+            user_config_fn: Path(user_config_path, user_config_fn)
         }
         return config_files
     except OSError as o_err:
