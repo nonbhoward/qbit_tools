@@ -25,7 +25,7 @@ class QbitTasker:
         try:
             search_term = self.config.hardcoded.keys.search_detail_keys.SEARCH_TERM
             # TODO bug, section headers is not populating
-            section_headers = self.config.parser.parsers.search_parser.sections()
+            section_headers = self.config.parser.parsers_keyed_by_file_path.search_parser.sections()
             for section_header in section_headers:
                 self.active_header = section_header
                 ml.log_event('monitoring search header {}'.format(self.active_header))
@@ -137,7 +137,7 @@ class QbitTasker:
         try:
             search_id = self.config.hardcoded.keys.search_detail_keys.SEARCH_ID
             if self._search_id_active():
-                self.config.parser.parsers.search_parser[self.active_header][search_id] = str(0)
+                self.config.parser.parsers_keyed_by_file_path.search_parser[self.active_header][search_id] = str(0)
                 ml.log_event('search id {} set as inactive'.format(search_id))
                 del self.active_search_ids[self.active_header]
         except KeyError as k_err:
@@ -147,7 +147,7 @@ class QbitTasker:
         ml.log_event('writing parser configurations to disk')
         try:
             config_file_paths = [self.config.paths.data, self.config.paths.user_config]
-            parsers = self.config.parser.parsers
+            parsers = self.config.parser.parsers_keyed_by_file_path
             for parser in parsers:
                 with open(path, 'w') as filename:
                     parser.write(filename)
@@ -353,7 +353,8 @@ class QbitTasker:
         """
         ml.log_event('reset search ids',event_completed=False)
         try:
-            search_parser = self.config.parser.parsers.search_parser
+            search_parser_path = self.config.paths.search_parser
+            search_parser = self.config.parser.parsers.parsers_keyed_by_file_path[search_parser_path]
             queued = self.config.hardcoded.keys.search_state_keys.SEARCH_QUEUED
             for section_header in search_parser.sections():
                 self.active_header = section_header
@@ -513,13 +514,22 @@ class QbitTasker:
     def _update_search_states(self, job_state):
         ml.log_event('updating the search state machine..')
         try:
+            search_parser = self.config.parser.parsers.search_detail_parser
+            search_keys = self.config.hardcoded.keys.search_detail_keys
+            active_header = self.active_header
+            search_id = search_parser[active_header][search_keys.SEARCH_ID]
+            QUEUED = self.config.hardcoded.keys.search_state_keys.SEARCH_QUEUED
+            RUNNING = self.config.hardcoded.keys.search_state_keys.SEARCH_RUNNING
+            STOPPED = self.config.hardcoded.keys.search_state_keys.SEARCH_STOPPED
+            CONCLUDED = self.config.hardcoded.keys.search_state_keys.SEARCH_CONCLUDED
             if job_state == QUEUED:
+                search_parser.remove_section(search_id)
                 self.search_parser.remove_section(search_key.id)
                 self.search_parser[self.active_header]['search_queued'] = YES
                 self.search_parser[self.active_header]['search_running'] = NO
                 self.search_parser[self.active_header]['search_stopped'] = NO
                 self.search_parser[self.active_header]['search_concluded'] = NO
-            elif job_state == STARTING:
+            elif job_state == RUNNING:
                 self.search_parser[self.active_header]['search_queued'] = NO
                 self.search_parser[self.active_header]['search_running'] = YES
                 self.search_parser[self.active_header]['search_stopped'] = NO
@@ -537,7 +547,7 @@ class QbitTasker:
                 self.search_parser[self.active_header]['search_concluded'] = YES
             else:
                 pass
-            self.search_parser[self.active_header]['last_write'] = str(datetime.datetime.now())
+            self.search_parser[self.active_header]['last_write'] = str(datetime.now())
         except KeyError as k_err:
             ml.log_event(k_err)
 

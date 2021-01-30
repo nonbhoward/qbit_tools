@@ -7,14 +7,6 @@ ml = MinimalLog()
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### TIER 3 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
-class Config:  # Configuration.HardCoded.FileNames.Config
-    def __init__(self):
-        # project's configuration file names, cannot be changed without changing project structure
-        self.metadata = 'metadata.cfg'
-        self.search_details = 'search_details.cfg'
-        self.user_config = 'user_configuration.cfg'
-
-
 class APIStateKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.APIStateKeys
     def __init__(self):
         # keys for the state machine, some from API responses, in memory, half can be changed
@@ -30,6 +22,14 @@ class MiscKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.MiscKeys
         self.EMPTY = ''
         self.RESET = 'reset'
         self.SEARCHES = 'searches'
+
+
+class Parsed:  # Configuration.HardCoded.FileNames.Config
+    def __init__(self):
+        # project's configuration file names, cannot be changed without changing project structure
+        self.metadata = 'metadata.cfg'
+        self.search_details = 'search_details.cfg'
+        self.user_config = 'user_configuration.cfg'
 
 
 class ParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.ParserKeys
@@ -121,7 +121,7 @@ class Extensions:  # Configuration.HardCoded.Extensions
 
 class FileNames:  # Configuration.HardCoded.FileNames
     def __init__(self):
-        self.config = Config()
+        self.to_be_parsed = Parsed()
 
 
 class KeyRing:  # Configuration.HardCoded.KeyRing
@@ -136,36 +136,42 @@ class KeyRing:  # Configuration.HardCoded.KeyRing
         self.user_config_keys = UserConfigKeys()
 
 
-class ParserNames:  # Configuration.Parser.ParserNames
-    def __init__(self):
-        # TODO unused for now, could be used to help organize Parsers()
-        self.metadata = 'metadata'
-        self.search = 'search'  # key with two uses, 1. controlling pause type, 2. keying parser TODO still true?
-        self.user_config = 'user_config'
+class ParserPaths:  # Configuration.Parser.ParserPaths
+    def __init__(self, configuration):
+        self.metadata_parser_path = self._get_parser_paths_from_(configuration)
+
+    @staticmethod
+    def _get_parser_paths_from_(configuration):
+        try:
+            print('todo')
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
 
 
 class Parsers:  # Configuration.Parser.Parsers
     def __init__(self, configuration):
-        # TODO for now return as unsorted tuple, (sorted by found) which could be done better using ParserNames()
-        # TODO already ran into issues with this, would be much better as a dict = {parser_name: parser_object}
-        self.metadata_parser, self.search_parser, self.user_config_parser = self._get_parsers_from_(configuration)
+        # TODO not scalable in the long term, will have to think about how to restructure this
+        parser_paths = configuration.paths._get_parser_paths_from_(configuration)
+        self.parsers_keyed_by_file_path = self._get_parsers_from_(parser_paths)
+        self.metadata_parser = self.parsers_keyed_by_file_path[parser_paths[0]]
+        self.search_detail_parser = self.parsers_keyed_by_file_path[parser_paths[1]]
+        self.user_config_parser = self.parsers_keyed_by_file_path[parser_paths[2]]
 
     @staticmethod
-    def _get_parsers_from_(configuration) -> tuple:
+    def _get_parsers_from_(parser_paths) -> dict:
+        """
+        TODO how should this function handle situation where sections are not found?
+        TODO most likely scenario is parser did not successfully read
+        TODO for now it will not be added, which will cause Parsers to fatal exception
+        """
         try:
-            data_path = str(configuration.paths.data)
-            user_config_path = str(configuration.paths.user_config)
-            config_extension = configuration.hardcoded.extensions.config
-            parser_paths = [data_path, user_config_path]
-            parsers = list()
+            parsers = dict()
             for parser_path in parser_paths:
-                for root, dirs, files in walk(parser_path):
-                    for file in files:
-                        if file.endswith(config_extension):
-                            cp = ConfigParser()
-                            cp.read(file)
-                            parsers.append(cp)
-            return * parsers,
+                cp = ConfigParser()
+                cp.read(parser_path)
+                assert(_parser_has_sections(cp), True), ml.log_event('fatal exception {} has no sections'.format(cp))
+                parsers[parser_path] = cp
+            return parsers
         except Exception as e_err:
             ml.log_event(e_err, ml.ERROR)
 
@@ -181,8 +187,8 @@ class HardCoded:  # Configuration.HardCoded
 
 class Parser:  # Configuration.Parser
     def __init__(self, configuration):
+        self.paths = ParserPaths(configuration)
         self.parsers = Parsers(configuration)
-        self.names = ParserNames()
 
 
 class Paths:  # Configuration.Paths
@@ -190,6 +196,7 @@ class Paths:  # Configuration.Paths
         self.project = configuration._get_project_path()
         self.data = self._get_data_path_from_(configuration)
         self.user_config = self._get_user_config_path_from_(configuration)
+        self.metadata_parser, self.search_parser, self.user_config_parser = self._get_parser_paths_from_(configuration)
 
     def _get_data_path_from_(path, configuration) -> Path:
         """
@@ -201,6 +208,20 @@ class Paths:  # Configuration.Paths
             return Path(path.project, data_directory_name)
         except OSError as o_err:
             ml.log_event(o_err, level=ml.ERROR)
+
+    def _get_parser_paths_from_(path, configuration) -> tuple:
+        # TODO this cannot scale
+        try:
+            # data paths
+            metadata_parser_path = Path(path.data, configuration.hardcoded.file_names.to_be_parsed.metadata)
+            search_details_path = Path(path.data, configuration.hardcoded.file_names.to_be_parsed.search_details)
+            # user config paths
+            user_config_path = Path(path.user_config, configuration.hardcoded.file_names.to_be_parsed.user_config)
+            # build and return
+            parser_paths = [metadata_parser_path, search_details_path, user_config_path]
+            return * parser_paths,
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
 
     def _get_user_config_path_from_(path, configuration) -> Path:
         """
@@ -251,6 +272,17 @@ class Configuration:  # ROOT @ Configuration
 def get_user_configuration() -> Configuration:  # this is the only export required?
     try:
         return Configuration()
+    except Exception as e_err:
+        ml.log_event(e_err, level=ml.ERROR)
+
+
+def _parser_has_sections(configparser) -> bool:
+    try:
+        section_count = len(configparser.sections())
+        if section_count > 0:
+            return True
+        ml.log_event('configparser {} has no sections'.format(configparser), level=ml.WARNING)
+        return False
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
