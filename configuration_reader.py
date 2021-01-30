@@ -8,14 +8,14 @@ DIRECTORY_NAMES = 'directory_names'
 
 class HardcodedDirectoryNames:
     def __init__(self):
-        # project's sub directory names, cannot be changed
+        # project's sub directory names, strings cannot be changed without changing project structure
         self.CONFIG_PATH_DIR_NAME = 'user_configuration'
         self.DATA_PATH_DIR_NAME = 'data_src'
 
 
 class HardcodedConfigFileNames:
     def __init__(self):
-        # project's configuration file names, cannot be changed
+        # project's configuration file names, cannot be changed without changing project structure
         self.METADATA_FILE_NAME = 'metadata.cfg'
         self.SEARCH_DETAILS_FILE_NAME = 'search_details.cfg'
         self.USER_CONFIG_FILE_NAME = 'user_configuration.cfg'
@@ -32,9 +32,9 @@ class DirectoryPathKeys:
 class FilePathKeys:
     def __init__(self):
         # keys for file groups
-        self.METADATA_FILE_PATHS = 'metadata_file_paths'
-        self.PROJECT_FILE_PATHS = 'project_file_paths'
-        self.USER_CONFIG_FILE_PATHS = 'user_config_file_paths'
+        self.METADATA_FILE_PATH = 'metadata_file_path'
+        self.PROJECT_FILE_PATH = 'project_file_path'
+        self.USER_CONFIG_FILE_PATH = 'user_config_file_path'
 
 
 class ParserKeys:
@@ -54,7 +54,7 @@ class SearchKeys:
     def __init__(self):
         # keys for reading & writing values for the search config parser's end reason key, can be changed
         self.REQUIRED_RESULTS_FOUND = 'required results found!'
-        self.TIMED_OUT = 'timed out!'
+        self.TIMED_OUT = 'search timed out!'
 
 
 class APIStateKeys:
@@ -171,9 +171,9 @@ class Configuration:
         # set expected config files
         files_key = self.key.ring['files']
         self.file_paths = {
-            files_key.METADATA_FILE_PATHS: _get_expected_metadata_file_as_paths_dict(self),
-            files_key.PROJECT_FILE_PATHS: _get_all_files_in_project_path(self),
-            files_key.USER_CONFIG_FILE_PATHS: _get_expected_config_files_as_paths_dict(self)
+            files_key.METADATA_FILE_PATH: _get_expected_metadata_file_as_paths_dict(self),
+            files_key.PROJECT_FILE_PATH: _get_all_files_in_project_path(self),
+            files_key.USER_CONFIG_FILE_PATH: _get_expected_config_files_as_paths_dict(self)
         }
         # set parsers
         parser_key = self.key.ring['parser']
