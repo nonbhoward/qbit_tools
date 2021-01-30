@@ -2,37 +2,39 @@ from configparser import ConfigParser
 from minimalog.minimal_log import MinimalLog
 from os import getcwd, remove, walk
 from pathlib2 import Path
-ml = MinimalLog(__name__)
+CONFIG_FILE_NAMES = 'config_file_names'
+DIRECTORY_NAMES = 'directory_names'
 
 
-class Paths:
+class HardcodedDirectoryNames:
     def __init__(self):
-        # project directory names, cannot be changed
+        # project's sub directory names, cannot be changed
         self.CONFIG_PATH_DIR_NAME = 'user_configuration'
         self.DATA_PATH_DIR_NAME = 'data_src'
 
 
-class ConfigFiles:
+class HardcodedConfigFileNames:
     def __init__(self):
-        # project file names, cannot be changed
+        # project's configuration file names, cannot be changed
         self.METADATA_FILE_NAME = 'metadata.cfg'
         self.SEARCH_DETAILS_FILE_NAME = 'search_details.cfg'
         self.USER_CONFIG_FILE_NAME = 'user_configuration.cfg'
 
 
-class PathKeys:
+class DirectoryPathKeys:
     def __init__(self):
-        # keys for Configuration().paths, can be changed
+        # keys for sub paths in the project path
         self.DATA_PATH = 'data_path'
         self.PROJECT_PATH = 'project_path'
         self.USER_CONFIG_PATH = 'user_config_path'
 
 
-class ConfigFileKeys:
+class FilePathKeys:
     def __init__(self):
-        # keys for Configuration().files, can be changed
-        self.PROJECT_FILES = 'project_files'
-        self.USER_CONFIG_FILES = 'user_config_files'
+        # keys for file groups
+        self.METADATA_FILE_PATHS = 'metadata_file_paths'
+        self.PROJECT_FILE_PATHS = 'project_file_paths'
+        self.USER_CONFIG_FILE_PATHS = 'user_config_file_paths'
 
 
 class ParserKeys:
@@ -58,19 +60,19 @@ class SearchKeys:
 class APIStateKeys:
     def __init__(self):
         # keys for the state machine, some from API responses, in memory, half can be changed
+        self.CONCLUDED = 'concluded'  # this indicates that the search will not start again
         self.QUEUED = 'queued'  # this indicates that the search should be started soon
         self.RUNNING = 'Running'  # this is a web api status return value, indicates search is running
         self.STOPPED = 'Stopped'  # this is a web api status return value, indicates search is or has stopped
-        self.CONCLUDED = 'concluded'  # this indicates that the search will not start again
 
 
 class SearchStateKeys:
     def __init__(self):
         # keys for the search details state machine on disk, can be changed
+        self.SEARCH_CONCLUDED = 'search_concluded'
         self.SEARCH_QUEUED = 'search_queued'
         self.SEARCH_RUNNING = 'search_running'
         self.SEARCH_STOPPED = 'search_stopped'
-        self.SEARCH_CONCLUDED = 'search_concluded'
 
 
 class MetaDataKeys:
@@ -133,25 +135,25 @@ class MiscKeys:
 class HardCoded:  # meta class
     def __init__(self):
         self.property = {
-            'path': Paths(),
-            'file': ConfigFiles()
+            CONFIG_FILE_NAMES: HardcodedConfigFileNames(),
+            DIRECTORY_NAMES: HardcodedDirectoryNames()
         }
 
 
 class KeyRing:  # meta class
     def __init__(self):
         self.ring = {
-            'path': PathKeys(),
-            'config_file': ConfigFileKeys(),
-            'parser': ParserKeys(),
-            'search': SearchKeys(),
-            'state': APIStateKeys(),
-            'search_state': SearchStateKeys(),
+            'files': FilePathKeys(),
             'metadata': MetaDataKeys(),
-            'user_config': UserConfigKeys(),
-            'search_detail': SearchDetailKeys(),
+            'misc': MiscKeys(),
+            'parser': ParserKeys(),
+            'path': DirectoryPathKeys(),
             'pause': PauseKeys(),
-            'misc': MiscKeys()
+            'search': SearchKeys(),
+            'search_state': SearchStateKeys(),
+            'state': APIStateKeys(),
+            'search_detail': SearchDetailKeys(),
+            'user_config': UserConfigKeys(),
         }
 
 
@@ -167,18 +169,19 @@ class Configuration:
             path_key.USER_CONFIG_PATH: _get_user_config_path(self)
         }
         # set expected config files
-        config_key = self.key.ring['config_file']
-        self.files = {
-            config_key.USER_CONFIG_FILES: _get_expected_config_files_as_paths(self),
-            config_key.PROJECT_FILES: _get_all_files_in_project_path(self)
+        files_key = self.key.ring['files']
+        self.file_paths = {
+            files_key.METADATA_FILE_PATHS: _get_expected_metadata_file_as_paths_dict(self),
+            files_key.PROJECT_FILE_PATHS: _get_all_files_in_project_path(self),
+            files_key.USER_CONFIG_FILE_PATHS: _get_expected_config_files_as_paths_dict(self)
         }
         # set parsers
         parser_key = self.key.ring['parser']
         hardcoded = self.hardcoded
         self.parsers = {
-            parser_key.METADATA: _get_parser(hardcoded.property['file'].METADATA_FILE_NAME),
-            parser_key.SEARCH: _get_parser(hardcoded.property['file'].SEARCH_DETAILS_FILE_NAME),
-            parser_key.USER_CONFIG: _get_parser(hardcoded.property['file'].USER_CONFIG_FILE_NAME)
+            parser_key.METADATA: _get_parser(hardcoded.property[CONFIG_FILE_NAMES].METADATA_FILE_NAME),
+            parser_key.SEARCH: _get_parser(hardcoded.property[CONFIG_FILE_NAMES].SEARCH_DETAILS_FILE_NAME),
+            parser_key.USER_CONFIG: _get_parser(hardcoded.property[CONFIG_FILE_NAMES].USER_CONFIG_FILE_NAME)
         }
         if clean_up:
             self.cleanup_project_path()
@@ -186,8 +189,8 @@ class Configuration:
     def cleanup_project_path(self):
         try:
             hardcoded = self.hardcoded
-            data_path_name = hardcoded.property['path'].DATA_PATH_DIR_NAME
-            config_path_name = hardcoded.property['path'].CONFIG_PATH_DIR_NAME
+            data_path_name = hardcoded.property[DIRECTORY_NAMES].DATA_PATH_DIR_NAME
+            config_path_name = hardcoded.property[DIRECTORY_NAMES].CONFIG_PATH_DIR_NAME
             self._cleanup_path(Path(data_path_name))
             self._cleanup_path(Path(config_path_name))
             pass
@@ -196,10 +199,10 @@ class Configuration:
 
     def _cleanup_path(self, path_to_clean: Path):
         try:
-            key = self.key
+            configuration = self
             files_in_path = _get_all_files_in_path(path_to_clean)
             for file in files_in_path:
-                expected_config_file_names = key.ring['config'].USER_CONFIG_FILES
+                expected_config_file_names = _get_expected_config_files_as_paths_dict()
                 if file not in expected_config_file_names:
                     remove(file)
         except Exception as e_err:
@@ -237,7 +240,7 @@ def _get_user_config_path(configuration: Configuration) -> Path:
     """
     try:
         ml.log_event('get data path', event_completed=True)
-        return Path(_get_project_path(), configuration.hardcoded.property['path'].CONFIG_PATH_DIR_NAME)
+        return Path(_get_project_path(), configuration.hardcoded.property[DIRECTORY_NAMES].CONFIG_PATH_DIR_NAME)
     except OSError as o_err:
         ml.log_event(o_err)
 
@@ -248,35 +251,48 @@ def _get_data_path(configuration: Configuration) -> Path:
     """
     try:
         ml.log_event('get data path', event_completed=True)
-        return Path(_get_project_path(), configuration.hardcoded.property['path'].DATA_PATH_DIR_NAME)
+        return Path(_get_project_path(), configuration.hardcoded.property[DIRECTORY_NAMES].DATA_PATH_DIR_NAME)
     except OSError as o_err:
         ml.log_event(o_err)
 
 
-def _get_expected_config_files_as_paths(configuration: Configuration) -> dict:
-    """
-    :return: built path from hardcoded filename
-    """
+def _get_expected_config_files_as_paths_dict(configuration: Configuration) -> dict:
     ml.log_event('get config files')
     try:
         # get project root path
         path_key = configuration.key
         project_path = configuration.paths[path_key.ring['path'].PROJECT_PATH]
         # get sub paths
-        data_path = Path(project_path, configuration.hardcoded.property['path'].DATA_PATH_DIR_NAME)
-        user_config_path = Path(project_path, configuration.hardcoded.property['path'].CONFIG_PATH_DIR_NAME)
+        data_path = Path(project_path, configuration.hardcoded.property[DIRECTORY_NAMES].DATA_PATH_DIR_NAME)
+        user_config_path = Path(project_path, configuration.hardcoded.property[DIRECTORY_NAMES].CONFIG_PATH_DIR_NAME)
         # get paths to config files
-        metadata_fn = configuration.hardcoded.property['file'].METADATA_FILE_NAME
-        search_detail_fn = configuration.hardcoded.property['file'].SEARCH_DETAILS_FILE_NAME
-        user_config_fn = configuration.hardcoded.property['file'].USER_CONFIG_FILE_NAME
+        search_detail_fn = configuration.hardcoded.property[CONFIG_FILE_NAMES].SEARCH_DETAILS_FILE_NAME
+        user_config_fn = configuration.hardcoded.property[CONFIG_FILE_NAMES].USER_CONFIG_FILE_NAME
         config_files = {
-            metadata_fn: Path(data_path, metadata_fn),
             search_detail_fn: Path(data_path, search_detail_fn),
             user_config_fn: Path(user_config_path, user_config_fn)
         }
         return config_files
     except OSError as o_err:
         ml.log_event(o_err)
+
+
+def _get_expected_metadata_file_as_paths_dict(configuration: Configuration) -> dict:
+        ml.log_event('get config files')
+        try:
+            # get project root path
+            path_key = configuration.key
+            project_path = configuration.paths[path_key.ring['path'].PROJECT_PATH]
+            # get sub paths
+            data_path = Path(project_path, configuration.hardcoded.property[DIRECTORY_NAMES].DATA_PATH_DIR_NAME)
+            # get paths to metadata file
+            metadata_fn = configuration.hardcoded.property[CONFIG_FILE_NAMES].METADATA_FILE_NAME
+            metadata_file = {
+                metadata_fn: Path(data_path, metadata_fn),
+            }
+            return metadata_file
+        except OSError as o_err:
+            ml.log_event(o_err)
 
 
 def _get_parser(config_file_path) -> ConfigParser:
@@ -329,5 +345,8 @@ def get_user_configuration() -> Configuration:
 
 
 if __name__ == '__main__':
-    cf = Configuration()
-    pass  # i don't see why i would ever run this directly
+    ml = MinimalLog()
+    cf = Configuration(clean_up=True)
+    pass
+else:
+    ml = MinimalLog(__name__)
