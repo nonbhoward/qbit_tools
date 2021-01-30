@@ -2,111 +2,140 @@ from configparser import ConfigParser
 from minimalog.minimal_log import MinimalLog
 from os import getcwd, remove, walk
 from pathlib2 import Path
+ml = MinimalLog()
 CONFIG_FILE_NAMES = 'config_file_names'
 DIRECTORY_NAMES = 'directory_names'
 
 
-class KeyRing:  # meta class
-    # LEGACY, BEING REPLACED
+##### ##### ##### ##### ##### ##### ##### ##### TIER 3 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
+class Config:  # Configuration.HardCodedConstants.FileNames.Config
     def __init__(self):
-        self.names = KeyNamesForKeyRing()
-        self.ring = {
-            self.names.PROJECT_FILES: ProjectFilePathKeys(),
-            self.names.CONFIG_FILES: ConfigFilePathKeys(),
-            self.names.METADATA: MetaDataKeys(),
-            self.names.MISC: MiscKeys(),
-            self.names.PARSER: ParserKeys(),
-            self.names.PATH: DirectoryPathKeys(),
-            self.names.PAUSE: PauseKeys(),
-            self.names.SEARCH: SearchKeys(),
-            self.names.SEARCH_STATE: SearchStateKeys(),
-            self.names.STATE: APIStateKeys(),
-            self.names.SEARCH_DETAIL: SearchDetailKeys(),
-            self.names.USER_CONFIG: UserConfigKeys(),
-        }
+        # project's configuration file names, cannot be changed without changing project structure
+        self.METADATA = 'metadata.cfg'
+        self.SEARCH_DETAILS = 'search_details.cfg'
+        self.USER_CONFIG = 'user_configuration.cfg'
 
 
-# TIER 2 : Configuration().Hardcoded().DirectoryNames()
-class DirectoryNames:  # T2
+##### ##### ##### ##### ##### ##### ##### ##### TIER 2 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
+class DirectoryNames:  # Configuration.HardCodedConstants.DirectoryNames
     def __init__(self):
-        self.CONFIG_PATH = 'user_configuration'
+        self.USER_CONFIG_PATH = 'user_configuration'
         self.DATA_PATH = 'data_src'
 
 
-# TIER 2 : Configuration().Hardcoded().FileNames()
-class FileNames:  # T2
-    class Config:
-        def __init__(self):
-            # project's configuration file names, cannot be changed without changing project structure
-            self.METADATA = 'metadata.cfg'
-            self.SEARCH_DETAILS = 'search_details.cfg'
-            self.USER_CONFIG = 'user_configuration.cfg'
-
-    class Project:
-        def __init__(self):
-            self.ALL_PROJECT_FILE_PATHS = 'all_project_file_paths'
+class FileNames:  # Configuration.HardCodedConstants.FileNames
+    def __init__(self):
+        self.config = Config()
 
 
-# TIER 1 : Configuration().HardCoded()
-class HardCoded:  # T1 Child class for nesting/embedding in Configuration()
+class ParserNames:  # Configuration.Parser.ParserNames
+    def __init__(self):
+        self.METADATA = 'metadata'
+        self.SEARCH = 'search'  # key with two uses, 1. controlling pause type, 2. keying parser TODO still true?
+        self.USER_CONFIG = 'user_config'
+
+
+class Parsers:  # Configuration.Parser.Parsers
+    def __init__(self, configuration):
+        self.METADATA_PARSER = _get_parser(configuration)
+        self.SEARCH_PARSER = _get_parser(configuration)
+        self.USER_CONFIG_PARSER = _get_parser(configuration)
+
+
+##### ##### ##### ##### ##### ##### ##### ##### TIER 1 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
+class HardCodedConstants:  # Configuration.HardCodedConstants
     def __init__(self):
         self.file_names = FileNames()
+        self.directory_names = DirectoryNames()
 
 
-# TIER 1 : Configuration().Keys()
-class Keys:
-    # TODO if possible delete this class and just nest without using potentially confusing keys
-    def __init__(self):
-        pass
+class Parser:  # Configuration.Parser
+    def __init__(self, configuration):
+        self.parsers = Parsers(configuration)
+        self.names = ParserNames()
 
 
-# TIER 0, ROOT @ Configuration()
-class Configuration:
+class Paths:  # Configuration.Parser
+    def __init__(self, configuration):
+        self.PROJECT = configuration._get_project_path()
+        self.DATA = self._get_data_path_from_(configuration)
+        self.USER_CONFIG = self._get_user_config_path_from_(configuration)
+
+    def _get_data_path_from_(path, configuration) -> Path:
+        """
+        :return: data path as path object
+        """
+        try:
+            ml.log_event('get data path', event_completed=True)
+            data_directory_name = configuration.hardcoded_constants.directory_names.DATA_PATH
+            return Path(path.PROJECT, data_directory_name)
+        except OSError as o_err:
+            ml.log_event(o_err)
+
+    def _get_user_config_path_from_(path, configuration) -> Path:
+        """
+        :return: data path as path object
+        """
+        try:
+            ml.log_event('get data path', event_completed=True)
+            user_config_directory_name = configuration.hardcoded_constants.directory_names.USER_CONFIG_PATH
+            return Path(path.PROJECT, user_config_directory_name)
+        except OSError as o_err:
+            ml.log_event(o_err)
+
+
+
+class ProjectFiles:  # Configuration.ProjectFiles
+    def __init__(self, configuration):
+        self.ALL_PROJECT_FILE_PATHS = _get_all_files_in_project_path(configuration)
+
+
+##### ##### ##### ##### ##### ##### ##### ###### TIER 0 CLASS ###### ##### ##### ##### ##### ##### ##### ######
+class Configuration:  # ROOT @ Configuration
     # TODO should include an option like 'parse_all_files_in_project_path=False' to allow for optional parsing
     def __init__(self):
-        self.hardcoded = HardCoded()
-        self.keys = Keys()
+        self.hardcoded_constants = HardCodedConstants()
+        self.paths = Paths(self)
+        self.files = ProjectFiles(self)
+        self.parser = Parser(self)
+
+    def _get_parser(configuration) -> ConfigParser:
+        try:
+            parser = ConfigParser()
+            parser.read(config_file_path)
+            return parser
+        except Exception as e_err:
+            ml.log_event(e_err, ml.ERROR)
+
+    def _get_all_files_in_project_path(configuration):
+        try:
+            path_key = configuration.key.ring['path']
+            project_path, all_files = configuration.project_path[path_key.PROJECT_PATH], list()
+            for root, dirs, files in walk(project_path):
+                for file in files:
+                    all_files.append(Path(root, file))
+            return all_files
+        except Exception as e_err:
+            ml.log_event(e_err)
+
+    @staticmethod
+    def _get_project_path() -> Path:
+        try:
+            return Path(getcwd())
+        except OSError as o_err:
+            ml.log_event(o_err)
 
 
 # TESTING AREA DELETE ME
 config = Configuration()
+pass
 # TESTING AREA DELETE ME
 
+
 # LEGACY BELOW
-class HardcodedConfigFileNames:
-    def __init__(self):
-        self.METADATA_FILE_NAME = 'metadata.cfg'
-        self.SEARCH_DETAILS_FILE_NAME = 'search_details.cfg'
-        self.USER_CONFIG_FILE_NAME = 'user_configuration.cfg'
-
-
-class DirectoryPathKeys:
-    def __init__(self):
-        # keys for sub paths in the project path
-        self.DATA_PATH = 'data_path'
-        self.PROJECT_PATH = 'project_path'
-        self.USER_CONFIG_PATH = 'user_config_path'
-
-
-class ProjectFilePathKeys:
-    def __init__(self):
-        # keys for project file group
-        self.PROJECT_FILE_PATH = 'project_file_path'
-
-
-class ConfigFilePathKeys:
-    def __init__(self):
-        # keys for config file group
-        self.METADATA_FILE_PATH = 'metadata_file_path'
-        self.USER_CONFIG_FILE_PATH = 'user_config_file_path'
-
-
 class ParserKeys:
     def __init__(self):
         # keys for Configuration().parsers, can be changed
-        self.METADATA = 'metadata'
-        self.SEARCH = 'search'  # key with two uses, 1. controlling pause type, 2. keying parser
-        self.USER_CONFIG = 'user_config'
         # key for the DEFAULT section of all config parsers, cannot be changed
         self. DEFAULT = 'DEFAULT'
         # keys for reading & writing boolean values for all config parsers, cannot be changed
@@ -259,28 +288,28 @@ class KeyNamesForKeyRing:
 #         }
 #         if clean_up:
 #             self.cleanup_project_path()
-
-    def cleanup_project_path(self):
-        try:
-            hardcoded = self.hardcoded
-            data_path_name = hardcoded.property[DIRECTORY_NAMES].DATA_PATH_DIR_NAME
-            config_path_name = hardcoded.property[DIRECTORY_NAMES].CONFIG_PATH_DIR_NAME
-            self._cleanup_path(Path(data_path_name))
-            self._cleanup_path(Path(config_path_name))
-            pass
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def _cleanup_path(self, path_to_clean: Path):
-        try:
-            configuration = self
-            files_in_path = _get_all_files_in_path(path_to_clean)
-            for file in files_in_path:
-                expected_config_file_names = _get_expected_config_files_as_paths_dict()
-                if file not in expected_config_file_names:
-                    remove(file)
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+#
+#     def cleanup_project_path(self):
+#         try:
+#             hardcoded = self.hardcoded
+#             data_path_name = hardcoded.property[DIRECTORY_NAMES].DATA_PATH_DIR_NAME
+#             config_path_name = hardcoded.property[DIRECTORY_NAMES].CONFIG_PATH_DIR_NAME
+#             self._cleanup_path(Path(data_path_name))
+#             self._cleanup_path(Path(config_path_name))
+#             pass
+#         except Exception as e_err:
+#             ml.log_event(e_err, level=ml.ERROR)
+#
+#     def _cleanup_path(self, path_to_clean: Path):
+#         try:
+#             configuration = self
+#             files_in_path = _get_all_files_in_path(path_to_clean)
+#             for file in files_in_path:
+#                 expected_config_file_names = _get_expected_config_files_as_paths_dict()
+#                 if file not in expected_config_file_names:
+#                     remove(file)
+#         except Exception as e_err:
+#             ml.log_event(e_err, level=ml.ERROR)
 
 
 def _config_file_has_sections(config_parser) -> bool:
@@ -295,39 +324,6 @@ def _config_file_has_sections(config_parser) -> bool:
     except RuntimeError as r_err:
         ml.log_event('{}: configuration file has no sections'.format(r_err))
 
-
-def _get_all_files_in_project_path(configuration: Configuration):
-    try:
-        path_key = configuration.key.ring['path']
-        project_path, all_files = configuration.project_path[path_key.PROJECT_PATH], list()
-        for root, dirs, files in walk(project_path):
-            for file in files:
-                all_files.append(Path(root, file))
-        return all_files
-    except Exception as e_err:
-        ml.log_event(e_err)
-
-
-def _get_user_config_path(configuration: Configuration) -> Path:
-    """
-    :return: data path as path object
-    """
-    try:
-        ml.log_event('get data path', event_completed=True)
-        return Path(_get_project_path(), configuration.hardcoded.property[DIRECTORY_NAMES].CONFIG_PATH_DIR_NAME)
-    except OSError as o_err:
-        ml.log_event(o_err)
-
-
-def _get_data_path(configuration: Configuration) -> Path:
-    """
-    :return: data path as path object
-    """
-    try:
-        ml.log_event('get data path', event_completed=True)
-        return Path(_get_project_path(), configuration.hardcoded.property[DIRECTORY_NAMES].DATA_PATH_DIR_NAME)
-    except OSError as o_err:
-        ml.log_event(o_err)
 
 
 def _get_expected_config_files_as_paths_dict(configuration: Configuration) -> dict:
@@ -369,15 +365,6 @@ def _get_expected_metadata_file_as_paths_dict(configuration: Configuration) -> d
         ml.log_event(o_err)
 
 
-def _get_parser(config_file_path) -> ConfigParser:
-    try:
-        parser = ConfigParser()
-        parser.read(config_file_path)
-        return parser
-    except Exception as e_err:
-        ml.log_event(e_err, ml.ERROR)
-
-
 def _get_parser_file_paths_as_dict(configuration: Configuration) -> dict:
     try:
         key, key_names = configuration.key, configuration.key.names
@@ -390,13 +377,6 @@ def _get_parser_file_paths_as_dict(configuration: Configuration) -> dict:
         return parser_file_paths_dict
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
-
-
-def _get_project_path() -> Path:
-    try:
-        return Path(getcwd())
-    except OSError as o_err:
-        ml.log_event(o_err)
 
 
 def _parser_is_ready() -> tuple:
