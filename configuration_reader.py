@@ -169,7 +169,8 @@ class Parsers:  # Configuration.Parser.Parsers
             for parser_path in parser_paths:
                 cp = ConfigParser()
                 cp.read(parser_path)
-                assert(_parser_has_sections(cp), True), ml.log_event('fatal exception {} has no sections'.format(cp))
+                # TODO check to be sure this statement works as expected
+                assert _parser_has_sections(cp), ml.log_event('fatal exception {} has no sections'.format(cp))
                 parsers[parser_path] = cp
             return parsers
         except Exception as e_err:
@@ -271,7 +272,8 @@ class Configuration:  # ROOT @ Configuration
 
 def get_user_configuration() -> Configuration:  # this is the only export required?
     try:
-        return Configuration()
+        configuration = Configuration()
+        return configuration
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 

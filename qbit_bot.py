@@ -1,4 +1,3 @@
-from configuration_reader import get_user_configuration
 from datetime import datetime
 from minimalog.minimal_log import MinimalLog
 from re import findall
@@ -8,11 +7,11 @@ import qbittorrentapi
 
 
 class QbitTasker:
-    def __init__(self):
+    def __init__(self, user_configuration):
         ml.log_event('initialize {}'.format(self.__class__), event_completed=False, announce=True)
         self.main_loop_count = 0
         self.qbit_client_connected = True if self._client_is_connected() else False
-        self.config = get_user_configuration()
+        self.config = user_configuration
         self._connection_time_start = datetime.now()
         self._reset_search_ids()
         self.active_search_ids, self.active_header = dict(), ''
@@ -24,8 +23,8 @@ class QbitTasker:
     def initiate_and_monitor_searches(self):
         try:
             search_term = self.config.hardcoded.keys.search_detail_keys.SEARCH_TERM
-            # TODO bug, section headers is not populating
-            section_headers = self.config.parser.parsers_keyed_by_file_path.search_parser.sections()
+            # TODO bug, section headers is not populating, search_parser loses data somewhere before here
+            section_headers = self.config.parser.parsers.search_detail_parser.sections()
             for section_header in section_headers:
                 self.active_header = section_header
                 ml.log_event('monitoring search header {}'.format(self.active_header))
@@ -116,10 +115,13 @@ class QbitTasker:
     def _config_get_search_term(self) -> str:
         ml.log_event('get search term for {}'.format(self.active_header))
         try:
-            if SEARCH_TERM not in self.config.parsers[self.active_header].keys():
+            search_term = self.config.hardcoded.keys.search_detail_keys.SEARCH_TERM
+            if search_term not in self.config.parser.parsers.search_detail_parser[self.active_header].keys():
+                ml.log_event('key {} not found in header {}, setting key value to header value'.format(
+                    search_term, self.active_header), level=ml.WARNING)
                 search_term = self.active_header
                 return search_term
-            search_term = self.config.parsers[self.active_header][SEARCH_TERM]
+            search_term = self.config.parser.parsers.search_detail_parser[self.active_header][search_term]
             return search_term
         except KeyError as k_err:
             ml.log_event(k_err)
@@ -353,8 +355,7 @@ class QbitTasker:
         """
         ml.log_event('reset search ids',event_completed=False)
         try:
-            search_parser_path = self.config.paths.search_parser
-            search_parser = self.config.parser.parsers.parsers_keyed_by_file_path[search_parser_path]
+            search_parser = self.config.parser.parsers.search_detail_parser
             queued = self.config.hardcoded.keys.search_state_keys.SEARCH_QUEUED
             for section_header in search_parser.sections():
                 self.active_header = section_header
@@ -517,37 +518,39 @@ class QbitTasker:
             search_parser = self.config.parser.parsers.search_detail_parser
             search_keys = self.config.hardcoded.keys.search_detail_keys
             active_header = self.active_header
-            search_id = search_parser[active_header][search_keys.SEARCH_ID]
+            search_id = self._config_get_search_term()
             QUEUED = self.config.hardcoded.keys.search_state_keys.SEARCH_QUEUED
             RUNNING = self.config.hardcoded.keys.search_state_keys.SEARCH_RUNNING
             STOPPED = self.config.hardcoded.keys.search_state_keys.SEARCH_STOPPED
             CONCLUDED = self.config.hardcoded.keys.search_state_keys.SEARCH_CONCLUDED
+            YES, NO = self.config.hardcoded.keys.parser_keys.YES, self.config.hardcoded.keys.parser_keys.NO
+            # TODO bug, section headers is not populating, search_parser loses data somewhere after here
             if job_state == QUEUED:
-                search_parser.remove_section(search_id)
-                self.search_parser.remove_section(search_key.id)
-                self.search_parser[self.active_header]['search_queued'] = YES
-                self.search_parser[self.active_header]['search_running'] = NO
-                self.search_parser[self.active_header]['search_stopped'] = NO
-                self.search_parser[self.active_header]['search_concluded'] = NO
+                # self.search_parser.remove_section('search_id')  # TODO delete this line after implementing replacement
+                self.config.parser.parsers.search_detail_parser.remove_section(search_keys.SEARCH_ID)
+                self.config.parser.parsers.search_detail_parser[active_header][QUEUED] = YES
+                self.config.parser.parsers.search_detail_parser[active_header][RUNNING] = NO
+                self.config.parser.parsers.search_detail_parser[active_header][STOPPED] = NO
+                self.config.parser.parsers.search_detail_parser[active_header][CONCLUDED] = NO
             elif job_state == RUNNING:
-                self.search_parser[self.active_header]['search_queued'] = NO
-                self.search_parser[self.active_header]['search_running'] = YES
-                self.search_parser[self.active_header]['search_stopped'] = NO
-                self.search_parser[self.active_header]['search_concluded'] = NO
+                self.config.parser.parsers.search_detail_parser[active_header][QUEUED] = NO
+                self.config.parser.parsers.search_detail_parser[active_header][RUNNING] = YES
+                self.config.parser.parsers.search_detail_parser[active_header][STOPPED] = NO
+                self.config.parser.parsers.search_detail_parser[active_header][CONCLUDED] = NO
                 self._increment_search_attempt_count()
             elif job_state == STOPPED:
-                self.search_parser[self.active_header]['search_queued'] = NO
-                self.search_parser[self.active_header]['search_running'] = NO
-                self.search_parser[self.active_header]['search_stopped'] = YES
-                self.search_parser[self.active_header]['search_concluded'] = NO
+                self.config.parser.parsers.search_detail_parser[active_header][QUEUED] = NO
+                self.config.parser.parsers.search_detail_parser[active_header][RUNNING] = NO
+                self.config.parser.parsers.search_detail_parser[active_header][STOPPED] = YES
+                self.config.parser.parsers.search_detail_parser[active_header][CONCLUDED] = NO
             elif job_state == CONCLUDED:
-                self.search_parser[self.active_header]['search_queued'] = NO
-                self.search_parser[self.active_header]['search_running'] = NO
-                self.search_parser[self.active_header]['search_stopped'] = NO
-                self.search_parser[self.active_header]['search_concluded'] = YES
+                self.config.parser.parsers.search_detail_parser[active_header][QUEUED] = NO
+                self.config.parser.parsers.search_detail_parser[active_header][RUNNING] = NO
+                self.config.parser.parsers.search_detail_parser[active_header][STOPPED] = NO
+                self.config.parser.parsers.search_detail_parser[active_header][CONCLUDED] = YES
             else:
                 pass
-            self.search_parser[self.active_header]['last_write'] = str(datetime.now())
+            self.config.parser.parsers.search_detail_parser[active_header][search_keys.LAST_WRITE] = str(datetime.now())
         except KeyError as k_err:
             ml.log_event(k_err)
 
