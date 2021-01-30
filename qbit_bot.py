@@ -7,11 +7,18 @@ import qbittorrentapi
 
 
 class QbitTasker:
-    def __init__(self, user_configuration):
+    def __init__(self, user_configuration=None, debug=False):
         ml.log_event('initialize {}'.format(self.__class__), event_completed=False, announce=True)
+        assert user_configuration is not None, ml.log_event('no user configuration', announce=True, level=ml.ERROR)
         self.main_loop_count = 0
         self.qbit_client_connected = True if self._client_is_connected() else False
-        self.config = self._get_convenience_objects(user_configuration)
+        # TODO i really hate this debug section, it can be done more dynamically?
+        if not debug:
+            self.config, self.parsers, self.key_ring = \
+                self._get_convenience_objects(user_configuration, debug)
+        else:
+            self.config, self.parsers, self.key_ring, self.search_details_parser_sections = \
+                self._get_convenience_objects(user_configuration, debug)
         self._connection_time_start = datetime.now()
         self._reset_search_ids()
         self.active_search_ids, self.active_header = dict(), ''
@@ -35,21 +42,21 @@ class QbitTasker:
 
     def pause_on_event(self, pause_type):
         try:
-            timestamp = _get_timestamp()
-            if pause_type == MAIN_LOOP:
-                delay = int(self.config.parsers[USER_CONFIG][MAIN_LOOP_WAIT])
+            timestamp, p_keys, uc_keys = _get_timestamp(), self.key_ring.parser_keys, self.key_ring.user_config_keys
+            if pause_type == uc_keys.MAIN_LOOP_WAIT:
+                delay = int(self.parsers.user_config_parser[p_keys.DEFAULT][uc_keys.MAIN_LOOP_WAIT])
                 ml.log_event('{} waiting {} seconds for loop..\n\n'.format(timestamp, delay))
                 sleep(delay)
-            elif pause_type == SEARCH:
-                delay = int(self.config.parsers[USER_CONFIG][SEARCH_CHECK_WAIT])
+            elif pause_type == uc_keys.SEARCH_STATUS_CHECK:
+                delay = int(self.parsers.user_config_parser[p_keys.DEFAULT][uc_keys.SEARCH_STATUS_CHECK])
                 ml.log_event('{} waiting {} seconds for search..\n\n'.format(timestamp, delay))
                 sleep(delay)
-            elif pause_type == ADD:
-                delay = int(self.config.parsers[USER_CONFIG][ADD_WAIT])
+            elif pause_type == uc_keys.ADD_RESULT:
+                delay = int(self.parsers.user_config_parser[p_keys.DEFAULT][uc_keys.ADD_RESULT])
                 ml.log_event('{} waiting {} seconds for add..\n\n'.format(timestamp, delay))
                 sleep(delay)
             else:
-                delay = int(self.config.parsers[USER_CONFIG][OTHER_WAIT])
+                delay = int(self.parsers.user_config_parser[p_keys.DEFAULT][uc_keys.OTHER_WAIT])
                 ml.log_event('{} waiting {} seconds for other..\n\n'.format(timestamp, delay))
                 sleep(delay)
         except ValueError as v_err:
@@ -149,11 +156,10 @@ class QbitTasker:
         ml.log_event('writing parser configurations to disk')
         try:
             config_file_paths = [self.config.paths.data, self.config.paths.user_config]
-            parsers = self.config.parser.parsers_keyed_by_file_path
-            for parser in parsers:
-                with open(path, 'w') as filename:
-                    parser.write(filename)
-                    this_parser.write()
+            parsers_dict = self.parsers.parsers_keyed_by_file_path
+            for parser_path, parser in parsers_dict.items():
+                with open(parser_path, 'w') as parser_to_write:
+                    parser.write(parser_to_write)
         except OSError as o_err:
             ml.log_event(o_err, level=ml.ERROR)
 
@@ -183,9 +189,19 @@ class QbitTasker:
             ml.log_event(k_err, level=ml.ERROR)
 
     @staticmethod
-    def _get_convenience_objects(user_configuration) -> tuple:
+    def _get_convenience_objects(user_configuration, debug=False) -> tuple:
+        """
+        TODO if this is used too often, consider changing the data structure
+        """
         try:
-            pass
+            convenience_objects = [
+                user_configuration,
+                user_configuration.parser.parsers,
+                user_configuration.hardcoded.keys
+            ]
+            if debug:  # allow easy access to section_headers keys in search_detail_parser
+                convenience_objects.append(user_configuration.parser.parsers.search_detail_parser._sections)
+            return * convenience_objects,
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -218,11 +234,12 @@ class QbitTasker:
         """
         ml.log_event('get search state for {}'.format(self.active_header))
         try:
-            self.config.parsers[SEARCH][self.active_header][LAST_READ] = str(datetime.now())
-            _search_queued = self.config.parsers[self.active_header].getboolean(QUEUED)
-            _search_running = self.config.parsers[self.active_header].getboolean(RUNNING)
-            _search_stopped = self.config.parsers[self.active_header].getboolean(STOPPED)
-            _search_concluded = self.config.parsers[self.active_header].getboolean(CONCLUDED)
+            s_keys, t_keys = self.key_ring.search_detail_keys, self.key_ring.search_state_keys
+            self.parsers.search_detail_parser[self.active_header][s_keys.LAST_READ] = str(datetime.now())
+            _search_queued = self.parsers.search_detail_parser[self.active_header].getboolean(t_keys.SEARCH_QUEUED)
+            _search_running = self.parsers.search_detail_parser[self.active_header].getboolean(t_keys.SEARCH_RUNNING)
+            _search_stopped = self.parsers.search_detail_parser[self.active_header].getboolean(t_keys.SEARCH_STOPPED)
+            _search_concluded = self.parsers.search_detail_parser[self.active_header].getboolean(t_keys.SEARCH_CONCLUDED)
             ml.log_event('\n\nsearch state for {}: \nqueued: {}\nrunning: {}\nstopped: {}\nconcluded: {}\n\n'.format(
                 self.active_header, _search_queued, _search_running, _search_stopped, _search_concluded))
             return _search_queued, _search_running, _search_stopped, _search_concluded
@@ -231,8 +248,8 @@ class QbitTasker:
 
     def _hash(self, x, un=False):
         try:
-            _pol = -1 if un else 1
-            _hash = ''.join([chr(ord(e) + int(self.config.parsers[USER_CONFIG][UNI_SHIFT])) * _pol for e in str(x) if x])
+            _pol, u_keys = -1 if un else 1, self.key_ring.user_config_keys
+            _hash = ''.join([chr(ord(e) + int(self.parsers.user_config_parser.get(u_keys.UNI_SHIFT))) * _pol for e in str(x) if x])
             ml.log_event('hashed from {} to {}'.format(x, _hash))
             return _hash
         except ValueError as v_err:
