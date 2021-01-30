@@ -23,10 +23,9 @@ class QbitTasker:
 
     def initiate_and_monitor_searches(self):
         try:
-            search_key = self.config.key.names.search
+            search_term = self.config.hardcoded.keys.search_detail_keys.SEARCH_TERM
             # TODO bug, section headers is not populating
-            section_headers = self.config.parsers[search_key].sections()
-            section_headers = self.config.parsers[search_key].sections()
+            section_headers = self.config.parser.parsers.search_parser.sections()
             for section_header in section_headers:
                 self.active_header = section_header
                 ml.log_event('monitoring search header {}'.format(self.active_header))
@@ -136,9 +135,9 @@ class QbitTasker:
 
     def _config_set_search_id_as_inactive(self):
         try:
-            search_id = self.config.parsers[self.active_header][SEARCH_ID]
+            search_id = self.config.hardcoded.keys.search_detail_keys.SEARCH_ID
             if self._search_id_active():
-                self.config.parsers[self.active_header][SEARCH_ID] = str(0)
+                self.config.parser.parsers.search_parser[self.active_header][search_id] = str(0)
                 ml.log_event('search id {} set as inactive'.format(search_id))
                 del self.active_search_ids[self.active_header]
         except KeyError as k_err:
@@ -146,14 +145,13 @@ class QbitTasker:
 
     def _config_to_disk(self):
         ml.log_event('writing parser configurations to disk')
-        key, key_names = self.config.key, self.config.key.names
-        config_file_paths = self.config.project_file_path[key.ring[key_names.PROJECT_FILES]]
         try:
-            parser_dict = self.config.parsers
-            for parser_name, parser in parser_dict.items():
-                ml.log_event('.. {} ..'.format(parser))
-                with open(parser[0], 'w') as parser_file:
-                    parser[1].write(parser_file)
+            config_file_paths = [self.config.paths.data, self.config.paths.user_config]
+            parsers = self.config.parser.parsers
+            for parser in parsers:
+                with open(path, 'w') as filename:
+                    parser.write(filename)
+                    this_parser.write()
         except OSError as o_err:
             ml.log_event(o_err)
 
@@ -355,8 +353,8 @@ class QbitTasker:
         """
         ml.log_event('reset search ids',event_completed=False)
         try:
-            search_parser = self.config.parsers['search']
-            queued = self.config.key.ring['search_states'].QUEUED
+            search_parser = self.config.parser.parsers.search_parser
+            queued = self.config.hardcoded.keys.search_state_keys.SEARCH_QUEUED
             for section_header in search_parser.sections():
                 self.active_header = section_header
                 ml.log_event('reset search_id for section: {}'.format(self.active_header))
