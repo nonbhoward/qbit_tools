@@ -147,7 +147,7 @@ class QbitTasker:
     def _config_to_disk(self):
         ml.log_event('writing parser configurations to disk')
         key, key_names = self.config.key, self.config.key.names
-        config_file_paths = self.config.file_paths[key.ring[key_names.FILES]]
+        config_file_paths = self.config.project_file_path[key.ring[key_names.PROJECT_FILES]]
         try:
             parser_dict = self.config.parsers
             for parser_name, parser in parser_dict.items():

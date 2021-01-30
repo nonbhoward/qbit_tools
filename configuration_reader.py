@@ -29,11 +29,16 @@ class DirectoryPathKeys:
         self.USER_CONFIG_PATH = 'user_config_path'
 
 
-class FilePathKeys:
+class ProjectFilePathKeys:
     def __init__(self):
-        # keys for file groups
-        self.METADATA_FILE_PATH = 'metadata_file_path'
+        # keys for project file group
         self.PROJECT_FILE_PATH = 'project_file_path'
+
+
+class ConfigFilePathKeys:
+    def __init__(self):
+        # keys for config file group
+        self.METADATA_FILE_PATH = 'metadata_file_path'
         self.USER_CONFIG_FILE_PATH = 'user_config_file_path'
 
 
@@ -143,7 +148,8 @@ class HardCoded:  # meta class
 # TODO would it be better to subclass/extend and avoid keys all-together?
 class KeyNamesForKeyRing:
     def __init__(self):
-        self.FILES = 'files'
+        self.PROJECT_FILES = 'project_files'
+        self.CONFIG_FILES = 'config_files'
         self.METADATA = 'metadata'
         self.MISC = 'misc'
         self.PARSER = 'parser'
@@ -160,7 +166,8 @@ class KeyRing:  # meta class
     def __init__(self):
         self.names = KeyNamesForKeyRing()
         self.ring = {
-            self.names.FILES: FilePathKeys(),
+            self.names.PROJECT_FILES: ProjectFilePathKeys(),
+            self.names.CONFIG_FILES: ConfigFilePathKeys(),
             self.names.METADATA: MetaDataKeys(),
             self.names.MISC: MiscKeys(),
             self.names.PARSER: ParserKeys(),
@@ -177,30 +184,38 @@ class KeyRing:  # meta class
 class Configuration:
     def __init__(self, clean_up=False):
         self.key = KeyRing()
+        key_names = self.key.names
         self.hardcoded = HardCoded()
         # set paths
-        path_key = self.key.ring['path']
-        self.paths = {
+        path_key = self.key.ring[key_names.PATH]
+        self.project_path = {
             path_key.PROJECT_PATH: _get_project_path(),
+        }
+        self.config_paths = {
             path_key.DATA_PATH: _get_data_path(self),
             path_key.USER_CONFIG_PATH: _get_user_config_path(self)
         }
         # set expected config files
-        files_key = self.key.ring['files']
-        self.file_paths = {
-            files_key.METADATA_FILE_PATH: _get_expected_metadata_file_as_paths_dict(self),
-            files_key.PROJECT_FILE_PATH: _get_all_files_in_project_path(self),
-            files_key.USER_CONFIG_FILE_PATH: _get_expected_config_files_as_paths_dict(self)
+        project_files_key = self.key.ring[key_names.PROJECT_FILES]
+        config_files_key = self.key.ring[key_names.CONFIG_FILES]
+        self.project_file_path = {
+            project_files_key.PROJECT_FILE_PATH: _get_all_files_in_project_path(self),
+        }
+        self.config_file_paths = {
+            config_files_key.METADATA_FILE_PATH: _get_expected_metadata_file_as_paths_dict(self),
+            config_files_key.USER_CONFIG_FILE_PATH: _get_expected_config_files_as_paths_dict(self)
         }
         # set parsers
         key_names = self.key.names
         parser_key = self.key.ring[key_names.PARSER]
-        parser_file_paths = _get_parser_file_paths(self)
+        parser_file_paths = _get_parser_file_paths_as_dict(self)
         hardcoded = self.hardcoded
+        metadata_config_file_name = hardcoded.property[key_names.CONFIG_FILES].METADATA_FILE_NAME
+        metadata_config_file_path = parser_file_paths[metadata_config_file_name]
         self.parsers = {
-            parser_key.METADATA: _get_parser(self.file_paths[parser_key.METADATA_FILE_PATH]),
-            parser_key.SEARCH: _get_parser(hardcoded.property[CONFIG_FILE_NAMES].SEARCH_DETAILS_FILE_NAME),
-            parser_key.USER_CONFIG: _get_parser(hardcoded.property[CONFIG_FILE_NAMES].USER_CONFIG_FILE_NAME)
+            parser_key.METADATA: _get_parser(hardcoded.property[key_names.CONFIG_FILES].METADATA_FILE_NAME),
+            parser_key.SEARCH: _get_parser(hardcoded.property[key_names.CONFIG_FILES].SEARCH_DETAILS_FILE_NAME),
+            parser_key.USER_CONFIG: _get_parser(hardcoded.property[key_names.CONFIG_FILES].USER_CONFIG_FILE_NAME)
         }
         if clean_up:
             self.cleanup_project_path()
@@ -244,7 +259,7 @@ def _config_file_has_sections(config_parser) -> bool:
 def _get_all_files_in_project_path(configuration: Configuration):
     try:
         path_key = configuration.key.ring['path']
-        project_path, all_files = configuration.paths[path_key.PROJECT_PATH], list()
+        project_path, all_files = configuration.project_path[path_key.PROJECT_PATH], list()
         for root, dirs, files in walk(project_path):
             for file in files:
                 all_files.append(Path(root, file))
@@ -280,7 +295,7 @@ def _get_expected_config_files_as_paths_dict(configuration: Configuration) -> di
     try:
         # get project root path
         path_key = configuration.key
-        project_path = configuration.paths[path_key.ring['path'].PROJECT_PATH]
+        project_path = configuration.project_path[path_key.ring['path'].PROJECT_PATH]
         # get sub paths
         data_path = Path(project_path, configuration.hardcoded.property[DIRECTORY_NAMES].DATA_PATH_DIR_NAME)
         user_config_path = Path(project_path, configuration.hardcoded.property[DIRECTORY_NAMES].CONFIG_PATH_DIR_NAME)
@@ -297,21 +312,21 @@ def _get_expected_config_files_as_paths_dict(configuration: Configuration) -> di
 
 
 def _get_expected_metadata_file_as_paths_dict(configuration: Configuration) -> dict:
-        ml.log_event('get config files')
-        try:
-            # get project root path
-            path_key = configuration.key
-            project_path = configuration.paths[path_key.ring['path'].PROJECT_PATH]
-            # get sub paths
-            data_path = Path(project_path, configuration.hardcoded.property[DIRECTORY_NAMES].DATA_PATH_DIR_NAME)
-            # get paths to metadata file
-            metadata_fn = configuration.hardcoded.property[CONFIG_FILE_NAMES].METADATA_FILE_NAME
-            metadata_file = {
-                metadata_fn: Path(data_path, metadata_fn),
-            }
-            return metadata_file
-        except OSError as o_err:
-            ml.log_event(o_err)
+    ml.log_event('get config files')
+    try:
+        # get project root path
+        path_key = configuration.key
+        project_path = configuration.project_path[path_key.ring['path'].PROJECT_PATH]
+        # get sub paths
+        data_path = Path(project_path, configuration.hardcoded.property[DIRECTORY_NAMES].DATA_PATH_DIR_NAME)
+        # get paths to metadata file
+        metadata_fn = configuration.hardcoded.property[CONFIG_FILE_NAMES].METADATA_FILE_NAME
+        metadata_file = {
+            metadata_fn: Path(data_path, metadata_fn),
+        }
+        return metadata_file
+    except OSError as o_err:
+        ml.log_event(o_err)
 
 
 def _get_parser(config_file_path) -> ConfigParser:
@@ -323,14 +338,15 @@ def _get_parser(config_file_path) -> ConfigParser:
         ml.log_event(e_err, ml.ERROR)
 
 
-def _get_parser_file_paths(configuration: Configuration) -> dict:
+def _get_parser_file_paths_as_dict(configuration: Configuration) -> dict:
     try:
+        key, key_names = configuration.key, configuration.key.names
         parser_file_paths_dict = dict()
-        for file_path_key, file_path_dict in configuration.file_paths.items():
+        config_file_paths = configuration.config_file_paths
+        for file_path_key, file_path_dict in config_file_paths.items():
             for file_name, file_path in file_path_dict.items():
+                parser_file_paths_dict[file_name] = file_path
                 # TODO NOW get the project files
-                if not _is_project_path():
-                    parser_file_paths_dict[file_name] = file_path
         return parser_file_paths_dict
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
