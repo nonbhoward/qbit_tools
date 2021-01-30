@@ -1,8 +1,10 @@
-from configuration_reader import MAIN_LOOP
+from configuration_reader import *
 from datetime import datetime
 from minimalog.minimal_log import MinimalLog
 from qbit_bot import QbitTasker
 ml = MinimalLog()
+key = KeyRing()
+key_names = key.names
 
 
 def mainloop():
@@ -14,7 +16,8 @@ def mainloop():
         qbit.initiate_and_monitor_searches()
         qbit.increment_loop_count()
         ml.log_event('main loop has ended, {} total loops..'.format(qbit.main_loop_count))
-        qbit.pause_on_event(MAIN_LOOP)
+        main_loop_wait = key.ring[key_names.PAUSE].MAIN_LOOP
+        qbit.pause_on_event(main_loop_wait)
 
 
 def start_application():

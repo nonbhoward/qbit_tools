@@ -23,7 +23,11 @@ class QbitTasker:
 
     def initiate_and_monitor_searches(self):
         try:
-            for section_header in self.config.parsers[SEARCH].sections():
+            search_key = self.config.key.names.SEARCH
+            # TODO bug, section headers is not populating
+            section_headers = self.config.parsers[search_key].sections()
+            section_headers = self.config.parsers[search_key].sections()
+            for section_header in section_headers:
                 self.active_header = section_header
                 ml.log_event('monitoring search header {}'.format(self.active_header))
                 self._manage_state_updates(self._get_search_state())
@@ -142,11 +146,12 @@ class QbitTasker:
 
     def _config_to_disk(self):
         ml.log_event('writing parser configurations to disk')
+        key, key_names = self.config.key, self.config.key.names
+        config_file_paths = self.config.file_paths[key.ring[key_names.FILES]]
         try:
-            # parser_data = self._get_all_parsers()  # TODO delete me
-            parser_data = self.config.parsers
-            for parser in parser_data:
-                ml.log_event('.. {} ..'.format(parser[0]))
+            parser_dict = self.config.parsers
+            for parser_name, parser in parser_dict.items():
+                ml.log_event('.. {} ..'.format(parser))
                 with open(parser[0], 'w') as parser_file:
                     parser[1].write(parser_file)
         except OSError as o_err:
@@ -350,17 +355,19 @@ class QbitTasker:
         """
         ml.log_event('reset search ids',event_completed=False)
         try:
-            for section_header in
-            for section_header in self.search_parser.sections():
+            search_parser = self.config.parsers['search']
+            queued = self.config.key.ring['search_states'].QUEUED
+            for section_header in search_parser.sections():
                 self.active_header = section_header
                 ml.log_event('reset search_id for section: {}'.format(self.active_header))
-                self._update_search_states(QUEUED)
+                self._update_search_states(queued)
                 ml.log_event('reset search ids', event_completed=True)
         except KeyError as k_err:
             ml.log_event(k_err, level=ml.ERROR)
 
     def _result_has_enough_seeds(self, result) -> bool:
         try:
+            minimum_seeds = int(self.config.key.ring[''])
             minimum_seeds = int(self.search_parser[self.active_header][search_key.minimum_seeds])
             result_seeds = result[results_key.supply]
             if result_seeds > minimum_seeds:
@@ -548,10 +555,11 @@ def _enough_results_in_(filtered_results, expected_result_count):
 
 
 def _get_timestamp():
-    return datetime.datetime.now()
+    return datetime.now()
 
 
 if __name__ == '__main__':
     ml = MinimalLog()
+    ml.log_event('this should not be run directly, user main loop')
 else:
     ml = MinimalLog(__name__)

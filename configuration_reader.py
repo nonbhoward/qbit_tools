@@ -140,20 +140,37 @@ class HardCoded:  # meta class
         }
 
 
+# TODO would it be better to subclass/extend and avoid keys all-together?
+class KeyNamesForKeyRing:
+    def __init__(self):
+        self.FILES = 'files'
+        self.METADATA = 'metadata'
+        self.MISC = 'misc'
+        self.PARSER = 'parser'
+        self.PATH = 'path'
+        self.PAUSE = 'pause'
+        self.SEARCH = 'search'
+        self.SEARCH_STATE = 'search_state'
+        self.STATE = 'state'
+        self.SEARCH_DETAIL = 'search_detail'
+        self.USER_CONFIG = 'user_config'
+
+
 class KeyRing:  # meta class
     def __init__(self):
+        self.names = KeyNamesForKeyRing()
         self.ring = {
-            'files': FilePathKeys(),
-            'metadata': MetaDataKeys(),
-            'misc': MiscKeys(),
-            'parser': ParserKeys(),
-            'path': DirectoryPathKeys(),
-            'pause': PauseKeys(),
-            'search': SearchKeys(),
-            'search_state': SearchStateKeys(),
-            'state': APIStateKeys(),
-            'search_detail': SearchDetailKeys(),
-            'user_config': UserConfigKeys(),
+            self.names.FILES: FilePathKeys(),
+            self.names.METADATA: MetaDataKeys(),
+            self.names.MISC: MiscKeys(),
+            self.names.PARSER: ParserKeys(),
+            self.names.PATH: DirectoryPathKeys(),
+            self.names.PAUSE: PauseKeys(),
+            self.names.SEARCH: SearchKeys(),
+            self.names.SEARCH_STATE: SearchStateKeys(),
+            self.names.STATE: APIStateKeys(),
+            self.names.SEARCH_DETAIL: SearchDetailKeys(),
+            self.names.USER_CONFIG: UserConfigKeys(),
         }
 
 
@@ -176,10 +193,12 @@ class Configuration:
             files_key.USER_CONFIG_FILE_PATH: _get_expected_config_files_as_paths_dict(self)
         }
         # set parsers
-        parser_key = self.key.ring['parser']
+        key_names = self.key.names
+        parser_key = self.key.ring[key_names.PARSER]
+        parser_file_paths = _get_parser_file_paths(self)
         hardcoded = self.hardcoded
         self.parsers = {
-            parser_key.METADATA: _get_parser(hardcoded.property[CONFIG_FILE_NAMES].METADATA_FILE_NAME),
+            parser_key.METADATA: _get_parser(self.file_paths[parser_key.METADATA_FILE_PATH]),
             parser_key.SEARCH: _get_parser(hardcoded.property[CONFIG_FILE_NAMES].SEARCH_DETAILS_FILE_NAME),
             parser_key.USER_CONFIG: _get_parser(hardcoded.property[CONFIG_FILE_NAMES].USER_CONFIG_FILE_NAME)
         }
@@ -302,6 +321,19 @@ def _get_parser(config_file_path) -> ConfigParser:
         return parser
     except Exception as e_err:
         ml.log_event(e_err, ml.ERROR)
+
+
+def _get_parser_file_paths(configuration: Configuration) -> dict:
+    try:
+        parser_file_paths_dict = dict()
+        for file_path_key, file_path_dict in configuration.file_paths.items():
+            for file_name, file_path in file_path_dict.items():
+                # TODO NOW get the project files
+                if not _is_project_path():
+                    parser_file_paths_dict[file_name] = file_path
+        return parser_file_paths_dict
+    except Exception as e_err:
+        ml.log_event(e_err, level=ml.ERROR)
 
 
 def _get_project_path() -> Path:
