@@ -1,4 +1,4 @@
-from configuration_reader import *
+from configuration_reader import get_user_configuration
 from datetime import datetime
 from minimalog.minimal_log import MinimalLog
 from re import findall
@@ -23,7 +23,7 @@ class QbitTasker:
 
     def initiate_and_monitor_searches(self):
         try:
-            search_key = self.config.key.names.SEARCH
+            search_key = self.config.key.names.search
             # TODO bug, section headers is not populating
             section_headers = self.config.parsers[search_key].sections()
             section_headers = self.config.parsers[search_key].sections()
