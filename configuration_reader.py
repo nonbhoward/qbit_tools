@@ -6,16 +6,75 @@ CONFIG_FILE_NAMES = 'config_file_names'
 DIRECTORY_NAMES = 'directory_names'
 
 
-class HardcodedDirectoryNames:
+class KeyRing:  # meta class
+    # LEGACY, BEING REPLACED
     def __init__(self):
-        # project's sub directory names, strings cannot be changed without changing project structure
-        self.CONFIG_PATH_DIR_NAME = 'user_configuration'
-        self.DATA_PATH_DIR_NAME = 'data_src'
+        self.names = KeyNamesForKeyRing()
+        self.ring = {
+            self.names.PROJECT_FILES: ProjectFilePathKeys(),
+            self.names.CONFIG_FILES: ConfigFilePathKeys(),
+            self.names.METADATA: MetaDataKeys(),
+            self.names.MISC: MiscKeys(),
+            self.names.PARSER: ParserKeys(),
+            self.names.PATH: DirectoryPathKeys(),
+            self.names.PAUSE: PauseKeys(),
+            self.names.SEARCH: SearchKeys(),
+            self.names.SEARCH_STATE: SearchStateKeys(),
+            self.names.STATE: APIStateKeys(),
+            self.names.SEARCH_DETAIL: SearchDetailKeys(),
+            self.names.USER_CONFIG: UserConfigKeys(),
+        }
 
 
+# TIER 2 : Configuration().Hardcoded().DirectoryNames()
+class DirectoryNames:  # T2
+    def __init__(self):
+        self.CONFIG_PATH = 'user_configuration'
+        self.DATA_PATH = 'data_src'
+
+
+# TIER 2 : Configuration().Hardcoded().FileNames()
+class FileNames:  # T2
+    class Config:
+        def __init__(self):
+            # project's configuration file names, cannot be changed without changing project structure
+            self.METADATA = 'metadata.cfg'
+            self.SEARCH_DETAILS = 'search_details.cfg'
+            self.USER_CONFIG = 'user_configuration.cfg'
+
+    class Project:
+        def __init__(self):
+            self.ALL_PROJECT_FILE_PATHS = 'all_project_file_paths'
+
+
+# TIER 1 : Configuration().HardCoded()
+class HardCoded:  # T1 Child class for nesting/embedding in Configuration()
+    def __init__(self):
+        self.file_names = FileNames()
+
+
+# TIER 1 : Configuration().Keys()
+class Keys:
+    # TODO if possible delete this class and just nest without using potentially confusing keys
+    def __init__(self):
+        pass
+
+
+# TIER 0, ROOT @ Configuration()
+class Configuration:
+    # TODO should include an option like 'parse_all_files_in_project_path=False' to allow for optional parsing
+    def __init__(self):
+        self.hardcoded = HardCoded()
+        self.keys = Keys()
+
+
+# TESTING AREA DELETE ME
+config = Configuration()
+# TESTING AREA DELETE ME
+
+# LEGACY BELOW
 class HardcodedConfigFileNames:
     def __init__(self):
-        # project's configuration file names, cannot be changed without changing project structure
         self.METADATA_FILE_NAME = 'metadata.cfg'
         self.SEARCH_DETAILS_FILE_NAME = 'search_details.cfg'
         self.USER_CONFIG_FILE_NAME = 'user_configuration.cfg'
@@ -137,12 +196,12 @@ class MiscKeys:
         self.SEARCHES = 'searches'
 
 
-class HardCoded:  # meta class
-    def __init__(self):
-        self.property = {
-            CONFIG_FILE_NAMES: HardcodedConfigFileNames(),
-            DIRECTORY_NAMES: HardcodedDirectoryNames()
-        }
+# class HardCoded:  # meta class
+#     def __init__(self):
+#         self.property = {
+#             CONFIG_FILE_NAMES: HardcodedConfigFileNames(),
+#             DIRECTORY_NAMES: HardcodedDirectoryNames()
+#         }
 
 
 # TODO would it be better to subclass/extend and avoid keys all-together?
@@ -162,63 +221,44 @@ class KeyNamesForKeyRing:
         self.USER_CONFIG = 'user_config'
 
 
-class KeyRing:  # meta class
-    def __init__(self):
-        self.names = KeyNamesForKeyRing()
-        self.ring = {
-            self.names.PROJECT_FILES: ProjectFilePathKeys(),
-            self.names.CONFIG_FILES: ConfigFilePathKeys(),
-            self.names.METADATA: MetaDataKeys(),
-            self.names.MISC: MiscKeys(),
-            self.names.PARSER: ParserKeys(),
-            self.names.PATH: DirectoryPathKeys(),
-            self.names.PAUSE: PauseKeys(),
-            self.names.SEARCH: SearchKeys(),
-            self.names.SEARCH_STATE: SearchStateKeys(),
-            self.names.STATE: APIStateKeys(),
-            self.names.SEARCH_DETAIL: SearchDetailKeys(),
-            self.names.USER_CONFIG: UserConfigKeys(),
-        }
-
-
-class Configuration:
-    def __init__(self, clean_up=False):
-        self.key = KeyRing()
-        key_names = self.key.names
-        self.hardcoded = HardCoded()
-        # set paths
-        path_key = self.key.ring[key_names.PATH]
-        self.project_path = {
-            path_key.PROJECT_PATH: _get_project_path(),
-        }
-        self.config_paths = {
-            path_key.DATA_PATH: _get_data_path(self),
-            path_key.USER_CONFIG_PATH: _get_user_config_path(self)
-        }
-        # set expected config files
-        project_files_key = self.key.ring[key_names.PROJECT_FILES]
-        config_files_key = self.key.ring[key_names.CONFIG_FILES]
-        self.project_file_path = {
-            project_files_key.PROJECT_FILE_PATH: _get_all_files_in_project_path(self),
-        }
-        self.config_file_paths = {
-            config_files_key.METADATA_FILE_PATH: _get_expected_metadata_file_as_paths_dict(self),
-            config_files_key.USER_CONFIG_FILE_PATH: _get_expected_config_files_as_paths_dict(self)
-        }
-        # set parsers
-        key_names = self.key.names
-        parser_key = self.key.ring[key_names.PARSER]
-        parser_file_paths = _get_parser_file_paths_as_dict(self)
-        hardcoded = self.hardcoded
-        metadata_config_file_name = hardcoded.property[key_names.CONFIG_FILES].METADATA_FILE_NAME
-        metadata_config_file_path = parser_file_paths[metadata_config_file_name]
-        self.parsers = {
-            parser_key.METADATA: _get_parser(hardcoded.property[key_names.CONFIG_FILES].METADATA_FILE_NAME),
-            parser_key.SEARCH: _get_parser(hardcoded.property[key_names.CONFIG_FILES].SEARCH_DETAILS_FILE_NAME),
-            parser_key.USER_CONFIG: _get_parser(hardcoded.property[key_names.CONFIG_FILES].USER_CONFIG_FILE_NAME)
-        }
-        if clean_up:
-            self.cleanup_project_path()
+# class Configuration:
+#     def __init__(self, clean_up=False):
+#         self.key = KeyRing()
+#         key_names = self.key.names
+#         self.hardcoded = HardCoded()
+#         # set paths
+#         path_key = self.key.ring[key_names.PATH]
+#         self.project_path = {
+#             path_key.PROJECT_PATH: _get_project_path(),
+#         }
+#         self.config_paths = {
+#             path_key.DATA_PATH: _get_data_path(self),
+#             path_key.USER_CONFIG_PATH: _get_user_config_path(self)
+#         }
+#         # set expected config files
+#         project_files_key = self.key.ring[key_names.PROJECT_FILES]
+#         config_files_key = self.key.ring[key_names.CONFIG_FILES]
+#         self.project_file_path = {
+#             project_files_key.PROJECT_FILE_PATH: _get_all_files_in_project_path(self),
+#         }
+#         self.config_file_paths = {
+#             config_files_key.METADATA_FILE_PATH: _get_expected_metadata_file_as_paths_dict(self),
+#             config_files_key.USER_CONFIG_FILE_PATH: _get_expected_config_files_as_paths_dict(self)
+#         }
+#         # set parsers
+#         key_names = self.key.names
+#         parser_key = self.key.ring[key_names.PARSER]
+#         parser_file_paths = _get_parser_file_paths_as_dict(self)
+#         hardcoded = self.hardcoded
+#         metadata_config_file_name = hardcoded.property[key_names.CONFIG_FILES].METADATA_FILE_NAME
+#         metadata_config_file_path = parser_file_paths[metadata_config_file_name]
+#         self.parsers = {
+#             parser_key.METADATA: _get_parser(hardcoded.property[key_names.CONFIG_FILES].METADATA_FILE_NAME),
+#             parser_key.SEARCH: _get_parser(hardcoded.property[key_names.CONFIG_FILES].SEARCH_DETAILS_FILE_NAME),
+#             parser_key.USER_CONFIG: _get_parser(hardcoded.property[key_names.CONFIG_FILES].USER_CONFIG_FILE_NAME)
+#         }
+#         if clean_up:
+#             self.cleanup_project_path()
 
     def cleanup_project_path(self):
         try:
