@@ -76,7 +76,7 @@ class SearchStateKeys:
 class MetaDataKeys:
     def __init__(self):
         # keys for reading & writing metadata info
-        # TODO get all of these keys from nextx debug run
+        # TODO get all of these keys from next debug run
         self.META_DEMAND = 'nbPeers'
         self.META_NAME = 'fileName'
         self.META_RESULTS = 'results'
@@ -167,10 +167,10 @@ class Configuration:
             path_key.USER_CONFIG_PATH: _get_user_config_path(self)
         }
         # set expected config files
-        config_key = self.key.ring['config']
+        config_key = self.key.ring['config_file']
         self.files = {
             config_key.USER_CONFIG_FILES: _get_expected_config_files_as_paths(self),
-            config_key.PROJECT_FILES: _get_all_files_in_project_path()
+            config_key.PROJECT_FILES: _get_all_files_in_project_path(self)
         }
         # set parsers
         parser_key = self.key.ring['parser']
@@ -219,9 +219,10 @@ def _config_file_has_sections(config_parser) -> bool:
         ml.log_event('{}: configuration file has no sections'.format(r_err))
 
 
-def _get_all_files_in_project_path():
+def _get_all_files_in_project_path(configuration: Configuration):
     try:
-        project_path, all_files = user_settings.config.project_path, list()
+        path_key = configuration.key.ring['path']
+        project_path, all_files = configuration.paths[path_key.PROJECT_PATH], list()
         for root, dirs, files in walk(project_path):
             for file in files:
                 all_files.append(Path(root, file))
@@ -259,8 +260,8 @@ def _get_expected_config_files_as_paths(configuration: Configuration) -> dict:
     ml.log_event('get config files')
     try:
         # get project root path
-        project_path = _get_project_path()
-        configuration.hardcoded.property['path'].
+        path_key = configuration.key
+        project_path = configuration.paths[path_key.ring['path'].PROJECT_PATH]
         # get sub paths
         data_path = Path(project_path, configuration.hardcoded.property['path'].DATA_PATH_DIR_NAME)
         user_config_path = Path(project_path, configuration.hardcoded.property['path'].CONFIG_PATH_DIR_NAME)
@@ -306,7 +307,7 @@ def _parser_is_ready() -> tuple:
         ml.log_event(o_err, level=ml.ERROR)
 
 
-user_settings = UserSettings()  # fyi this is here because relies on the above functions
+# user_settings = UserSettings()  # fyi this is here because relies on the above functions
 
 
 def _get_all_files_in_path(path_containing_files: Path) -> list:
@@ -328,6 +329,5 @@ def get_user_configuration() -> Configuration:
 
 
 if __name__ == '__main__':
-    pass  # i don't see why i would run this directly besides testing
-else:
-    user_settings = UserSettings()
+    cf = Configuration()
+    pass  # i don't see why i would ever run this directly
