@@ -249,7 +249,8 @@ class QbitTasker:
     def _hash(self, x, un=False):
         try:
             _pol, u_keys = -1 if un else 1, self.key_ring.user_config_keys
-            _hash = ''.join([chr(ord(e) + int(self.parsers.user_config_parser.get(u_keys.UNI_SHIFT))) * _pol for e in str(x) if x])
+            _hash = ''.join([chr(ord(e) + int(self.parsers.user_config_parser.get(
+                u_keys.UNI_SHIFT))) * _pol for e in str(x) if x])
             ml.log_event('hashed from {} to {}'.format(x, _hash))
             return _hash
         except ValueError as v_err:
@@ -257,26 +258,29 @@ class QbitTasker:
 
     def _increment_search_attempt_count(self):
         try:
-            search_attempt_count = int(self.config.parsers[self.active_header][SEARCH_ATTEMPT_COUNT])
+            s_keys = self.key_ring.search_detail_keys
+            search_attempt_count = int(self.parsers[self.active_header][s_keys.SEARCH_ATTEMPT_COUNT])
             ml.log_event('search try counter at {}, incrementing..'.format(search_attempt_count))
-            self.config.parsers[self.active_header][SEARCH_ATTEMPT_COUNT] = str(search_attempt_count + 1)
+            self.parsers.search_detail_parser[self.active_header][
+                s_keys.SEARCH_ATTEMPT_COUNT] = str(search_attempt_count + 1)
         except KeyError as k_err:
             ml.log_event(k_err, level=ml.ERROR)
 
     def _manage_state_updates(self, section_states):
         try:
             ml.log_event('manage state updates..')
+            t_keys, uc_keys = self.key_ring.search_state_keys, self.key_ring.user_config_keys
             _search_queued, _search_running, _search_stopped, _search_concluded = section_states
             if _search_queued and not self._search_queue_full():
                 self._start_search()  # search is in queue and queue has room, attempt to start this search
             elif _search_running:
                 _search_status = self._qbit_get_search_status()
-                if RUNNING in _search_status:
+                if t_keys.SEARCH_RUNNING in _search_status:
                     pass  # search is ongoing, do nothing
-                elif STOPPED in _search_status:
-                    self._update_search_states(STOPPED)  # mark search as stopped (finished)
+                elif t_keys.SEARCH_STOPPED in _search_status:
+                    self._update_search_states(t_keys.SEARCH_STOPPED)  # mark search as stopped (finished)
                 else:
-                    self._update_search_states(QUEUED)  # search status unexpected, re-queue this search
+                    self._update_search_states(t_keys.SEARCH_QUEUED)  # search status unexpected, re-queue this search
             elif _search_stopped:
                 filtered_results, filtered_results_count = self._filter_results()
                 if filtered_results is not None and filtered_results_count > 0:
@@ -285,12 +289,12 @@ class QbitTasker:
                     self._save_remote_metadata_to_local_results_sorting_by_(
                         search_priority, filtered_results)  # search is finished, attempt to add results
                 else:
-                    self._update_search_states(QUEUED)  # search is stopped, but no results found, re-queue this search
+                    self._update_search_states(t_keys.SEARCH_QUEUED)  # search stopped, no results found, re-queue
             elif _search_concluded:
                 pass
             else:
-                self._update_search_states(QUEUED)
-            self.pause_on_event(SEARCH)
+                self._update_search_states(t_keys.SEARCH_QUEUED)
+            self.pause_on_event(uc_keys.SEARCH_STATUS_CHECK)
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -362,9 +366,12 @@ class QbitTasker:
         """
         try:
             ml.log_event('checking search status for section: {}'.format(self.active_header))
-            search_id, search_status = self.search_parser[self.active_header]['search_id'], None
+            s_keys = self.key_ring.search_detail_keys
+            search_id, search_status = self.parsers.search_detail_parser[self.active_header][s_keys.SEARCH_ID], None
+            # TODO delete input arg?
             search_id_valid = self._search_id_is_valid(search_id)
             if search_id_valid:
+                # TODO bug, this section of code is double logging, why?
                 ml.log_event('getting search status for header {} with search_id {}'.format(
                     self.active_header, search_id))
                 if search_id in self.active_search_ids.values():
@@ -441,13 +448,14 @@ class QbitTasker:
         :return: bool, success or failure of adding new result to local stored results
         """
         try:
+            t_keys = self.key_ring.search_state_keys
             ml.log_event('add results by {}'.format(attribute), event_completed=False)
             # TODO implement attribute here, 'rKey.nbSeeders' instead of 'popularity
             most_popular_results = self._get_most_popular_results(filtered_results)
             search_id_valid = self._search_id_is_valid()
             if not search_id_valid:
                 ml.log_event('search id for {} is invalid'.format(self.active_header))
-                self._update_search_states(QUEUED)  # wanted to add result but search_id was bad, re-queue search
+                self._update_search_states(t_keys.SEARCH_QUEUED)  # wanted to add result but id bad, re-queue search
                 return False
             if most_popular_results is not None:
                 self._check_if_search_is_concluded()  # we found some results, have we met our 'concluded' criteria?
@@ -462,7 +470,9 @@ class QbitTasker:
 
     def _search_id_active(self) -> bool:
         try:
-            search_id = self.search_parser[self.active_header][search_key.id]
+            s_key = self.key_ring.search_detail_keys
+            # search_id = self.search_parser[self.active_header][search_key.id]
+            search_id = self.parsers[self.active_header][s_key.SEARCH_ID]
             if search_id == self.active_search_ids[self.active_header]:
                 return True
             return False
@@ -472,9 +482,10 @@ class QbitTasker:
     def _search_id_is_valid(self) -> bool:
         search_id = self.active_search_ids.get(self.active_header, '')
         ml.log_event('check if search id {} is valid'.format(search_id))
+        m_keys = self.key_ring.metadata_keys.misc_keys
         try:
             if search_id is not None:
-                if search_id != EMPTY:
+                if search_id != m_keys.EMPTY:
                     return True
             return False
         except ValueError as v_err:
