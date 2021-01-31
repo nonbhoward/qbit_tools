@@ -19,7 +19,7 @@ class APIStateKeys:  # Configuration.HardCoded.KeyRing.APIStateKeys
 class MetaDataKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
     def __init__(self):
         # keys for reading & writing metadata info
-        # TODO get all of these keys from next debug run
+        # TODO get all of these keys from next debug run returning results
         self.DEMAND = 'nbPeers'
         self.NAME = 'fileName'
         self.RESULT = 'results'
@@ -32,7 +32,6 @@ class MiscKeys:  # Configuration.HardCoded.KeyRing.MiscKeys
         # keys to label/organize
         self.EMPTY = ''
         self.RESET = 'reset'
-        # self.SEARCHES = 'searches'  # TODO delete, is this ever used?
 
 
 class Parsed:  # Configuration.HardCoded.FileNames.Parsed
@@ -74,13 +73,13 @@ class SearchDetailKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.SEARCH_TERM = 'search_term'
 
 
-class SearchStateKeys:  # Configuration.HardCoded.KeyRing.SearchStateKeys
-    def __init__(self):
-        # keys for the search details state machine on disk, can be changed
-        self.SEARCH_CONCLUDED = 'search_concluded'
-        self.SEARCH_QUEUED = 'search_queued'
-        self.SEARCH_RUNNING = 'search_running'
-        self.SEARCH_STOPPED = 'search_stopped'
+# class SearchStateKeys:  # Configuration.HardCoded.KeyRing.SearchStateKeys
+#     def __init__(self):
+#         # keys for the search details state machine on disk, can be changed
+#         self.SEARCH_CONCLUDED = 'search_concluded'
+#         self.SEARCH_QUEUED = 'search_queued'
+#         self.SEARCH_RUNNING = 'search_running'
+#         self.SEARCH_STOPPED = 'search_stopped'
 
 
 class SearchStoppedReasonKeys:  # Configuration.HardCoded.KeyRing.SearchStoppedReasonKeys
@@ -96,7 +95,7 @@ class UserConfigKeys:  # Configuration.HardCoded.KeyRing.UserConfigKeys
         # program wait times
         self.ADD_RESULT = 'seconds_to_wait_after_each_torrent_add_attempt'
         self.MAIN_LOOP = 'seconds_to_wait_after_each_main_loop'
-        self.OTHER = 'seconds_to_wait_for_other_reason'
+        self.MISCELLANEOUS = 'seconds_to_wait_for_miscellaneous_reason'
         self.SEARCH_STATUS_CHECK = 'seconds_to_wait_after_each_search_status_check'
         # other user settings
         # TODO how will 'seeds' on disk translate to 'nbSeeders' in practice?
@@ -128,9 +127,8 @@ class KeyRing:  # Configuration.HardCoded.KeyRing
         self.metadata_keyring = MetaDataKeys()
         self.misc_keyring = MiscKeys()
         self.parser_keyring = ParserKeys()
-        # self.pause_keys = PauseKeys()  # TODO delete
         self.search_detail_keyring = SearchDetailKeys()
-        self.search_state_keyring = SearchStateKeys()
+        # self.search_state_keyring = SearchStateKeys()  # TODO delete
         self.search_stopped_reason_keyring = SearchStoppedReasonKeys()
         self.user_config_keyring = UserConfigKeys()
 
@@ -153,7 +151,7 @@ class Parsers:  # Configuration.Parser.Parsers
         parser_paths = configuration.paths._get_parser_paths_from_(configuration)
         self.parsers_keyed_by_file_path = self._get_parsers_from_(parser_paths)
         self.metadata_parser = self.parsers_keyed_by_file_path[parser_paths[0]]
-        self.search_detail_parser = self.parsers_keyed_by_file_path[parser_paths[1]]
+        self.search_details_parser = self.parsers_keyed_by_file_path[parser_paths[1]]
         self.user_config_parser = self.parsers_keyed_by_file_path[parser_paths[2]]
 
     @staticmethod
@@ -203,8 +201,8 @@ class Paths:  # Configuration.Paths
         :return: data path as path object
         """
         try:
-            ml.log_event('get data path', event_completed=True)
             data_directory_name = configuration.hardcoded.directory_names.data_path
+            ml.log_event('get data path for {}..'.format(data_directory_name))
             return Path(path.project, data_directory_name)
         except OSError as o_err:
             ml.log_event(o_err, level=ml.ERROR)
@@ -271,7 +269,7 @@ class Configuration:  # ROOT @ Configuration
 
 def get_user_configuration() -> Configuration:  # this is the only export required?
     try:
-        configuration = Configuration()
+        configuration = Configuration(parse_all_project_files=True)
         return configuration
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
@@ -280,9 +278,9 @@ def get_user_configuration() -> Configuration:  # this is the only export requir
 def _parser_has_sections(configparser) -> bool:
     try:
         section_count = len(configparser.sections())
+        ml.log_event('configparser {} has {} sections'.format(configparser, section_count))
         if section_count > 0:
             return True
-        ml.log_event('configparser {} has no sections'.format(configparser), level=ml.WARNING)
         return False
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
