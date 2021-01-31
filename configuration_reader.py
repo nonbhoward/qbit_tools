@@ -1,4 +1,6 @@
-# TODO this should maybe be it's own repo/project, lots of potential for re-use
+# TODO any self.properties of the Keys classes may need to also be changed in the associated config file
+# TODO unless the bot does this now by setting default values, as of now it does not
+# TODO you change key here, also change in .cfg
 from configparser import ConfigParser
 from minimalog.minimal_log import MinimalLog
 from os import getcwd, remove, walk
@@ -65,21 +67,12 @@ class SearchDetailKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         # FYI, ***FOR KEY REFERENCES ONLY*** trying to keep properties singular for predictability,
         # key strings can be plural or singular since they are never directly referenced
         self.RESULT_ADDED_COUNT = 'results_added'
-        self.RESULT_COUNT = 'results_count'
+        self.RESULT_COUNT = 'results_count'  # this relies on being in DEFAULTS or program errors?
         self.RESULT_REQUIRED_COUNT = 'results_required'
         self.SEARCH_ATTEMPT_COUNT = 'search_attempt_count'
         self.SEARCH_ID = 'search_id'
         self.SEARCH_STOPPED_REASON = 'search_stopped_reason'
         self.SEARCH_TERM = 'search_term'
-
-
-# class SearchStateKeys:  # Configuration.HardCoded.KeyRing.SearchStateKeys
-#     def __init__(self):
-#         # keys for the search details state machine on disk, can be changed
-#         self.SEARCH_CONCLUDED = 'search_concluded'
-#         self.SEARCH_QUEUED = 'search_queued'
-#         self.SEARCH_RUNNING = 'search_running'
-#         self.SEARCH_STOPPED = 'search_stopped'
 
 
 class SearchStoppedReasonKeys:  # Configuration.HardCoded.KeyRing.SearchStoppedReasonKeys
@@ -94,14 +87,16 @@ class UserConfigKeys:  # Configuration.HardCoded.KeyRing.UserConfigKeys
         # keys for reading & writing user configuration
         # program wait times
         self.ADD_RESULT = 'seconds_to_wait_after_each_torrent_add_attempt'
+        self.DEFAULT = 'DEFAULT'
         self.MAIN_LOOP = 'seconds_to_wait_after_each_main_loop'
-        self.MISCELLANEOUS = 'seconds_to_wait_for_miscellaneous_reason'
         self.SEARCH_STATUS_CHECK = 'seconds_to_wait_after_each_search_status_check'
         # other user settings
         # TODO how will 'seeds' on disk translate to 'nbSeeders' in practice?
-        self.PRIORITY = 'metadata_priority'
+        # TODO well, you caught this bug in advance, there was no reference
+        self.PRIORITY = 'metadata_value_sort_priority'
         self.UNI_CHAR_COUNT = 'unicode_total_character_count'
         self.UNI_SHIFT = 'unicode_shift_offset_for_scrambling_results_cfg_file'
+        self.USER = 'seconds_to_wait_to_allow_user_to_read_log'
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### TIER 2 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
@@ -128,7 +123,6 @@ class KeyRing:  # Configuration.HardCoded.KeyRing
         self.misc_keyring = MiscKeys()
         self.parser_keyring = ParserKeys()
         self.search_detail_keyring = SearchDetailKeys()
-        # self.search_state_keyring = SearchStateKeys()  # TODO delete
         self.search_stopped_reason_keyring = SearchStoppedReasonKeys()
         self.user_config_keyring = UserConfigKeys()
 
@@ -208,7 +202,7 @@ class Paths:  # Configuration.Paths
             ml.log_event(o_err, level=ml.ERROR)
 
     def _get_parser_paths_from_(path, configuration) -> tuple:
-        # TODO this cannot scale
+        # TODO this is basically hardcoded, do this better but lower priority than bugs
         try:
             # data paths
             metadata_parser_path = Path(path.data, configuration.hardcoded.file_names.to_be_parsed.metadata)
@@ -253,11 +247,11 @@ class ProjectFiles:  # Configuration.ProjectFiles
 ##### ##### ##### ##### ##### ##### ##### ###### TIER 0 CLASS ###### ##### ##### ##### ##### ##### ##### ######
 class Configuration:  # ROOT @ Configuration
     def __init__(self, parse_all_project_files=False):  # FYI, module entry point is here
-        self.hardcoded = HardCoded()
-        self.paths = Paths(self)
+        self.hardcoded = HardCoded()  # lots of hardcoded 'string"keys" and project properties/variables
+        self.paths = Paths(self)  # a list of relevant paths used to build the project
         if parse_all_project_files:
-            self.files = ProjectFiles(self)
-        self.parser = Parser(self)
+            self.files = ProjectFiles(self)  # a list of the Path object for every project file
+        self.parser = Parser(self)  # all parsers containing parsed .cfg file data
 
     @staticmethod
     def _get_project_path() -> Path:
