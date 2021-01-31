@@ -7,7 +7,7 @@ ml = MinimalLog()
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### TIER 3 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
-class APIStateKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.APIStateKeys
+class APIStateKeys:  # Configuration.HardCoded.KeyRing.APIStateKeys
     def __init__(self):
         # keys for the state machine, some from API responses, in memory, half can be changed
         self.CONCLUDED = 'concluded'  # this indicates that the search will not start again
@@ -20,30 +20,30 @@ class MetaDataKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
     def __init__(self):
         # keys for reading & writing metadata info
         # TODO get all of these keys from next debug run
-        self.META_DEMAND = 'nbPeers'
-        self.META_NAME = 'fileName'
-        self.META_RESULTS = 'results'
-        self.META_SUPPLY = 'nbSeeders'
-        self.META_URL = 'fileUrl'
+        self.DEMAND = 'nbPeers'
+        self.NAME = 'fileName'
+        self.RESULT = 'results'
+        self.SUPPLY = 'nbSeeders'
+        self.URL = 'fileUrl'
 
 
-class MiscKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.MiscKeys
+class MiscKeys:  # Configuration.HardCoded.KeyRing.MiscKeys
     def __init__(self):
         # keys to label/organize
         self.EMPTY = ''
         self.RESET = 'reset'
-        self.SEARCHES = 'searches'
+        # self.SEARCHES = 'searches'  # TODO delete, is this ever used?
 
 
-class Parsed:  # Configuration.HardCoded.FileNames.Config
+class Parsed:  # Configuration.HardCoded.FileNames.Parsed
     def __init__(self):
         # project's configuration file names, cannot be changed without changing project structure
         self.metadata = 'metadata.cfg'
-        self.search_details = 'search_details.cfg'
+        self.search_detail = 'search_details.cfg'
         self.user_config = 'user_configuration.cfg'
 
 
-class ParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.ParserKeys
+class ParserKeys:  # Configuration.HardCoded.KeyRing.ParserKeys
     def __init__(self):
         # keys for Configuration().parsers, can be changed
         # key for the DEFAULT section of all config parsers, cannot be changed
@@ -53,39 +53,25 @@ class ParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.ParserKeys
         self.YES = 'yes'
 
 
-# class PauseKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.PauseKeys
-#     def __init__(self):
-#         # TODO aren't these already implemented in UserConfigKeys()? reduntant?
-#         # keys for controlling pause_type
-#         self.ADD_RESULT = 'add_result_pause'
-#         self.MAIN_LOOP = 'main_loop_pause'
-#         self.OTHER = 'other_pause_reason'
-#         self.SEARCH_STATUS_CHECK = 'search_status_check_pause'
-#         self.START_UP = 'start_up_pause'
-
-
 class SearchDetailKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
     def __init__(self):
         # keys for reading & writing search details
-        self.AVG_SEEDS = 'average_seed_count'
+        self.AVG_SEED_COUNT = 'average_seed_count'
         self.EXPECTED_RESULT_COUNT = 'expected_search_result_count'
-        self.FILENAME_REGEX = 'regex_filter_for_filename'
+        self.FILE_NAME_REGEX = 'regex_filter_for_file_name'
         self.LAST_READ = 'last_read'
         self.LAST_WRITE = 'last_write'
-        self.MAX_SEARCH_ATTEMPTS = 'maximum_search_attempts'
-        self.MIN_SEEDS = 'minimum_seeds'
-        self.RESULTS_ADDED = 'results_added'
-        self.RESULTS_REQUIRED = 'results_required'
+        self.MAX_SEARCH_ATTEMPT_COUNT = 'maximum_search_attempts'
+        self.MIN_SEED_COUNT = 'minimum_seeds'
+        # FYI, ***FOR KEY REFERENCES ONLY*** trying to keep properties singular for predictability,
+        # key strings can be plural or singular since they are never directly referenced
+        self.RESULT_ADDED_COUNT = 'results_added'
+        self.RESULT_COUNT = 'results_count'
+        self.RESULT_REQUIRED_COUNT = 'results_required'
         self.SEARCH_ATTEMPT_COUNT = 'search_attempt_count'
         self.SEARCH_ID = 'search_id'
+        self.SEARCH_STOPPED_REASON = 'search_stopped_reason'
         self.SEARCH_TERM = 'search_term'
-
-
-class SearchKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys.SearchKeys
-    def __init__(self):
-        # keys for reading & writing values for the search config parser's end reason key, can be changed
-        self.REQUIRED_RESULTS_FOUND = 'required results found!'
-        self.TIMED_OUT = 'search timed out!'
 
 
 class SearchStateKeys:  # Configuration.HardCoded.KeyRing.SearchStateKeys
@@ -97,15 +83,23 @@ class SearchStateKeys:  # Configuration.HardCoded.KeyRing.SearchStateKeys
         self.SEARCH_STOPPED = 'search_stopped'
 
 
+class SearchStoppedReasonKeys:  # Configuration.HardCoded.KeyRing.SearchStoppedReasonKeys
+    def __init__(self):
+        # keys for reading & writing values for the search config parser's end reason key, can be changed
+        self.REQUIRED_RESULT_COUNT_FOUND = 'required results found!'
+        self.TIMED_OUT = 'search timed out!'
+
+
 class UserConfigKeys:  # Configuration.HardCoded.KeyRing.UserConfigKeys
     def __init__(self):
         # keys for reading & writing user configuration
         # program wait times
-        self.ADD_RESULT_WAIT = 'seconds_to_wait_after_each_torrent_add_attempt'
-        self.MAIN_LOOP_WAIT = 'seconds_to_wait_after_each_main_loop'
-        self.OTHER_WAIT = 'seconds_to_wait_for_other_reason'
-        self.SEARCH_CHECK_WAIT = 'seconds_to_wait_after_each_search_status_check'
+        self.ADD_RESULT = 'seconds_to_wait_after_each_torrent_add_attempt'
+        self.MAIN_LOOP = 'seconds_to_wait_after_each_main_loop'
+        self.OTHER = 'seconds_to_wait_for_other_reason'
+        self.SEARCH_STATUS_CHECK = 'seconds_to_wait_after_each_search_status_check'
         # other user settings
+        # TODO how will 'seeds' on disk translate to 'nbSeeders' in practice?
         self.PRIORITY = 'metadata_priority'
         self.UNI_CHAR_COUNT = 'unicode_total_character_count'
         self.UNI_SHIFT = 'unicode_shift_offset_for_scrambling_results_cfg_file'
@@ -130,14 +124,15 @@ class FileNames:  # Configuration.HardCoded.FileNames
 
 class KeyRing:  # Configuration.HardCoded.KeyRing
     def __init__(self):
-        self.api_state_keys = APIStateKeys()
-        self.metadata_keys = MetaDataKeys()
-        self.misc_keys = MiscKeys()
-        self.parser_keys = ParserKeys()
-        # self.pause_keys = PauseKeys()
-        self.search_detail_keys = SearchDetailKeys()
-        self.search_state_keys = SearchStateKeys()
-        self.user_config_keys = UserConfigKeys()
+        self.api_state_keyring = APIStateKeys()
+        self.metadata_keyring = MetaDataKeys()
+        self.misc_keyring = MiscKeys()
+        self.parser_keyring = ParserKeys()
+        # self.pause_keys = PauseKeys()  # TODO delete
+        self.search_detail_keyring = SearchDetailKeys()
+        self.search_state_keyring = SearchStateKeys()
+        self.search_stopped_reason_keyring = SearchStoppedReasonKeys()
+        self.user_config_keyring = UserConfigKeys()
 
 
 class ParserPaths:  # Configuration.Parser.ParserPaths
@@ -219,7 +214,7 @@ class Paths:  # Configuration.Paths
         try:
             # data paths
             metadata_parser_path = Path(path.data, configuration.hardcoded.file_names.to_be_parsed.metadata)
-            search_details_path = Path(path.data, configuration.hardcoded.file_names.to_be_parsed.search_details)
+            search_details_path = Path(path.data, configuration.hardcoded.file_names.to_be_parsed.search_detail)
             # user config paths
             user_config_path = Path(path.user_config, configuration.hardcoded.file_names.to_be_parsed.user_config)
             # build and return
