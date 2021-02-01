@@ -75,12 +75,12 @@ class UserConfigKeys:  # Configuration.HardCoded.KeyRing.UserConfigKeys
         # sorted to make reading against user_config file easier
         self.DEFAULT_SECTION_HEADER_TITLE = 'DEFAULT'
         self.PRIORITY = 'metadata_value_sort_priority'
-        self.WAIT_MAIN_LOOP = 'seconds_to_wait_after_each_main_loop'
-        self.SEARCH_STATUS_CHECK = 'seconds_to_wait_after_each_search_status_check'
-        self.ADD_RESULT = 'seconds_to_wait_after_each_torrent_add_attempt'
-        self.USER = 'seconds_to_wait_to_allow_user_to_read_log'
-        self.UNI_SHIFT = 'unicode_shift_offset_for_scrambling_results_cfg_file'
         self.UNI_CHAR_COUNT = 'unicode_total_character_count'
+        self.UNI_SHIFT = 'unicode_shift_offset_for_scrambling_results_cfg_file'
+        self.WAIT_ADD_RESULT = 'seconds_to_wait_after_each_torrent_add_attempt'
+        self.WAIT_ALLOW_USER_TO_READ_LOG = 'seconds_to_wait_to_allow_user_to_read_log'
+        self.WAIT_MAIN_LOOP = 'seconds_to_wait_after_each_main_loop'
+        self.WAIT_SEARCH_STATUS_CHECK = 'seconds_to_wait_after_each_search_status_check'
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### TIER 2 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
