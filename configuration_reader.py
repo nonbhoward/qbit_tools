@@ -9,13 +9,18 @@ ml = MinimalLog()
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### TIER 3 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
-class APIStateKeys:  # Configuration.HardCoded.KeyRing.APIStateKeys
+class ConfigParserPathNames:  # Configuration.HardCoded.DirectoryNames.ConfigParserDirectoryNames
     def __init__(self):
-        # keys for the state machine, some from API responses, in memory, half can be changed
-        self.CONCLUDED = 'concluded'  # this indicates that the search will not start again
-        self.QUEUED = 'queued'  # this indicates that the search should be started soon
-        self.RUNNING = 'Running'  # this is a web api status return value, indicates search is running
-        self.STOPPED = 'Stopped'  # this is a web api status return value, indicates search is or has stopped
+        self.user_config_path_name = 'user_configuration'
+        self.data_path_name = 'data_src'
+
+
+class ConfigParserFileNames:  # Configuration.HardCoded.FileNames.ConfigParserFileNames
+    # project's configuration file names, cannot be changed without changing project structure
+    def __init__(self):
+        self.metadata = 'metadata.cfg'
+        self.search_detail = 'search_details.cfg'
+        self.user_config = 'user_configuration.cfg'
 
 
 class MetaDataKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
@@ -29,43 +34,21 @@ class MetaDataKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
         self.URL = 'fileUrl'
 
 
-class MiscKeys:  # Configuration.HardCoded.KeyRing.MiscKeys
-    def __init__(self):
-        # keys to label/organize
-        self.EMPTY = ''
-        self.RESET = 'reset'
-
-
-class Parsed:  # Configuration.HardCoded.FileNames.Parsed
-    def __init__(self):
-        # project's configuration file names, cannot be changed without changing project structure
-        self.metadata = 'metadata.cfg'
-        self.search_detail = 'search_details.cfg'
-        self.user_config = 'user_configuration.cfg'
-
-
-class ParserKeys:  # Configuration.HardCoded.KeyRing.ParserKeys
-    def __init__(self):
-        # keys for Configuration().parsers, can be changed
-        # key for the DEFAULT section of all config parsers, cannot be changed
-        self. DEFAULT = 'DEFAULT'
-        # keys for reading & writing boolean values for all config parsers, cannot be changed
-        self.NO = 'no'
-        self.YES = 'yes'
-
-
 class SearchDetailKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
+    # keys for reading & writing search details
     def __init__(self):
-        # keys for reading & writing search details
+        # FYI, ***FOR KEY REFERENCES ONLY*** trying to keep properties singular for predictability,
+        # key strings can be plural or singular since they are never directly referenced
         self.AVG_SEED_COUNT = 'average_seed_count'
+        self.DEFAULT = 'DEFAULT'
         self.EXPECTED_RESULT_COUNT = 'expected_search_result_count'
-        self.FILE_NAME_REGEX = 'regex_filter_for_file_name'
+        self.EMPTY = ''
+        self.FILENAME_REGEX = 'regex_filter_for_filename'
         self.LAST_READ = 'last_read'
         self.LAST_WRITE = 'last_write'
         self.MAX_SEARCH_ATTEMPT_COUNT = 'maximum_search_attempts'
         self.MIN_SEED_COUNT = 'minimum_seeds'
-        # FYI, ***FOR KEY REFERENCES ONLY*** trying to keep properties singular for predictability,
-        # key strings can be plural or singular since they are never directly referenced
+        self.RESET = 'reset'
         self.RESULT_ADDED_COUNT = 'results_added'
         self.RESULT_COUNT = 'results_count'  # this relies on being in DEFAULTS or program errors?
         self.RESULT_REQUIRED_COUNT = 'results_required'
@@ -73,11 +56,15 @@ class SearchDetailKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.SEARCH_ID = 'search_id'
         self.SEARCH_STOPPED_REASON = 'search_stopped_reason'
         self.SEARCH_TERM = 'search_term'
-
-
-class SearchStoppedReasonKeys:  # Configuration.HardCoded.KeyRing.SearchStoppedReasonKeys
-    def __init__(self):
-        # keys for reading & writing values for the search config parser's end reason key, can be changed
+        # search state keys, RUNNING and STOPPED are api return state keys
+        self.CONCLUDED = 'concluded'  # this indicates that the search will not start again
+        self.QUEUED = 'queued'  # this indicates that the search should be started soon
+        self.RUNNING = 'Running'  # this is a web api status return value, indicates search is running
+        self.STOPPED = 'Stopped'  # this is a web api status return value, indicates search is or has stopped
+        # boolean state keys
+        self.NO = 'no'  # False
+        self.YES = 'yes'  # True
+        # search stopped reasons
         self.REQUIRED_RESULT_COUNT_FOUND = 'required results found!'
         self.TIMED_OUT = 'search timed out!'
 
@@ -85,25 +72,21 @@ class SearchStoppedReasonKeys:  # Configuration.HardCoded.KeyRing.SearchStoppedR
 class UserConfigKeys:  # Configuration.HardCoded.KeyRing.UserConfigKeys
     def __init__(self):
         # keys for reading & writing user configuration
-        # program wait times
-        self.ADD_RESULT = 'seconds_to_wait_after_each_torrent_add_attempt'
-        self.DEFAULT = 'DEFAULT'
-        self.MAIN_LOOP = 'seconds_to_wait_after_each_main_loop'
-        self.SEARCH_STATUS_CHECK = 'seconds_to_wait_after_each_search_status_check'
-        # other user settings
-        # TODO how will 'seeds' on disk translate to 'nbSeeders' in practice?
-        # TODO well, you caught this bug in advance, there was no reference
+        # sorted to make reading against user_config file easier
+        self.DEFAULT_SECTION_HEADER_TITLE = 'DEFAULT'
         self.PRIORITY = 'metadata_value_sort_priority'
-        self.UNI_CHAR_COUNT = 'unicode_total_character_count'
-        self.UNI_SHIFT = 'unicode_shift_offset_for_scrambling_results_cfg_file'
+        self.WAIT_MAIN_LOOP = 'seconds_to_wait_after_each_main_loop'
+        self.SEARCH_STATUS_CHECK = 'seconds_to_wait_after_each_search_status_check'
+        self.ADD_RESULT = 'seconds_to_wait_after_each_torrent_add_attempt'
         self.USER = 'seconds_to_wait_to_allow_user_to_read_log'
+        self.UNI_SHIFT = 'unicode_shift_offset_for_scrambling_results_cfg_file'
+        self.UNI_CHAR_COUNT = 'unicode_total_character_count'
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### TIER 2 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
 class DirectoryNames:  # Configuration.HardCoded.DirectoryNames
     def __init__(self):
-        self.user_config_path = 'user_configuration'
-        self.data_path = 'data_src'
+        self.config_parser_path_names = ConfigParserPathNames()
 
 
 class Extensions:  # Configuration.HardCoded.Extensions
@@ -113,17 +96,13 @@ class Extensions:  # Configuration.HardCoded.Extensions
 
 class FileNames:  # Configuration.HardCoded.FileNames
     def __init__(self):
-        self.to_be_parsed = Parsed()
+        self.config_parser = ConfigParserFileNames()
 
 
 class KeyRing:  # Configuration.HardCoded.KeyRing
     def __init__(self):
-        self.api_state_keyring = APIStateKeys()
         self.metadata_keyring = MetaDataKeys()
-        self.misc_keyring = MiscKeys()
-        self.parser_keyring = ParserKeys()
         self.search_detail_keyring = SearchDetailKeys()
-        self.search_stopped_reason_keyring = SearchStoppedReasonKeys()
         self.user_config_keyring = UserConfigKeys()
 
 
@@ -171,7 +150,8 @@ class Parsers:  # Configuration.Parser.Parsers
 ##### ##### ##### ##### ##### ##### ##### ##### TIER 1 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
 class HardCoded:  # Configuration.HardCoded
     def __init__(self):
-        self.file_names = FileNames()
+        self.config_parser_filenames = ConfigParserFileNames
+        self.filenames = FileNames()
         self.directory_names = DirectoryNames()
         self.extensions = Extensions()
         self.keys = KeyRing()
@@ -195,7 +175,7 @@ class Paths:  # Configuration.Paths
         :return: data path as path object
         """
         try:
-            data_directory_name = configuration.hardcoded.directory_names.data_path
+            data_directory_name = configuration.hardcoded.directory_names.config_parser_path_names.data_path_name
             ml.log_event('get data path for {}..'.format(data_directory_name))
             return Path(path.project, data_directory_name)
         except OSError as o_err:
@@ -205,10 +185,10 @@ class Paths:  # Configuration.Paths
         # TODO this is basically hardcoded, do this better but lower priority than bugs
         try:
             # data paths
-            metadata_parser_path = Path(path.data, configuration.hardcoded.file_names.to_be_parsed.metadata)
-            search_details_path = Path(path.data, configuration.hardcoded.file_names.to_be_parsed.search_detail)
+            metadata_parser_path = Path(path.data, configuration.hardcoded.filenames.config_parser.metadata)
+            search_details_path = Path(path.data, configuration.hardcoded.filenames.config_parser.search_detail)
             # user config paths
-            user_config_path = Path(path.user_config, configuration.hardcoded.file_names.to_be_parsed.user_config)
+            user_config_path = Path(path.user_config, configuration.hardcoded.filenames.config_parser.user_config)
             # build and return
             parser_paths = [metadata_parser_path, search_details_path, user_config_path]
             return * parser_paths,
@@ -221,7 +201,9 @@ class Paths:  # Configuration.Paths
         """
         try:
             ml.log_event('get data path', event_completed=True)
-            user_config_directory_name = configuration.hardcoded.directory_names.user_config_path
+            # user_config_directory_name = configuration.hardcoded.directory_names.user_config_path_name
+            user_config_directory_name = \
+                configuration.hardcoded.directory_names.config_parser_path_names.user_config_path_name
             return Path(path.project, user_config_directory_name)
         except OSError as o_err:
             ml.log_event(o_err, level=ml.ERROR)
@@ -269,12 +251,54 @@ def get_user_configuration() -> Configuration:  # this is the only export requir
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def _parser_has_sections(configparser) -> bool:
+def _parser_has_sections(configparser: ConfigParser) -> bool:
     try:
+        if _parser_has_defaults(configparser):
+            return True
         section_count = len(configparser.sections())
         ml.log_event('configparser {} has {} sections'.format(configparser, section_count))
-        if section_count > 0:
+        if section_count < 1:
+            if _parser_able_to_read_write_(configparser):
+                return True
+            return False
+        return True
+    except Exception as e_err:
+        ml.log_event(e_err, level=ml.ERROR)
+
+
+def _parser_able_to_read_write_(configparser: ConfigParser) -> bool:
+    try:
+        parser_modified_test_sections = _parser_modify_test_sections(configparser)
+        if parser_modified_test_sections:
+            ml.log_event('parser {} is able tod modify sections, parser is valid'.format(configparser))
             return True
+        return False
+    except Exception as e_err:
+        ml.log_event(e_err, level=ml.ERROR)
+
+
+def _parser_has_defaults(configparser: ConfigParser) -> bool:
+    try:
+        if configparser.defaults() is not None:
+            return True
+        return False
+    except Exception as e_err:
+        ml.log_event(e_err, level=ml.ERROR)
+
+
+def _parser_modify_test_sections(configparser: ConfigParser) -> bool:
+    # TODO function completely untested, has never needed to run.. maybe just learn to use pytest?
+    try:
+        parser_test_section = 'configparser self test header, can be deleted'
+        if configparser.has_section(parser_test_section):
+            configparser.remove_section(parser_test_section)
+            if not configparser.has_section(parser_test_section):
+                return True
+        configparser.add_section(parser_test_section)
+        if configparser.has_section(parser_test_section):
+            configparser.remove_section(parser_test_section)
+            if not configparser.has_section(parser_test_section):
+                return True
         return False
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
