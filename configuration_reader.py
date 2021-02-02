@@ -80,15 +80,14 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
 class UserConfigParserKeys:  # Configuration.HardCoded.KeyRing.UserConfigKeys
     def __init__(self):
         # keys for reading & writing user configuration
-        # sorted to make reading against user_config file easier
-        self.DEFAULT_SECTION_HEADER_TITLE = 'DEFAULT'
-        self.PRIORITY = 'metadata_value_sort_priority'
-        self.UNI_CHAR_COUNT = 'unicode_total_character_count'
+        self.DEFAULT = 'DEFAULT'
+        self.UNI_MEMBER_COUNT = 'unicode_total_character_count'
         self.UNI_SHIFT = 'unicode_shift_offset_for_scrambling_results_cfg_file'
-        self.WAIT_ADD_RESULT = 'seconds_to_wait_after_each_torrent_add_attempt'
-        self.WAIT_ALLOW_USER_TO_READ_LOG = 'seconds_to_wait_to_allow_user_to_read_log'
-        self.WAIT_MAIN_LOOP = 'seconds_to_wait_after_each_main_loop'
-        self.WAIT_SEARCH_STATUS_CHECK = 'seconds_to_wait_after_each_search_status_check'
+        self.USER_PRIORITY = 'metadata_value_sort_priority'
+        self.WAIT_FOR_MAIN_LOOP = 'seconds_to_wait_after_each_main_loop'
+        self.WAIT_FOR_SEARCH_RESULT_ADD = 'seconds_to_wait_after_each_torrent_add_attempt'
+        self.WAIT_FOR_SEARCH_STATUS_CHECK = 'seconds_to_wait_after_each_search_status_check'
+        self.WAIT_FOR_USER = 'seconds_to_wait_to_allow_user_to_read_log'
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### TIER 2 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
