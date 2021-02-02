@@ -522,7 +522,7 @@ class QbitTasker:
         try:
             metadata_parser_keys, user_config_parser_keys = \
                 self._get_keyring_for_metadata_parser(), self._get_keyring_for_user_config_parser()
-            ml.log_event('save metadata result to file: {}'.format(result[]metadata_parser_keys.NAME))
+            ml.log_event('save metadata result to file: {}'.format(result[metadata_parser_keys.NAME]))
             metadata_section = self._hash(result[metadata_parser_keys.NAME])
             if not self.parsers.metadata_parser.has_section(metadata_section):
                 ml.log_event('qbit client has added result {} for header {}'.format(result[metadata_parser_keys.NAME],
