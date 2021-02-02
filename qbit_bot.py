@@ -419,7 +419,7 @@ class QbitTasker:
                 self.key_ring.search_parser_keyring, self.key_ring.user_config_parser_keyring, self._get_keyring_for_metadata_parser()
             search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
             count_before = self._qbit_count_all_torrents()
-            ml.log_event('local machine has {} stored results before add attempt..'.format(count_before), announce=True)
+            ml.log_event('local machine has {} stored results before add attempt..'.format(count_before))
             # TODO why does this api call sometimes not add? bad result? not long enough wait?
             self.qbit_client.torrents_add(urls=result['fileUrl'], is_paused=True)
             self.pause_on_event(user_config_parser_keys.WAIT_ADD_RESULT)
