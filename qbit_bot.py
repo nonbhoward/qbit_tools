@@ -108,7 +108,7 @@ class QbitTasker:
             app_version = self.qbit_client.app_version
             web_api_version = self.qbit_client.app_web_api_version
             if app_version is not None and web_api_version is not None:
-                ml.log_event('connect to client with.. \nclient app version {} \nweb api version {}'.format(
+                ml.log_event('connect to client with.. \n\n\tclient app version {} \n\n\tweb api version {}\n\n'.format(
                     app_version, web_api_version), event_completed=True)
                 return True
             return False
@@ -292,8 +292,8 @@ class QbitTasker:
 
     def _get_keyring_for_metadata_details(self):
         try:
-            metadata_keyring = self.config.hardcoded.keys.metadata_detail_keyring
-            return metadata_keyring
+            metadata_detail_keyring = self.config.hardcoded.keys.metadata_detail_keyring
+            return metadata_detail_keyring
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -327,7 +327,6 @@ class QbitTasker:
         """
         :return: search states
         """
-        ml.log_event('get search state for {}'.format(self.active_header))
         try:
             search_detail_keys = self._get_keyring_for_search_details()
             search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
@@ -337,7 +336,7 @@ class QbitTasker:
             _search_stopped = search_detail_parser_at_active_header.getboolean(search_detail_keys.STOPPED)
             _search_concluded = search_detail_parser_at_active_header.getboolean(search_detail_keys.CONCLUDED)
             ml.log_event('search state for {}: \nqueued: {}\nrunning: {}\nstopped: {}\nconcluded: {}'.format(
-                self.active_header, _search_queued, _search_running, _search_stopped, _search_concluded))
+                self.active_header, _search_queued, _search_running, _search_stopped, _search_concluded), announce=True)
             return _search_queued, _search_running, _search_stopped, _search_concluded
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
@@ -511,7 +510,7 @@ class QbitTasker:
 
     def _result_has_enough_seeds(self, result) -> bool:
         try:
-            md_keys, search_detail_keys = self.key_ring.metadata_keyring, self.key_ring.search_detail_keyring
+            md_keys, search_detail_keys = self.key_ring.metadata_detail_keyring, self.key_ring.search_detail_keyring
             # minimum_seeds = int(self.search_parser[self.active_header][search_key.minimum_seeds])  # TODO delete
             minimum_seeds = int(self.config.parser.parsers.search_detail_parser[self.active_header][search_detail_keys.MIN_SEED_COUNT])
             # result_seeds = result[results_key.supply]
@@ -526,7 +525,7 @@ class QbitTasker:
     def _metadata_parser_write_to_metadata_config_file(self, result):
         ml.log_event('store result {} in metadata parser'.format(result))
         try:
-            metadata_keys, user_config_parser_keys = self.key_ring.metadata_keyring, self.key_ring.user_config_keyring
+            metadata_keys, user_config_parser_keys = self.key_ring.metadata_detail_keyring, self.key_ring.user_config_keyring
             if not self.parsers.metadata_parser.has_section(self._hash(result[metadata_keys.NAME])):
                 self.parsers.metadata_parser.add_section(self._hash(result(metadata_keys.NAME)))
                 header = self._hash(result[metadata_keys.NAME])
