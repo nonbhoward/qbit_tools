@@ -462,14 +462,17 @@ class QbitTasker:
             search_id, search_status = search_detail_parser_at_active_header[search_parser_keys.SEARCH_ID], None
             search_id_valid = self._active_header_search_id_is_valid()
             if search_id_valid:
-                # TODO PRIORITY BUG, this section of code is double logging, why?
+                # TODO PRIORITY BUG, this section of code was double logging, fixed?
                 ml.log_event('getting search status for header {} with search_id {}'.format(
                     self.active_header, search_id))
                 if search_id in self.active_search_ids.values():
                     ongoing_search = self.qbit_client.search_status(search_id=search_id)
                     search_status = ongoing_search.data[0]['status']
-            ml.log_event('search status for section: {} is {}'.format(self.active_header, search_status))
-            ml.log_event('qbit client get search status')
+            if search_status is None:  # TODO fyi new line, moitor, delete comment after
+                ml.log_event('search status is \'{}\' for section \'{}\''.format(search_status, self.active_header),
+                             level=ml.WARNING)
+                return search_status
+            ml.log_event('search status is \'{}\' for section \'{}\''.format(search_status, self.active_header))
             return search_status
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
