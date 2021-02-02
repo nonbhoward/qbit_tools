@@ -25,11 +25,17 @@ class ConfigParserFileNames:  # Configuration.HardCoded.FileNames.ConfigParserFi
 
 class MetaDataKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
     def __init__(self):
-        # keys for reading & writing metadata info
-        # TODO get all of these keys from next debug run returning results
-        self.DEMAND = 'nbPeers'
+        # keys for reading the SearchResultsDictionary containing the metadata in results['results']
+        self.RESULTS = 'results'
+        self.STATUS = 'status'
+        self.TOTAL = 'total'
+        # keys for reading & writing core metadata info
+        self.DEMAND = 'nbLeechers'
+        self.LINK = 'descrLink'
         self.NAME = 'fileName'
-        self.RESULT = 'results'
+        # self.RESULT = 'results'
+        self.SIZE = 'fileSize'
+        self.SITE = 'siteUrl'
         self.SUPPLY = 'nbSeeders'
         self.URL = 'fileUrl'
 
