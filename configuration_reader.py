@@ -23,8 +23,10 @@ class ConfigParserFileNames:  # Configuration.HardCoded.FileNames.ConfigParserFi
         self.user_config = 'user_configuration.cfg'
 
 
-class MetaDataKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
+class MetadataParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
     def __init__(self):
+        # default section name
+        self.DEFAULT = 'DEFAULT'
         # keys for reading the SearchResultsDictionary containing the metadata in results['results']
         self.RESULT = 'results'
         self.STATUS = 'status'
@@ -40,7 +42,7 @@ class MetaDataKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
         self.URL = 'fileUrl'
 
 
-class SearchDetailKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
+class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
     # keys for reading & writing search details
     def __init__(self):
         # FYI, ***FOR KEY REFERENCES ONLY*** trying to keep properties singular for predictability,
@@ -75,7 +77,7 @@ class SearchDetailKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.TIMED_OUT = 'search timed out!'
 
 
-class UserConfigKeys:  # Configuration.HardCoded.KeyRing.UserConfigKeys
+class UserConfigParserKeys:  # Configuration.HardCoded.KeyRing.UserConfigKeys
     def __init__(self):
         # keys for reading & writing user configuration
         # sorted to make reading against user_config file easier
@@ -107,9 +109,9 @@ class FileNames:  # Configuration.HardCoded.FileNames
 
 class KeyRing:  # Configuration.HardCoded.KeyRing
     def __init__(self):
-        self.metadata_detail_keyring = MetaDataKeys()
-        self.search_detail_keyring = SearchDetailKeys()
-        self.user_config_keyring = UserConfigKeys()
+        self.metadata_parser_keyring = MetadataParserKeys()
+        self.search_parser_keyring = SearchParserKeys()
+        self.user_config_parser_keyring = UserConfigParserKeys()
 
 
 class ParserPaths:  # Configuration.Parser.ParserPaths
