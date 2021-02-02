@@ -207,7 +207,7 @@ class QbitTasker:
             if results is None:
                 return None, 0
             ml.log_event('get filename regex pattern for active header {}'.format(self.active_header))
-            for result in results(metadata_keys.RESULT):
+            for result in results[metadata_keys.RESULT]:
                 filename = result[metadata_keys.NAME]
                 search_pattern = self._parsers_get_filename_regex()
                 if self._pattern_matches(search_pattern, filename):

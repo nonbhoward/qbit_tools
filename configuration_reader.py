@@ -26,7 +26,7 @@ class ConfigParserFileNames:  # Configuration.HardCoded.FileNames.ConfigParserFi
 class MetaDataKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
     def __init__(self):
         # keys for reading the SearchResultsDictionary containing the metadata in results['results']
-        self.RESULTS = 'results'
+        self.RESULT = 'results'
         self.STATUS = 'status'
         self.TOTAL = 'total'
         # keys for reading & writing core metadata info
