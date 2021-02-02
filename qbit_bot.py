@@ -425,11 +425,7 @@ class QbitTasker:
             self.pause_on_event(user_config_parser_keys.WAIT_ADD_RESULT)
             results_added = self._qbit_count_all_torrents() - count_before
             if results_added > 0:
-                ml.log_event('qbit client has added result {} for header {}'.format(result[metadata_parser_keys.NAME],
-                                                                                    self.active_header), announce=True)
                 self._metadata_parser_write_to_metadata_config_file(result)
-                ml.log_event('qbit client has added result {} for header {}'.format(result[metadata_parser_keys.NAME],
-                                                                                    self.active_header), announce=True)
                 search_detail_parser_at_active_header[search_parser_keys.RESULT_ADDED_COUNT] = \
                     str(int(search_detail_parser_at_active_header[search_parser_keys.RESULT_ADDED_COUNT]))
                 return
@@ -523,12 +519,14 @@ class QbitTasker:
             ml.log_event(e_err, level=ml.ERROR)
 
     def _metadata_parser_write_to_metadata_config_file(self, result):
-        ml.log_event('store result {} in metadata parser'.format(result))
         try:
             metadata_parser_keys, user_config_parser_keys = \
                 self._get_keyring_for_metadata_parser(), self._get_keyring_for_user_config_parser()
+            ml.log_event('save metadata result to file: {}'.format(result[]metadata_parser_keys.NAME))
             metadata_section = self._hash(result[metadata_parser_keys.NAME])
             if not self.parsers.metadata_parser.has_section(metadata_section):
+                ml.log_event('qbit client has added result {} for header {}'.format(result[metadata_parser_keys.NAME],
+                                                                                    self.active_header), announce=True)
                 self.parsers.metadata_parser.add_section(metadata_section)
                 header = metadata_section
                 for attribute, detail in result.items():
