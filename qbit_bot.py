@@ -143,7 +143,7 @@ class QbitTasker:
             ml.log_event(e_err, level=ml.ERROR)
 
     def _get_search_term_from_search_detail_parser_at_active_header(self) -> str:
-        ml.log_event('get search term for from search detail parser at header: {}'.format(self.active_header))
+        ml.log_event('get search term for search detail parser at header: {}'.format(self.active_header))
         search_detail_keys = self._get_keyring_for_search_details()
         search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
         try:
@@ -156,7 +156,6 @@ class QbitTasker:
                 search_term = self.active_header
                 search_detail_parser_at_active_header[search_detail_keys.SEARCH_TERM] = search_term
                 return search_term
-            # search_term = self.config.parser.parsers.search_detail_parser[self.active_header][search_detail_keys.SEARCH_TERM]  # TODO delete me
             search_term = search_detail_parser_at_active_header[search_detail_keys.SEARCH_TERM]
             return search_term
         except Exception as e_err:
