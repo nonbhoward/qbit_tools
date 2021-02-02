@@ -146,7 +146,7 @@ class QbitTasker:
             if search_parser_keys.SEARCH_TERM not in search_detail_parser_at_active_header.keys():
                 # TODO this print indicates no search term was provided, could fill in the active section header
                 # TODO with the default value just to suppress this from occurring except when a new term is added
-                ml.log_event('key \'{}\' not found in header \'{}\', setting key value to default header value'.format(
+                ml.log_event('\'{}\' not found in header keys for \'{}\', setting key value to header value'.format(
                     search_parser_keys.SEARCH_TERM, self.active_header), level=ml.WARNING)
                 search_term = self.active_header
                 search_detail_parser_at_active_header[search_parser_keys.SEARCH_TERM] = search_term
