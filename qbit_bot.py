@@ -417,6 +417,7 @@ class QbitTasker:
         try:
             search_parser_keys, user_config_parser_keys, metadata_parser_keys = \
                 self.key_ring.search_parser_keyring, self.key_ring.user_config_parser_keyring, self._get_keyring_for_metadata_parser()
+            search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
             count_before = self._qbit_count_all_torrents()
             ml.log_event('local machine has {} stored results before add attempt..'.format(count_before), announce=True)
             # TODO why does this api call sometimes not add? bad result? not long enough wait?
@@ -424,13 +425,13 @@ class QbitTasker:
             self.pause_on_event(user_config_parser_keys.WAIT_ADD_RESULT)
             results_added = self._qbit_count_all_torrents() - count_before
             if results_added > 0:
-                # ml.log_event('qbit client has added result {} for header {}'.format(result['fileName'], self.active_header), announce=True)
-                ml.log_event('qbit client has added result {} for header {}'.format(result[], self.active_header), announce=True)
+                ml.log_event('qbit client has added result {} for header {}'.format(result[metadata_parser_keys.NAME],
+                                                                                    self.active_header), announce=True)
                 self._metadata_parser_write_to_metadata_config_file(result)
-                ml.log_event('qbit client has added result {} for header {}'.format(result['fileName'], self.active_header), announce=True)
-                self.config.parser.parsers.search_detail_parser[self.active_header][search_parser_keys.RESULT_ADDED_COUNT] = str(int(
-                    self.config.parser.parsers.search_detail_parser[self.active_header][search_parser_keys.RESULT_ADDED_COUNT]
-                ))
+                ml.log_event('qbit client has added result {} for header {}'.format(result[metadata_parser_keys.NAME],
+                                                                                    self.active_header), announce=True)
+                search_detail_parser_at_active_header[search_parser_keys.RESULT_ADDED_COUNT] = \
+                    str(int(search_detail_parser_at_active_header[search_parser_keys.RESULT_ADDED_COUNT]))
                 return
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
