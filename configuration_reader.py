@@ -40,6 +40,7 @@ class MetadataParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
         self.SITE = 'siteUrl'
         self.SUPPLY = 'nbSeeders'
         self.URL = 'fileUrl'
+        # translations to api
 
 
 class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
@@ -49,13 +50,13 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         # key strings can be plural or singular since they are never directly referenced
         self.AVG_SEED_COUNT = 'average_seed_count'
         self.DEFAULT = 'DEFAULT'
-        self.EXPECTED_RESULT_COUNT = 'expected_search_result_count'
         self.EMPTY = ''
-        self.FILENAME_REGEX = 'regex_filter_for_filename'
+        self.EXPECTED_SEARCH_RESULT_COUNT = 'expected_search_result_count'
         self.LAST_READ = 'last_read'
         self.LAST_WRITE = 'last_write'
         self.MAX_SEARCH_ATTEMPT_COUNT = 'maximum_search_attempts'
         self.MIN_SEED_COUNT = 'minimum_seeds'
+        self.REGEX_FILTER_FOR_FILENAME = 'regex_filter_for_filename'
         self.RESET = 'reset'
         self.RESULT_ADDED_COUNT = 'results_added'
         self.RESULT_COUNT = 'results_count'  # this relies on being in DEFAULTS or program errors?
