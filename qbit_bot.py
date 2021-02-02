@@ -69,6 +69,19 @@ class QbitTasker:
     def transfer_files_to_remote(self):
         pass
 
+    def _active_header_search_id_is_valid(self) -> bool:
+        search_id = self.active_search_ids.get(self.active_header, '')
+        ml.log_event('check if search id \'{}\' is valid'.format(search_id))
+        search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
+        try:
+            if search_id is not None:
+                if search_id != search_parser_keys.EMPTY:
+                    ml.log_event('search id \'{}\' appears valid'.format(search_id))
+                    return True
+            return False
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
     def _all_searches_concluded(self) -> bool:
         # TODO would be nice to exit if all jobs exceed set limits, not currently in-use
         try:
@@ -93,6 +106,11 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
+    def _check_if_section_header_metadata_exists_as_local_result(self) -> bool:
+        delete_me = self.config  # suppress @staticmethod warning
+        ml.log_event('TODO : ..just return hardcoded False..', level=ml.WARNING)
+        return False  # TODO
+
     def _client_is_connected(self) -> bool:
         """
         connect to the client, fetch check app version and web api version
@@ -111,56 +129,6 @@ class QbitTasker:
             return False
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
-
-    def _log_file_is_too_large(self):
-        # TODO yep it's growing
-        pass
-
-    def _manage_log_files(self):
-        # TODO .. someday .. when it seems interesting
-        try:
-            if self._log_file_is_too_large():
-                pass  # idk delete it or something
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def _parsers_get_filename_regex(self) -> str:
-        try:
-            search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
-            search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
-            filename_regex = search_detail_parser_at_active_header[search_parser_keys.REGEX_FILTER_FOR_FILENAME]
-            if filename_regex not in search_detail_parser_at_active_header.keys():
-                filename_regex = '.*'
-                return filename_regex
-            filename_regex = self.config.parser.parsers.search_detail_parser[self.active_header][filename_regex]
-            return filename_regex
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def _get_search_term_from_search_detail_parser_at_active_header(self) -> str:
-        ml.log_event('get search term for search detail parser at header \'{}\''.format(self.active_header))
-        search_parser_keys = self._get_keyring_for_search_parser()
-        search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
-        try:
-            # if the section does not exist, set term to active header, then write change to parser
-            if search_parser_keys.SEARCH_TERM not in search_detail_parser_at_active_header.keys():
-                # TODO this print indicates no search term was provided, could fill in the active section header
-                # TODO with the default value just to suppress this from occurring except when a new term is added
-                ml.log_event('\'{}\' not found in header keys for \'{}\', setting key value to header value'.format(
-                    search_parser_keys.SEARCH_TERM, self.active_header), level=ml.WARNING)
-                search_term = self.active_header
-                search_detail_parser_at_active_header[search_parser_keys.SEARCH_TERM] = search_term
-                return search_term
-            search_term = search_detail_parser_at_active_header[search_parser_keys.SEARCH_TERM]
-            ml.log_event('search term \'{}\' has been retrieved..'.format(search_term))
-            return search_term
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def _check_if_section_header_metadata_exists_as_local_result(self) -> bool:
-        delete_me = self.config  # suppress @staticmethod warning
-        ml.log_event('TODO : ..just return hardcoded False..', level=ml.WARNING)
-        return False  # TODO
 
     def _config_set_search_id_as_active(self):
         search_id = self.active_search_ids[self.active_header]
@@ -222,6 +190,27 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
+    def _get_keyring_for_metadata_parser(self):
+        try:
+            metadata_detail_keyring = self.config.hardcoded.keys.metadata_parser_keyring
+            return metadata_detail_keyring
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _get_keyring_for_search_parser(self):
+        try:
+            search_parser_keyring = self.config.hardcoded.keys.search_parser_keyring
+            return search_parser_keyring
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _get_keyring_for_user_config_parser(self):
+        try:
+            user_config_keyring = self.config.hardcoded.keys.user_config_parser_keyring
+            return user_config_keyring
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
     def _get_metadata_arg_from_user_config_(self, priority) -> str:
         try:
             # TODO finish all of the translations between metadata args and user config values
@@ -231,20 +220,15 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def _get_search_detail_parser_at_active_header(self) -> ConfigParser:
+    def _get_metadata_parser_at_result_name_section(self, section_header):
         try:
-            search_detail_parser = self.config.parser.parsers.search_detail_parser[self.active_header]
-            return search_detail_parser
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def _get_user_config_parser_at_default_section(self) -> ConfigParser:
-        try:
-            user_config_parser_keys = self._get_keyring_for_user_config_parser()
-            ucpk = user_config_parser_keys
-            user_config_parser_at_default_section = \
-               self.config.parser.parsers.user_config_parser[ucpk.DEFAULT]
-            return user_config_parser_at_default_section
+            metadata_parser = self.config.parser.parsers.metadata_parser
+            metadata_parser_at_section_header = metadata_parser[section_header]
+            if metadata_parser.has_section(section_header):
+                ml.log_event('warning, section_header {} already exists, overwriting the existing entry '.format(section_header))
+                already_added = self._check_if_section_header_metadata_exists_as_local_result(metadata_parser_at_section_header)
+                if already_added:
+                    ml.log_event('metadata result for section header {} already exists in local results'.format(section_header))
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -286,36 +270,10 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def _get_keyring_for_metadata_parser(self):
+    def _get_search_detail_parser_at_active_header(self) -> ConfigParser:
         try:
-            metadata_detail_keyring = self.config.hardcoded.keys.metadata_parser_keyring
-            return metadata_detail_keyring
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def _get_keyring_for_search_parser(self):
-        try:
-            search_parser_keyring = self.config.hardcoded.keys.search_parser_keyring
-            return search_parser_keyring
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def _get_keyring_for_user_config_parser(self):
-        try:
-            user_config_keyring = self.config.hardcoded.keys.user_config_parser_keyring
-            return user_config_keyring
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def _get_metadata_parser_at_result_name_section(self, section_header):
-        try:
-            metadata_parser = self.config.parser.parsers.metadata_parser
-            metadata_parser_at_section_header = metadata_parser[section_header]
-            if metadata_parser.has_section(section_header):
-                ml.log_event('warning, section_header {} already exists, overwriting the existing entry '.format(section_header))
-                already_added = self._check_if_section_header_metadata_exists_as_local_result(metadata_parser_at_section_header)
-                if already_added:
-                    ml.log_event('metadata result for section header {} already exists in local results'.format(section_header))
+            search_detail_parser = self.config.parser.parsers.search_detail_parser[self.active_header]
+            return search_detail_parser
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -334,6 +292,36 @@ class QbitTasker:
             ml.log_event('search state for \'{}\': \n\tqueued: {}\n\trunning: {}\n\tstopped: {}\n\tconcluded: {}'.format(
                 self.active_header, _search_queued, _search_running, _search_stopped, _search_concluded), announce=True)
             return _search_queued, _search_running, _search_stopped, _search_concluded
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _get_search_term_from_search_detail_parser_at_active_header(self) -> str:
+        ml.log_event('get search term for search detail parser at header \'{}\''.format(self.active_header))
+        search_parser_keys = self._get_keyring_for_search_parser()
+        search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
+        try:
+            # if the section does not exist, set term to active header, then write change to parser
+            if search_parser_keys.SEARCH_TERM not in search_detail_parser_at_active_header.keys():
+                # TODO this print indicates no search term was provided, could fill in the active section header
+                # TODO with the default value just to suppress this from occurring except when a new term is added
+                ml.log_event('\'{}\' not found in header keys for \'{}\', setting key value to header value'.format(
+                    search_parser_keys.SEARCH_TERM, self.active_header), level=ml.WARNING)
+                search_term = self.active_header
+                search_detail_parser_at_active_header[search_parser_keys.SEARCH_TERM] = search_term
+                return search_term
+            search_term = search_detail_parser_at_active_header[search_parser_keys.SEARCH_TERM]
+            ml.log_event('search term \'{}\' has been retrieved..'.format(search_term))
+            return search_term
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _get_user_config_parser_at_default_section(self) -> ConfigParser:
+        try:
+            user_config_parser_keys = self._get_keyring_for_user_config_parser()
+            ucpk = user_config_parser_keys
+            user_config_parser_at_default_section = \
+               self.config.parser.parsers.user_config_parser[ucpk.DEFAULT]
+            return user_config_parser_at_default_section
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -362,6 +350,18 @@ class QbitTasker:
             search_attempt_count = int(search_detail_parser_at_active_header[search_parser_keys.SEARCH_ATTEMPT_COUNT])
             ml.log_event('search try counter at {}, incrementing..'.format(search_attempt_count))
             search_detail_parser_at_active_header[search_parser_keys.SEARCH_ATTEMPT_COUNT] = str(search_attempt_count + 1)
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _log_file_is_too_large(self):
+        # TODO yep it's growing
+        pass
+
+    def _manage_log_files(self):
+        # TODO .. someday .. when it seems interesting
+        try:
+            if self._log_file_is_too_large():
+                pass  # idk delete it or something
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -396,6 +396,40 @@ class QbitTasker:
             else:
                 self._update_search_states(search_parser_keys.QUEUED)
             self.pause_on_event(user_config_parser_keys.WAIT_FOR_SEARCH_STATUS_CHECK)
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _metadata_parser_write_to_metadata_config_file(self, result):
+        try:
+            metadata_parser_keys, user_config_parser_keys = \
+                self._get_keyring_for_metadata_parser(), self._get_keyring_for_user_config_parser()
+            ml.log_event('save metadata result to file: {}'.format(result[metadata_parser_keys.NAME]))
+            metadata_section = self._hash(result[metadata_parser_keys.NAME])
+            if not self.config.parser.parsers.metadata_parser.has_section(metadata_section):
+                ml.log_event('qbit client has added result \'{}\' for header \'{}\''.format(
+                    result[metadata_parser_keys.NAME], self.active_header), announce=True)
+                self.config.parser.parsers.metadata_parser.add_section(metadata_section)
+                header = metadata_section
+                for attribute, detail in result.items():
+                    # TODO there are some redundant log commands 'above' and 'below' this entry
+                    # TODO i think this entry is causing the redundant log commands with _hash() calls
+                    h_attr, d_attr = self._hash(attribute), self._hash(detail)
+                    ml.log_event('detail added to metadata parser with attribute key \'{}\''.format(h_attr))
+                    self.config.parser.parsers.metadata_parser[header][h_attr] = d_attr
+                    self.pause_on_event(user_config_parser_keys.WAIT_FOR_USER)
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _parsers_get_filename_regex(self) -> str:
+        try:
+            search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
+            search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
+            filename_regex = search_detail_parser_at_active_header[search_parser_keys.REGEX_FILTER_FOR_FILENAME]
+            if filename_regex not in search_detail_parser_at_active_header.keys():
+                filename_regex = '.*'
+                return filename_regex
+            filename_regex = self.config.parser.parsers.search_detail_parser[self.active_header][filename_regex]
+            return filename_regex
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -524,27 +558,6 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def _metadata_parser_write_to_metadata_config_file(self, result):
-        try:
-            metadata_parser_keys, user_config_parser_keys = \
-                self._get_keyring_for_metadata_parser(), self._get_keyring_for_user_config_parser()
-            ml.log_event('save metadata result to file: {}'.format(result[metadata_parser_keys.NAME]))
-            metadata_section = self._hash(result[metadata_parser_keys.NAME])
-            if not self.config.parser.parsers.metadata_parser.has_section(metadata_section):
-                ml.log_event('qbit client has added result \'{}\' for header \'{}\''.format(
-                    result[metadata_parser_keys.NAME], self.active_header), announce=True)
-                self.config.parser.parsers.metadata_parser.add_section(metadata_section)
-                header = metadata_section
-                for attribute, detail in result.items():
-                    # TODO there are some redundant log commands 'above' and 'below' this entry
-                    # TODO i think this entry is causing the redundant log commands with _hash() calls
-                    h_attr, d_attr = self._hash(attribute), self._hash(detail)
-                    ml.log_event('detail added to metadata parser with attribute key \'{}\''.format(h_attr))
-                    self.config.parser.parsers.metadata_parser[header][h_attr] = d_attr
-                    self.pause_on_event(user_config_parser_keys.WAIT_FOR_USER)
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
     def _results_fetch_all_data(self) -> dict:
         ml.log_event('fetching results from disk', event_completed=False)
         try:
@@ -594,50 +607,6 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def _search_id_active(self) -> bool:
-        try:
-            search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
-            search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
-            search_id = search_detail_parser_at_active_header[search_parser_keys.SEARCH_ID]
-            if search_id == self.active_search_ids[self.active_header]:
-                return True
-            return False
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def _active_header_search_id_is_valid(self) -> bool:
-        search_id = self.active_search_ids.get(self.active_header, '')
-        ml.log_event('check if search id \'{}\' is valid'.format(search_id))
-        search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
-        try:
-            if search_id is not None:
-                if search_id != search_parser_keys.EMPTY:
-                    ml.log_event('search id \'{}\' appears valid'.format(search_id))
-                    return True
-            return False
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def _search_queue_full(self) -> bool:
-        ml.log_event('check search queue..')
-        try:
-            if self._search_at_active_header_is_already_started():
-                return True  # TODO, add this feature
-            active_search_count = len(self.active_search_ids.keys())
-            if active_search_count < 5:
-                ml.log_event('search queue is NOT full..')
-                ml.log_event('active search headers are..')
-                for active_search_header_name in self.active_search_ids.keys():
-                    ml.log_event('search header : \'{}\''.format(active_search_header_name))
-                return False
-            ml.log_event('search queue is FULL, cannot add header \'{}\''.format(self.active_header, announce=True))
-            ml.log_event('active search headers are..')
-            for active_search_header_name in self.active_search_ids.keys():
-                ml.log_event('search header : \'{}\''.format(active_search_header_name))
-            return True
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
     def _search_has_yielded_the_required_results(self) -> bool:
         """
         decides if search is ready to be marked as completed (ADDED)
@@ -669,6 +638,37 @@ class QbitTasker:
                 return True
             ml.log_event('search \'{}\' will be allowed to continue'.format(self.active_header), event_completed=True)
             return False
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _search_id_active(self) -> bool:
+        try:
+            search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
+            search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
+            search_id = search_detail_parser_at_active_header[search_parser_keys.SEARCH_ID]
+            if search_id == self.active_search_ids[self.active_header]:
+                return True
+            return False
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _search_queue_full(self) -> bool:
+        ml.log_event('check search queue..')
+        try:
+            if self._search_at_active_header_is_already_started():
+                return True  # TODO, add this feature
+            active_search_count = len(self.active_search_ids.keys())
+            if active_search_count < 5:
+                ml.log_event('search queue is NOT full..')
+                ml.log_event('active search headers are..')
+                for active_search_header_name in self.active_search_ids.keys():
+                    ml.log_event('search header : \'{}\''.format(active_search_header_name))
+                return False
+            ml.log_event('search queue is FULL, cannot add header \'{}\''.format(self.active_header, announce=True))
+            ml.log_event('active search headers are..')
+            for active_search_header_name in self.active_search_ids.keys():
+                ml.log_event('search header : \'{}\''.format(active_search_header_name))
+            return True
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
