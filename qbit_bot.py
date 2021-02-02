@@ -525,9 +525,10 @@ class QbitTasker:
         try:
             metadata_parser_keys, user_config_parser_keys = \
                 self._get_keyring_for_metadata_details(), self._get_keyring_for_user_config()
-            if not self.parsers.metadata_parser.has_section(self._hash(result[metadata_parser_keys.NAME])):
-                self.parsers.metadata_parser.add_section(self._hash(result(metadata_parser_keys.NAME)))
-                header = self._hash(result[metadata_parser_keys.NAME])
+            metadata_section = self._hash(result[metadata_parser_keys.NAME])
+            if not self.parsers.metadata_parser.has_section(metadata_section):
+                self.parsers.metadata_parser.add_section(metadata_section)
+                header = metadata_section
                 for attribute, detail in result.items():
                     # TODO there are some redundant log commands 'above' and 'below' this entry
                     # TODO i think this entry is causing the redundant log commands with _hash() calls
