@@ -107,7 +107,7 @@ class FileNames:  # Configuration.HardCoded.FileNames
 
 class KeyRing:  # Configuration.HardCoded.KeyRing
     def __init__(self):
-        self.metadata_keyring = MetaDataKeys()
+        self.metadata_detail_keyring = MetaDataKeys()
         self.search_detail_keyring = SearchDetailKeys()
         self.user_config_keyring = UserConfigKeys()
 
