@@ -723,13 +723,13 @@ class QbitTasker:
                 search_detail_parser_at_active_header[search_parser_keys.STOPPED] = search_parser_keys.NO
                 search_detail_parser_at_active_header[search_parser_keys.CONCLUDED] = search_parser_keys.NO
                 self._increment_search_attempt_count()
-                ml.log_event('search for \'{}\' is ongoing.. no action to be taken'.format(self.active_header))
+                ml.log_event('search for \'{}\' is running.. please stand by..'.format(self.active_header))
             elif api_state_key == search_parser_keys.STOPPED:
                 search_detail_parser_at_active_header[search_parser_keys.QUEUED] = search_parser_keys.NO
                 search_detail_parser_at_active_header[search_parser_keys.RUNNING] = search_parser_keys.NO
                 search_detail_parser_at_active_header[search_parser_keys.STOPPED] = search_parser_keys.YES
                 search_detail_parser_at_active_header[search_parser_keys.CONCLUDED] = search_parser_keys.NO
-                ml.log_event('saerch for \'{}\' is stopped and will be processed on next program loop'.format(
+                ml.log_event('search for \'{}\' is stopped and will be processed on next program loop'.format(
                     self.active_header))
             elif api_state_key == search_parser_keys.CONCLUDED:
                 search_detail_parser_at_active_header[search_parser_keys.QUEUED] = search_parser_keys.NO
