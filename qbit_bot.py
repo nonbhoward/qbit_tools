@@ -501,9 +501,9 @@ class QbitTasker:
             search_parser_keys, user_config_parser_keys = self._get_keyring_for_search_parser(), self._get_keyring_for_user_config_parser()
             search_detail_parser = self.config.parser.parsers.search_detail_parser
             for section_header in search_detail_parser.sections():
-                ml.log_event('reset search_id for section: {}'.format(self.active_header))
+                ml.log_event('reset search_id for section: {}'.format(section_header))
                 self.active_header = section_header
-                self._update_search_states(search_detail_keys.QUEUED)
+                self._update_search_states(search_parser_keys.QUEUED)
                 self.pause_on_event(user_config_parser_keys.WAIT_ALLOW_USER_TO_READ_LOG)
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
