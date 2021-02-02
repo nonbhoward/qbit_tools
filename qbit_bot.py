@@ -143,12 +143,12 @@ class QbitTasker:
             ml.log_event(e_err, level=ml.ERROR)
 
     def _get_search_term_from_search_detail_parser_at_active_header(self) -> str:
-        ml.log_event('get search term for {}'.format(self.active_header))
+        ml.log_event('get search term for from search detail parser at header: {}'.format(self.active_header))
         search_detail_keys = self._get_keyring_for_search_details()
         search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
         try:
+            # if the section does not exist, set term to active header, then write change to parser
             if search_detail_keys.SEARCH_TERM not in search_detail_parser_at_active_header.keys():
-                # if the section does not exist, set term to active header, then write change to parser
                 # TODO this print indicates no search term was provided, could fill in the active section header
                 # TODO with the default value just to suppress this from occurring except when a new term is added
                 ml.log_event('key {} not found in header {}, setting key value to default header value'.format(
@@ -156,8 +156,8 @@ class QbitTasker:
                 search_term = self.active_header
                 search_detail_parser_at_active_header[search_detail_keys.SEARCH_TERM] = search_term
                 return search_term
-            # if the section exists, fetch the search term
-            search_term = self.config.parser.config.parser.parsers.search_detail_parser[self.active_header][search_detail_keys.SEARCH_TERM]
+            # search_term = self.config.parser.parsers.search_detail_parser[self.active_header][search_detail_keys.SEARCH_TERM]  # TODO delete me
+            search_term = search_detail_parser_at_active_header[search_detail_keys.SEARCH_TERM]
             return search_term
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
