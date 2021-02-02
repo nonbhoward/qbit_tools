@@ -5,7 +5,7 @@ from configparser import ConfigParser
 from minimalog.minimal_log import MinimalLog
 from os import getcwd, remove, walk
 from pathlib2 import Path
-ml = MinimalLog()
+ml = MinimalLog(__name__)
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### TIER 3 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
