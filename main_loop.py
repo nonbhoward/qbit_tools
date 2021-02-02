@@ -17,7 +17,7 @@ def mainloop():
             qbit.initiate_and_monitor_searches()
             qbit.increment_loop_count()
             ml.log_event('main loop has ended, {} total loops..'.format(qbit.main_loop_count))
-            wait_between_main_loops = user_configuration.hardcoded.keys.user_config_parser_keyring.WAIT_MAIN_LOOP
+            wait_between_main_loops = user_configuration.hardcoded.keys.user_config_parser_keyring.WAIT_FOR_MAIN_LOOP
             # TODO could probably embed this in something instead of accessing directly, maybe later
             ml.log_event('current connection to qbittorrent api was started at {}'.format(qbit._connection_time_start))
             ml.log_event('when in doubt, compare parsed file keys with config reader string values', level=ml.WARNING)
