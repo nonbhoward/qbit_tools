@@ -1,0 +1,8 @@
+TODO top priorities.. TODO add more to this..
+
+    ..focusing on program function
+        1. prioritize searches based on when they were last-run
+
+    ..focusing on program organization
+        1. make sure getters handle all key/parser fetches
+        2. make sure setters handle all key/parser fetches
