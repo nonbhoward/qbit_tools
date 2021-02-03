@@ -10,8 +10,7 @@ def mainloop():
     try:
         ml.log_event('main loop has started..')
         start_application()
-        qbit = QbitTasker(user_configuration=user_configuration,
-                          debug=True)
+        qbit = QbitTasker(user_configuration=user_configuration)
         while True:
             ml.log_event(event='new loop starting at {}'.format(datetime.now(), announce=True))
             qbit.initiate_and_monitor_searches()

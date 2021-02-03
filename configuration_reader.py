@@ -132,7 +132,7 @@ class ParserPaths:  # Configuration.Parser.ParserPaths
 class Parsers:  # Configuration.Parser.Parsers
     def __init__(self, configuration):
         # TODO not scalable in the long term, will have to think about how to restructure this
-        parser_paths = configuration.parser_paths._get_parser_paths_from_(configuration)
+        parser_paths = configuration.paths._get_parser_paths_from_(configuration)
         self.parsers_keyed_by_file_path = self._get_parsers_from_(parser_paths)
         self.metadata_parser = self.parsers_keyed_by_file_path[parser_paths[0]]
         self.search_detail_parser = self.parsers_keyed_by_file_path[parser_paths[1]]
@@ -228,7 +228,7 @@ class ProjectFiles:  # Configuration.ProjectFiles
     @staticmethod
     def _get_all_files_in_project_path_using_(configuration):
         try:
-            project_path, all_files = configuration.parser_paths.project, list()
+            project_path, all_files = configuration.paths.project, list()
             for root, dirs, files in walk(project_path):
                 for file in files:
                     all_files.append(Path(root, file))
