@@ -1,31 +1,32 @@
 # source  
-### main.py
-main program loop, start here to customize behavior  
-
-### qbit_bot.py
-automatically acquire the latest linux images via bittorrent using qbittorrent's web api  
+### main_loop.py
+main program loop, abstracted program behavior described here  
 
 ### configuration_reader.py
-contains classes to parse configuration files for use in main program  
+module contains classes to parse configuration files  
+
+### qbit_bot.py
+automatically acquire the latest linux images via bittorrent using qbittorrent's web api
 
 
 
 # configuration
 ### metadata.cfg  
-stored metadata from previous searches, option to scramble non-securely  
+search results information  
 
 ### search_details.cfg
-dictates what searches are queued and how they are managed  
+dictates search behavior  
 
 ### user_configuration.cfg
 dictates program behavior  
 
 
 
-# requirement and setup  
+# requirements & setup
 ### requirements
-1. python installation  
-2. the pip package for that python installation
+1. a python installation  
+2. a pip installation, or some other manner of installing packages  
+3. the qbittorrent-api package : https://qbittorrent-api.readthedocs.io/en/latest/  
 
 
 ### setup  
@@ -34,5 +35,3 @@ dictates program behavior
 3. activate virtual environment  
 4. launch with 'python main_loop.py'  
 5. supply web ui credentials (user, pass, host) as preferred  
-
-
