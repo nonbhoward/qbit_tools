@@ -10,16 +10,17 @@ import qbittorrentapi
 
 
 class QbitTasker:
-    def __init__(self, user_configuration=None, debug=False, delete_log_files=False):
+    def __init__(self, user_configuration=None, manage_log_files=False):
         ml.log_event('initialize \'{}\''.format(self.__class__), event_completed=False, announce=True)
         assert user_configuration is not None, ml.log_event('!! no user configuration !!', announce=True, level=ml.ERROR)
         self.main_loop_count = 0
         self.qbit_client_connected = True if self._client_is_connected() else False
-        # TODO i really hate this debug section, it can be done more dynamically?
-        self.config = user_configuration
         self._connection_time_start = datetime.now()
+        self.config = user_configuration
         self._reset_search_ids()
         self.active_search_ids, self.active_header = dict(), ''
+        if manage_log_files:
+            self._manage_log_files()  # TODO this does nothing
         ml.log_event('initialize \'{}\''.format(self.__class__), event_completed=True, announce=True)
         self.pause_on_event(self.config.hardcoded.keys.user_config_parser_keyring.WAIT_FOR_USER)
 
@@ -28,11 +29,11 @@ class QbitTasker:
 
     def initiate_and_monitor_searches(self):
         try:
-            # FYI cannot use _get_parser function here because self.active_headers has not been established
-            section_headers = self.config.parser.parsers.search_detail_parser.sections()
-            for section_header in section_headers:
+            # FYI cannot use _get_parser function here because self.active_headers has not been set
+            search_detail_parser_section_headers = self.config.parser.parsers.search_detail_parser.sections()
+            for search_detail_parser_section_header in search_detail_parser_section_headers:
                 # TODO couldn't active_header be stored in the data structure? it is referenced VERY OFTEN
-                self.active_header = section_header
+                self.active_header = search_detail_parser_section_header
                 ml.log_event('monitoring search header \'{}\''.format(self.active_header))
                 self._manage_state_updates(self._get_search_state())
             self._config_to_disk()
@@ -284,7 +285,7 @@ class QbitTasker:
         try:
             search_parser_keys = self._get_keyring_for_search_parser()
             search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
-            search_detail_parser_at_active_header[search_parser_keys.LAST_READ] = str(datetime.now())
+            search_detail_parser_at_active_header[search_parser_keys.LAST_READ_TIME] = str(datetime.now())
             _search_queued = search_detail_parser_at_active_header.getboolean(search_parser_keys.QUEUED)
             _search_running = search_detail_parser_at_active_header.getboolean(search_parser_keys.RUNNING)
             _search_stopped = search_detail_parser_at_active_header.getboolean(search_parser_keys.STOPPED)
@@ -301,15 +302,15 @@ class QbitTasker:
         search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
         try:
             # if the section does not exist, set term to active header, then write change to parser
-            if search_parser_keys.SEARCH_TERM not in search_detail_parser_at_active_header.keys():
+            if search_parser_keys.PRIMARY_SEARCH_TERM not in search_detail_parser_at_active_header.keys():
                 # TODO this print indicates no search term was provided, could fill in the active section header
                 # TODO with the default value just to suppress this from occurring except when a new term is added
                 ml.log_event('\'{}\' not found in header keys for \'{}\', setting key value to header value'.format(
-                    search_parser_keys.SEARCH_TERM, self.active_header), level=ml.WARNING)
+                    search_parser_keys.PRIMARY_SEARCH_TERM, self.active_header), level=ml.WARNING)
                 search_term = self.active_header
-                search_detail_parser_at_active_header[search_parser_keys.SEARCH_TERM] = search_term
+                search_detail_parser_at_active_header[search_parser_keys.PRIMARY_SEARCH_TERM] = search_term
                 return search_term
-            search_term = search_detail_parser_at_active_header[search_parser_keys.SEARCH_TERM]
+            search_term = search_detail_parser_at_active_header[search_parser_keys.PRIMARY_SEARCH_TERM]
             ml.log_event('search term \'{}\' has been retrieved..'.format(search_term))
             return search_term
         except Exception as e_err:
@@ -332,12 +333,17 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def _hash(self, x, un=False):
+    def _hash(self, x, undo=False):
+        # TODO add option in user config file to skip this and just write human readable data to metadata.cfg
+        # TODO could also be accomplished by setting unicode_offset to 0
         try:
-            _pol = -1 if un else 1
-            _uk = self._get_keyring_for_user_config_parser()
+            _undo = -1 if undo else 1
+            _ucp_keys = self._get_keyring_for_user_config_parser()
             # TODO the bug is in this expression
-            _hash = ''.join([chr(ord(e) + int(self.config.parser.parsers.user_config_parser[_uk.DEFAULT][_uk.UNI_SHIFT])) * _pol for e in str(x) if x])
+            _hash = ''.join([chr(ord(e) + int(
+                self.config.parser.parsers.user_config_parser[_ucp_keys.DEFAULT][_ucp_keys.UNI_SHIFT])) * _undo
+                             for e in str(x) if x])
+
             ml.log_event('hashed from {} to {}'.format(x, _hash))
             return _hash
         except Exception as e_err:
@@ -740,7 +746,7 @@ class QbitTasker:
                              'no further action to be taken'.format(self.active_header))
             else:
                 pass
-            search_detail_parser_at_active_header[search_parser_keys.LAST_WRITE] = str(datetime.now())  # TODO what???
+            search_detail_parser_at_active_header[search_parser_keys.LAST_WRITE_TIME] = str(datetime.now())  # TODO what???
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
