@@ -46,15 +46,17 @@ class MetadataParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
 class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
     # keys for reading & writing search details
     def __init__(self):
+        # meta elements
+        time_last_read = 'time_last_read'
+        time_last_searched = 'time_last_searched'
+        time_last_written = 'time_last_written'
+        self.DATETIME_ELEMENT_LIST = [time_last_read, time_last_searched, time_last_written]
         # FYI, ***FOR KEY REFERENCES ONLY*** trying to keep properties singular for predictability,
         # key strings can be plural or singular since they are never directly referenced
         self.AVG_SEED_COUNT = 'average_seed_count'
         self.DEFAULT = 'DEFAULT'
         self.EMPTY = ''
         self.EXPECTED_SEARCH_RESULT_COUNT = 'expected_search_result_count'
-        self.LAST_SEARCH_TIME = 'last_search_time'  # TODO add
-        self.LAST_READ_TIME = 'last_read_time'
-        self.LAST_WRITE_TIME = 'last_write_time'
         self.MAX_SEARCH_ATTEMPT_COUNT = 'maximum_search_attempts_count'
         self.MAX_FILE_SIZE = 'max_file_size'  # TODO add
         self.MIN_SEED_COUNT = 'minimum_seeds_count'
@@ -67,6 +69,9 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.SEARCH_ATTEMPT_COUNT = 'search_attempt_count'
         self.SEARCH_ID = 'search_id'
         self.SEARCH_STOPPED_REASON = 'search_stopped_reason'
+        self.TIME_LAST_READ = time_last_read
+        self.TIME_LAST_SEARCHED = time_last_searched  # TODO add
+        self.TIME_LAST_WRITTEN = time_last_written
         # search state keys, 'concluded' and 'queued' are arbitrary names and can be changed
         self.CONCLUDED = 'concluded'  # the search will not start again
         self.QUEUED = 'queued'  # the search is waiting to start
