@@ -33,5 +33,6 @@ dictates program behavior
 1. clone project  
 2. create virtual environment  
 3. activate virtual environment  
-4. launch with 'python main_loop.py'  
-5. supply web ui credentials (user, pass, host) as preferred  
+4. pip install dependencies per requirements.txt  
+5. launch with 'python main_loop.py'  
+6. supply web ui credentials (user, pass, host) as preferred  
