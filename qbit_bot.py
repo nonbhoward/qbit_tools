@@ -479,12 +479,15 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    @staticmethod
-    def _pattern_matches(search_pattern, filename) -> bool:
+    def _pattern_matches(self, search_pattern, filename) -> bool:
         try:
             pattern_match = findall(search_pattern, filename)
             if pattern_match:
-                ml.log_event('matched pattern {} to {}'.format(search_pattern, filename))
+                search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
+                search_detail_parser_keys = self._get_keyring_for_search_detail_parser()
+                # FIXME i don't like how this line is but if i split it up it looks worse somehow so.. what to do
+                ml.log_event(f'for section header : \'{self.active_header}\', search term : \'{search_detail_parser_at_active_header[search_detail_parser_keys.PRIMARY_SEARCH_TERM]}\', matched pattern {search_pattern} to {filename}')
+                sleep(1)  # TODO this log entry is very spammy, maybe slow it down
                 return True
             return False
         except Exception as e_err:
