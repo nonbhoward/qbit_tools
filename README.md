@@ -6,7 +6,11 @@ main program loop, abstracted program behavior described here
 module contains classes to parse configuration files  
 
 ### qbit_bot.py
-automatically acquire the latest linux images via bittorrent using qbittorrent's web api
+automatically..  
+	..conduct searches..  
+	..filter results..  
+	..and acquire..  
+	..the latest linux images via bittorrent using qbittorrent's web api  
 
 
 
