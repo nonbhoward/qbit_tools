@@ -61,6 +61,7 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.MAX_FILE_SIZE = 'max_file_size'  # TODO add
         self.MIN_SEED_COUNT = 'minimum_seeds_count'
         self.PRIMARY_SEARCH_TERM = 'primary_search_term'  # if empty, will take the value of the section header
+        self.RANK = 'search_rank'
         self.REGEX_FILTER_FOR_FILENAME = 'regex_filter_for_filename'  # TODO allow a list of tilers?
         self.RESET = 'reset'
         self.RESULT_ADDED_COUNT = 'results_added_count'  # TODO can this trigger a conclude? untested
