@@ -35,19 +35,8 @@ class QbitTasker:
     def initiate_and_monitor_searches(self):
         try:
             # FYI cannot use self._get_parser functions here because self.active_headers has not been set
-            search_detail_parser = self.config.parser.parsers.search_detail_parser
-            search_detail_parser_keys = self.config.hardcoded.keys.search_parser_keyring
-            self._set_search_order_ranking_by_(search_detail_parser_keys.TIME_LAST_SEARCHED)
             search_detail_parser_section_headers = self.config.parser.parsers.search_detail_parser.sections()
             for search_detail_parser_section_header in search_detail_parser_section_headers:
-                section_header_search_rank = int(search_detail_parser[
-                                                     search_detail_parser_section_header][
-                                                     search_detail_parser_keys.RANK])
-                # forces any search that doesn't have the highest priority to wait
-                if section_header_search_rank > 0:  # lower number = higher priority, 0 = highest
-                    continue
-                search_detail_parser[search_detail_parser_section_header][search_detail_parser_keys.RANK] = str(999)
-                # TODO couldn't active_header be stored in the data structure? it is referenced VERY OFTEN
                 self.active_header = search_detail_parser_section_header
                 ml.log_event('monitoring search header \'{}\''.format(self.active_header))
                 self._manage_state_updates(self._get_search_state())
@@ -176,7 +165,7 @@ class QbitTasker:
             ml.log_event(e_err, level=ml.ERROR)
 
     def _get_datetimes_from_search_parser(self) -> dict:
-        # TODO unfinished
+        # FIXME unfinished, is this function needed?
         # TODO connect this to search sorting
         try:
             search_detail_parser_keys = self._get_keyring_for_search_detail_parser()
@@ -432,10 +421,17 @@ class QbitTasker:
     def _manage_state_updates(self, section_states):
         try:
             ml.log_event('manage state updates..')
-            search_detail_parser_keys, user_config_parser_keys = \
-                self.config.hardcoded.keys.search_parser_keyring, self.config.hardcoded.keys.user_config_parser_keyring
             _search_queued, _search_running, _search_stopped, _search_concluded = section_states
-            if _search_queued and not self._search_queue_full():
+            # abbreviate class objects
+            search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
+            search_detail_parser_keys = self.config.hardcoded.keys.search_parser_keyring
+            user_config_parser_keys = self.config.hardcoded.keys.user_config_parser_keyring
+            # perform sorting on search queue
+            sort_key = search_detail_parser_keys.TIME_LAST_SEARCHED
+            self._set_search_order_ranking_by_(sort_key)
+            search_rank = int(search_detail_parser_at_active_header[sort_key])
+            # perform the appropriate action based on the search parser's values
+            if _search_queued and not self._search_queue_full() and search_rank < 3:
                 self._start_search()  # search is in queue and queue has room, attempt to start this search
             elif _search_running:
                 _search_status = self._qbit_get_search_status()
@@ -568,23 +564,22 @@ class QbitTasker:
         :return: the status of the search at search_id
         """
         try:
-            ml.log_event('check search status for section \'{}\''.format(self.active_header))
+            ml.log_event(f'check search status for section \'{self.active_header}\'')
             search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
             search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
             search_id, search_status = search_detail_parser_at_active_header[search_parser_keys.SEARCH_ID], None
-            search_id_valid = self._active_header_search_id_is_valid()
-            if search_id_valid:
-                # TODO PRIORITY BUG, this section of code was double logging, fixed?
-                ml.log_event('getting search status for header \'{}\' with search id \'{}\''.format(
-                    self.active_header, search_id))
-                if search_id in self.active_search_ids.values():
-                    ongoing_search = self.qbit_client.search_status(search_id=search_id)
-                    search_status = ongoing_search.data[0]['status']
-            if search_status is None:  # TODO fyi new line, moitor, delete comment after
-                ml.log_event('search status is \'{}\' for section \'{}\''.format(search_status, self.active_header),
+            # TODO did this line below add any value? delete this line after decision
+            # search_id_valid = self._active_header_search_id_is_valid()  # FIXME, i think i deleted this function?
+            # TODO PRIORITY BUG, this section of code was double logging, fixed?
+            ml.log_event(f'getting search status for header \'{self.active_header}\' with search id \'{search_id}\'')
+            if search_id in self.active_search_ids.values():
+                ongoing_search = self.qbit_client.search_status(search_id=search_id)
+                search_status = ongoing_search.data[0]['status']
+            if search_status is None:  # TODO fyi new line, monitor, delete comment after
+                ml.log_event(f'search status is \'{search_status}\' for section \'{self.active_header}\'',
                              level=ml.WARNING)
                 return search_status
-            ml.log_event('search status is \'{}\' for section \'{}\''.format(search_status, self.active_header))
+            ml.log_event(f'search status is \'{search_status}\' for section \'{self.active_header}\'')
             return search_status
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
@@ -773,6 +768,15 @@ class QbitTasker:
             for search_rank in range(len(sdp_as_dict_sorted)):
                 header = sdp_as_dict_sorted[search_rank][0]
                 self._search_detail_parser_set_search_rank(header, search_rank)
+                ml.log_event(f'search rank \'{search_rank}\' assigned to header \'{header}\'')
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _set_time_last_searched_for_active_header(self):
+        try:
+            search_parser_at_active_header = self._get_search_detail_parser_at_active_header()
+            search_parser_detail_keys = self._get_keyring_for_search_detail_parser()
+            search_parser_at_active_header[search_parser_detail_keys.TIME_LAST_SEARCHED] = str(datetime.now())
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -787,6 +791,7 @@ class QbitTasker:
                     # TODO potential bug fix? seems to fix bug, delete this line whenever
                     self.active_search_ids[self.active_header] = search_id
             if search_parser_keys.RUNNING in search_state:  # search started successfully
+                self._set_time_last_searched_for_active_header()
                 ml.log_event('search started for \'{}\' with search id \'{}\''.format(self.active_header, search_id),
                              event_completed=True, announce=True)
                 # TODO this function IS the error, search_ids are never added which is causing problems
