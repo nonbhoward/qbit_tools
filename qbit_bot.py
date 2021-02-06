@@ -36,9 +36,17 @@ class QbitTasker:
         try:
             # FYI cannot use self._get_parser functions here because self.active_headers has not been set
             search_detail_parser_section_headers = self.config.parser.parsers.search_detail_parser.sections()
+            user_config_parser = self._get_user_config_parser()
+            search_detail_parser_keys = self.config.hardcoded.keys.search_parser_keyring
+            user_config_parser_keys = self._get_keyring_for_user_config_parser()
+            # perform sorting on search queue
+            sort_key = search_detail_parser_keys.TIME_LAST_SEARCHED
+            self._set_search_order_ranking_by_(sort_key)
+            self.pause_on_event(user_config_parser_keys.WAIT_FOR_USER)
+            # TODO reminder, main program loop entry here TODO $
             for search_detail_parser_section_header in search_detail_parser_section_headers:
                 self.active_header = search_detail_parser_section_header
-                ml.log_event('monitoring search header \'{}\''.format(self.active_header))
+                ml.log_event(f'monitoring search header \'{self.active_header}\'')
                 self._manage_state_updates(self._get_search_state())
             self._config_to_disk()
         except Exception as e_err:
@@ -148,6 +156,7 @@ class QbitTasker:
         ml.log_event('writing parser configurations to disk')
         try:
             parsers_dict = self.config.parser.parsers.parsers_keyed_by_file_path
+            search_detail_parser_keys = self._get_keyring_for_search_detail_parser()
             for parser_path, parser in parsers_dict.items():
                 with open(parser_path, 'w') as parser_to_write:
                     parser.write(parser_to_write)
@@ -426,11 +435,11 @@ class QbitTasker:
             search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
             search_detail_parser_keys = self.config.hardcoded.keys.search_parser_keyring
             user_config_parser_keys = self.config.hardcoded.keys.user_config_parser_keyring
-            # perform sorting on search queue
-            sort_key = search_detail_parser_keys.TIME_LAST_SEARCHED
-            self._set_search_order_ranking_by_(sort_key)
-            search_rank = int(search_detail_parser_at_active_header[sort_key])
+            # search sorting
+            search_rank = \
+                int(search_detail_parser_at_active_header[search_detail_parser_keys.SEARCH_RANK])
             # perform the appropriate action based on the search parser's values
+            # TODO should i force search rank to be 0 to only allow the top prioritized?
             if _search_queued and not self._search_queue_full() and search_rank < 3:
                 self._start_search()  # search is in queue and queue has room, attempt to start this search
             elif _search_running:
@@ -604,8 +613,9 @@ class QbitTasker:
         try:
             metadata_parser_keys, search_parser_keys = \
                 self.config.hardcoded.keys.metadata_parser_keyring, self.config.hardcoded.keys.search_parser_keyring
+            search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
             # minimum_seeds = int(self.search_parser[self.active_header][search_key.minimum_seeds])  # TODO delete
-            minimum_seeds = int(self.config.parser.parsers.search_detail_parser[self.active_header][search_parser_keys.MIN_SEED_COUNT])
+            minimum_seeds = int(search_detail_parser_at_active_header[search_parser_keys.MIN_SEED])
             # result_seeds = result[results_key.supply]
             result_seeds = result[metadata_parser_keys.SUPPLY]
             if result_seeds > minimum_seeds:
@@ -638,11 +648,11 @@ class QbitTasker:
             ml.log_event('add results by {}'.format(attribute), event_completed=False)
             # TODO implement attribute here, 'rKey.nbSeeders' instead of 'popularity
             most_popular_results = self._get_most_popular_results(regex_filtered_results)
-            search_id_valid = self._active_header_search_id_is_valid()
-            if not search_id_valid:
-                ml.log_event('search id for {} is invalid'.format(self.active_header))
-                self._update_search_states(search_parser_keys.QUEUED)  # wanted to add result but id bad, re-queue search
-                return False
+            # search_id_valid = self._active_header_search_id_is_valid()  # i think i deleted this function?
+            # if not search_id_valid:
+            #     ml.log_event('search id for {} is invalid'.format(self.active_header))
+            #     self._update_search_states(search_parser_keys.QUEUED)  # wanted to add result but id bad, re-queue search
+            #     return
             if most_popular_results is not None:
                 self._check_if_search_is_concluded()  # we found some results, have we met our 'concluded' criteria?
                 self._config_set_search_id_as_inactive()
@@ -676,7 +686,7 @@ class QbitTasker:
         try:
             search_detail_parser = self._get_parser_for_search_details()
             search_detail_parser_keys = self._get_keyring_for_search_detail_parser()
-            search_detail_parser[header][search_detail_parser_keys.TIME_LAST_SEARCHED] = str(search_rank)
+            search_detail_parser[header][search_detail_parser_keys.SEARCH_RANK] = str(search_rank)
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -764,11 +774,13 @@ class QbitTasker:
         try:
             search_detail_parser = self._get_parser_for_search_details()
             sdp_as_dict = self._get_parser_as_sortable_(search_detail_parser)
-            sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key], reverse=True)
+            # FIXME main search sorting bug, i think the search rank sorting bug was in this sorted(), delete if fix works
+            sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key])
             for search_rank in range(len(sdp_as_dict_sorted)):
                 header = sdp_as_dict_sorted[search_rank][0]
                 self._search_detail_parser_set_search_rank(header, search_rank)
                 ml.log_event(f'search rank \'{search_rank}\' assigned to header \'{header}\'')
+            pass  # TODO delete me, used as a breakpoint when debugging
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
