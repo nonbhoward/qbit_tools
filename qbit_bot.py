@@ -130,28 +130,6 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def _config_set_search_id_as_active(self):
-        search_id = self.active_search_ids[self.active_header]
-        search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
-        ml.log_event('search id \'{}\' set as active'.format(search_id))
-        try:
-            s_keys = self._get_keyring_for_search_detail_parser()
-            search_detail_parser_at_active_header[s_keys.SEARCH_ID] = search_id
-            self.active_search_ids[self.active_header] = search_id
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def _config_set_search_id_as_inactive(self):
-        try:
-            search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
-            search_id = self.config.hardcoded.keys.search_parser_keyring.SEARCH_ID
-            if self._search_id_active():
-                search_detail_parser_at_active_header[search_id] = str(0)
-                ml.log_event('search id \'{}\' set as inactive'.format(search_id))
-                del self.active_search_ids[self.active_header]
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
     def _config_to_disk(self):
         ml.log_event('writing parser configurations to disk')
         try:
@@ -529,8 +507,8 @@ class QbitTasker:
             # TODO why does client fail to add so much? async opportunity? bad results? dig into api code perhaps
             if results_added > 0:  # successful add
                 self._metadata_parser_write_to_metadata_config_file(result)
-                search_detail_parser_at_active_header[search_parser_keys.RESULT_ADDED_COUNT] = \
-                    str(int(search_detail_parser_at_active_header[search_parser_keys.RESULT_ADDED_COUNT]))
+                search_detail_parser_at_active_header[search_parser_keys.RESULTS_ADDED_COUNT] = \
+                    str(int(search_detail_parser_at_active_header[search_parser_keys.RESULTS_ADDED_COUNT]))
                 return
             ml.log_event('client failed to add \'{}\''.format(result[metadata_parser_keys.NAME]), level=ml.WARNING)
         except Exception as e_err:
@@ -655,7 +633,7 @@ class QbitTasker:
             #     return
             if most_popular_results is not None:
                 self._check_if_search_is_concluded()  # we found some results, have we met our 'concluded' criteria?
-                self._config_set_search_id_as_inactive()
+                self._set_search_id_as_inactive()
                 ml.log_event('results sorted by popularity for {}'.format(self.active_header))
                 for result in most_popular_results:
                     if self._result_has_enough_seeds(result):
@@ -707,10 +685,10 @@ class QbitTasker:
                 int(search_detail_parser_at_active_header[search_parser_keys.MAX_SEARCH_ATTEMPT_COUNT])
 
             results_added = \
-                int(search_detail_parser_at_active_header[search_parser_keys.RESULT_ADDED_COUNT])
+                int(search_detail_parser_at_active_header[search_parser_keys.RESULTS_ADDED_COUNT])
 
             results_required = \
-                int(search_detail_parser_at_active_header[search_parser_keys.RESULT_REQUIRED_COUNT])
+                int(search_detail_parser_at_active_header[search_parser_keys.RESULTS_REQUIRED_COUNT])
 
             if results_added > results_required:
                 ml.log_event(f'search \'{self.active_header}\' can be concluded, '
@@ -766,6 +744,28 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
+    def _set_search_id_as_active(self):
+        search_id = self.active_search_ids[self.active_header]
+        search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
+        ml.log_event('search id \'{}\' set as active'.format(search_id))
+        try:
+            s_keys = self._get_keyring_for_search_detail_parser()
+            search_detail_parser_at_active_header[s_keys.SEARCH_ID] = search_id
+            self.active_search_ids[self.active_header] = search_id
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _set_search_id_as_inactive(self):
+        try:
+            search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
+            search_id = self.config.hardcoded.keys.search_parser_keyring.SEARCH_ID
+            if self._search_id_active():
+                search_detail_parser_at_active_header[search_id] = str(0)
+                ml.log_event('search id \'{}\' set as inactive'.format(search_id))
+                del self.active_search_ids[self.active_header]
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
     def _set_search_order_ranking_by_(self, sort_key):
         """
         1. sort the key:value pair of the dict into a tuple of 2 (key, value), sorted by sort_key's value
@@ -810,7 +810,7 @@ class QbitTasker:
                 ml.log_event('search started for \'{}\' with search id \'{}\''.format(self.active_header, search_id),
                              event_completed=True, announce=True)
                 # TODO this function IS the error, search_ids are never added which is causing problems
-                self._config_set_search_id_as_active()
+                self._set_search_id_as_active()
                 self._update_search_states(search_parser_keys.RUNNING)
             elif search_parser_keys.STOPPED in search_status:
                 ml.log_event('search not successfully started for \'{}\''.format(
