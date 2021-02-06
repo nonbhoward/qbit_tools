@@ -57,11 +57,10 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.DEFAULT = 'DEFAULT'
         self.EMPTY = ''
         self.EXPECTED_SEARCH_RESULT_COUNT = 'expected_search_result_count'
-        self.MAX_SEARCH_ATTEMPT_COUNT = 'maximum_search_attempts_count'
+        self.MAX_SEARCH_ATTEMPT_COUNT = 'maximum_search_attempt_count'
         self.MAX_FILE_SIZE = 'max_file_size'  # TODO add
-        self.MIN_SEED_COUNT = 'minimum_seeds_count'
+        self.MIN_SEED = 'minimum_seed_count'
         self.PRIMARY_SEARCH_TERM = 'primary_search_term'  # if empty, will take the value of the section header
-        self.RANK = 'search_rank'
         self.REGEX_FILTER_FOR_FILENAME = 'regex_filter_for_filename'  # TODO allow a list of tilers?
         self.RESET = 'reset'
         self.RESULT_ADDED_COUNT = 'results_added_count'  # TODO can this trigger a conclude? untested
@@ -69,6 +68,7 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.RESULT_REQUIRED_COUNT = 'results_required_count'
         self.SEARCH_ATTEMPT_COUNT = 'search_attempt_count'
         self.SEARCH_ID = 'search_id'
+        self.SEARCH_RANK = 'search_rank'
         self.SEARCH_STOPPED_REASON = 'search_stopped_reason'
         self.TIME_LAST_READ = time_last_read
         self.TIME_LAST_SEARCHED = time_last_searched  # TODO add
