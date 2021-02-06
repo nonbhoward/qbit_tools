@@ -699,27 +699,30 @@ class QbitTasker:
         try:
             search_parser_keys = self._get_keyring_for_search_detail_parser()
             search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
+
             attempted_searches = \
                 int(search_detail_parser_at_active_header[search_parser_keys.SEARCH_ATTEMPT_COUNT])
+
             max_search_attempt_count = \
                 int(search_detail_parser_at_active_header[search_parser_keys.MAX_SEARCH_ATTEMPT_COUNT])
+
             results_added = \
                 int(search_detail_parser_at_active_header[search_parser_keys.RESULT_ADDED_COUNT])
+
             results_required = \
                 int(search_detail_parser_at_active_header[search_parser_keys.RESULT_REQUIRED_COUNT])
+
             if results_added > results_required:
-                ml.log_event('search \'{}\' can be concluded, '
-                             'requested result count has been added'.format(self.active_header),
-                             event_completed=True)
+                ml.log_event(f'search \'{self.active_header}\' can be concluded, '
+                             'requested result count has been added', event_completed=True)
                 self._search_set_end_reason(search_parser_keys.REQUIRED_RESULT_COUNT_FOUND)  # enough results, concluded
                 return True
             elif attempted_searches > max_search_attempt_count:
-                ml.log_event('search can be concluded, '
-                             'too many search attempts w/o meeting requested result count'.format(self.active_header),
-                             event_completed=True)
+                ml.log_event(f'search \'{self.active_header}\' can be concluded, too many search attempts '
+                             f'w/o meeting requested result count', event_completed=True)
                 self._search_set_end_reason(search_parser_keys.TIMED_OUT)  # too many search attempts, conclude
                 return True
-            ml.log_event('search \'{}\' will be allowed to continue'.format(self.active_header), event_completed=True)
+            ml.log_event(f'search \'{self.active_header}\' will be allowed to continue', event_completed=True)
             return False
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
