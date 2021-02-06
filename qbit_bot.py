@@ -34,9 +34,19 @@ class QbitTasker:
 
     def initiate_and_monitor_searches(self):
         try:
-            # FYI cannot use _get_parser function here because self.active_headers has not been set
+            # FYI cannot use self._get_parser functions here because self.active_headers has not been set
+            search_detail_parser = self.config.parser.parsers.search_detail_parser
+            search_detail_parser_keys = self.config.hardcoded.keys.search_parser_keyring
+            self._set_search_order_ranking_by_(search_detail_parser_keys.TIME_LAST_SEARCHED)
             search_detail_parser_section_headers = self.config.parser.parsers.search_detail_parser.sections()
             for search_detail_parser_section_header in search_detail_parser_section_headers:
+                section_header_search_rank = int(search_detail_parser[
+                                                     search_detail_parser_section_header][
+                                                     search_detail_parser_keys.RANK])
+                # forces any search that doesn't have the highest priority to wait
+                if section_header_search_rank > 0:  # lower number = higher priority, 0 = highest
+                    continue
+                search_detail_parser[search_detail_parser_section_header][search_detail_parser_keys.RANK] = str(999)
                 # TODO couldn't active_header be stored in the data structure? it is referenced VERY OFTEN
                 self.active_header = search_detail_parser_section_header
                 ml.log_event('monitoring search header \'{}\''.format(self.active_header))
@@ -251,6 +261,18 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
+    @staticmethod
+    def _get_parser_as_sortable_(parser_to_convert: ConfigParser) -> zip:
+        try:
+            sdp_dict = dict()
+            for section in parser_to_convert.sections():
+                sdp_dict[section] = dict()
+                for section_key in parser_to_convert[section]:
+                    sdp_dict[section][section_key] = parser_to_convert[section][section_key]
+            return sdp_dict
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
     def _get_parser_for_metadata(self):
         try:
             return self.config.parser.parsers.metadata_parser
@@ -305,17 +327,12 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def _get_search_detail_parser_section_headers_sorted_by_element_(self, search_detail_parser_key_to_sort_by):
+    def _get_search_detail_parser_sections_as_dict(self, section_header_name) -> dict:
         try:
-            search_detail_parser_keys = self._get_keyring_for_search_detail_parser()
+            # TODO this isn't hard to do, but is this function being used anywhere? delete if no?
             search_detail_parser = self._get_parser_for_search_details()
-            sort_key = search_detail_parser_key_to_sort_by  # TODO keep this
-            sort_key = search_detail_parser_keys.TIME_LAST_SEARCHED  # TODO delete this after debug
-            section_header_names = self._search_detail_parser_get_all_sections()
-            for section_header_name in section_header_names:
-                search_detail_parser_as_list_of_dict = self._get_search_detail_parser_as_list_of_dict()
-            section_header_dictionary_sorted_by_key = sorted(search_detail_parser_as_list_of_dict, key=lambda k: k[sort_key], reverse=True)
-            return section_header_dictionary_sorted_by_key
+            if section_header_name not in search_detail_parser.sections():
+                ml.log_event('section header \'{}\' not found in search parser'.format(section_header_name))
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -419,10 +436,6 @@ class QbitTasker:
                 self.config.hardcoded.keys.search_parser_keyring, self.config.hardcoded.keys.user_config_parser_keyring
             _search_queued, _search_running, _search_stopped, _search_concluded = section_states
             if _search_queued and not self._search_queue_full():
-                search_detail_parser_section_headers_sorted_by_time_last_searched = \
-                    self._get_search_detail_parser_section_headers_sorted_by_element_(
-                        search_detail_parser_keys.TIME_LAST_SEARCHED)
-
                 self._start_search()  # search is in queue and queue has room, attempt to start this search
             elif _search_running:
                 _search_status = self._qbit_get_search_status()
@@ -664,13 +677,11 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def _get_search_detail_parser_sections_as_dict(self, section_header_name) -> dict:
+    def _search_detail_parser_set_search_rank(self, header, search_rank) -> None:
         try:
             search_detail_parser = self._get_parser_for_search_details()
-            if section_header_name not in search_detail_parser.sections():
-                ml.log_event('section header \'{}\' not found in search parser'.format(section_header_name))
-            for key, value in search_detail_parser[section_header_name].items():
-                pass
+            search_detail_parser_keys = self._get_keyring_for_search_detail_parser()
+            search_detail_parser[header][search_detail_parser_keys.TIME_LAST_SEARCHED] = str(search_rank)
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -747,6 +758,24 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
+    def _set_search_order_ranking_by_(self, sort_key):
+        """
+        1. sort the key:value pair of the dict into a tuple of 2 (key, value), sorted by sort_key's value
+        2. assign a search rank to each search header based on previous sort
+        3. write the search rank to the search detail parser
+        :param sort_key:
+        :return:
+        """
+        try:
+            search_detail_parser = self._get_parser_for_search_details()
+            sdp_as_dict = self._get_parser_as_sortable_(search_detail_parser)
+            sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key], reverse=True)
+            for search_rank in range(len(sdp_as_dict_sorted)):
+                header = sdp_as_dict_sorted[search_rank][0]
+                self._search_detail_parser_set_search_rank(header, search_rank)
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
     def _start_search(self):
         try:
             search_parser_keys = self._get_keyring_for_search_detail_parser()
@@ -809,6 +838,21 @@ class QbitTasker:
             else:
                 pass
             search_detail_parser_at_active_header[search_parser_keys.TIME_LAST_WRITTEN] = str(datetime.now())  # TODO what???
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _write_list_of_dict_to_parser(self, list_of_dicts: dict, parser: ConfigParser) -> None:
+        try:
+            for _dict in list_of_dicts:
+                for key, val in _dict.items():
+                    pass
+            # TODO above, do the opposite of the code below
+            search_detail_parser = self._get_parser_for_search_details()
+            sdp_dicts, sdp_dict = list(), dict()
+            for section in search_detail_parser.sections():
+                sdp_dict[section] = dict()
+                for section_key in search_detail_parser[section]:
+                    sdp_dict[section][section_key] = search_detail_parser[section][section_key]
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
