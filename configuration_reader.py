@@ -63,9 +63,9 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.PRIMARY_SEARCH_TERM = 'primary_search_term'  # if empty, will take the value of the section header
         self.REGEX_FILTER_FOR_FILENAME = 'regex_filter_for_filename'  # TODO allow a list of tilers?
         self.RESET = 'reset'
-        self.RESULT_ADDED_COUNT = 'results_added_count'  # TODO can this trigger a conclude? untested
-        self.RESULT_COUNT = 'results_count'  # this relies on being in DEFAULTS or program errors?
-        self.RESULT_REQUIRED_COUNT = 'results_required_count'
+        self.RESULTS_ADDED_COUNT = 'results_added_count'  # TODO can this trigger a conclude? untested
+        self.RESULTS_COUNT = 'results_count'  # this relies on being in DEFAULTS or program errors?
+        self.RESULTS_REQUIRED_COUNT = 'results_required_count'
         self.SEARCH_ATTEMPT_COUNT = 'search_attempt_count'
         self.SEARCH_ID = 'search_id'
         self.SEARCH_RANK = 'search_rank'
