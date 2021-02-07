@@ -532,6 +532,9 @@ class QbitTasker:
             search_id = self._get_active_search_ids()
             if search_id:
                 results = self.qbit_client.search_results(search_id)
+                if results is None:
+                    ml.log_event(f'results for header \'{self.active_header}\' with '
+                                 f'search id \'{search_id}\' is None', level=ml.WARNING)
                 ml.log_event('qbit client get search results', event_completed=True)
                 return results
             return None
