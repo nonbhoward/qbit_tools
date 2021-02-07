@@ -145,6 +145,9 @@ class QbitTasker:
 
     def _get_active_search_id(self) -> str:
         try:
+            if self.active_header not in self.active_search_ids.keys():
+                ml.log_event(f'active header \'{self.active_header}\' is not in active search ids', level=ml.WARNING)
+                return 0  # TODO, check back in on this
             active_search_id = self.active_search_ids.get(self.active_header)
             ml.log_event('get active search id \'{}\' for \'{}\''.format(active_search_id, self.active_header))
             return active_search_id
@@ -277,6 +280,7 @@ class QbitTasker:
 
     def _get_regex_filtered_results_and_count(self) -> tuple:
         try:
+            # FIXME this function is getting called on headers that don't have active search ids
             metadata_parser_keys = self._get_keyring_for_metadata_parser()
             results = self._qbit_get_search_results()
             filtered_results = list()
@@ -418,7 +422,7 @@ class QbitTasker:
                 int(search_detail_parser_at_active_header[search_detail_parser_keys.SEARCH_RANK])
             # perform the appropriate action based on the search parser's values
             # TODO should i force search rank to be 0 to only allow the top prioritized?
-            if _search_queued and not self._search_queue_full() and search_rank < 3:
+            if _search_queued and not self._search_queue_full() and search_rank < 3:  # TODO un-hardcode this
                 self._start_search()  # search is in queue and queue has room, attempt to start this search
             elif _search_running:
                 _search_status = self._qbit_get_search_status()
@@ -427,8 +431,10 @@ class QbitTasker:
                 elif search_detail_parser_keys.STOPPED in _search_status:
                     self._update_search_states(search_detail_parser_keys.STOPPED)  # mark search as stopped (finished)
                 else:
-                    self._update_search_states(search_detail_parser_keys.QUEUED)  # search status unexpected, re-queue this search
+                    self._update_search_states(search_detail_parser_keys.QUEUED)  # search status unexpected, re-queue
             elif _search_stopped:
+                # FIXME check that the header has an active search id in self.active_search_ids
+                # FIXME otherwise this attempts to fetch results that do not exist
                 regex_filtered_results, regex_filtered_results_count = self._get_regex_filtered_results_and_count()
                 if regex_filtered_results is not None and regex_filtered_results_count > 0:
                     # TODO results_key.supply could be sort by any key, how to get that value here?
@@ -436,7 +442,8 @@ class QbitTasker:
                     self._save_remote_metadata_to_local_results_sorting_by_(
                         search_priority, regex_filtered_results)  # search is finished, attempt to add results
                 else:
-                    self._update_search_states(search_detail_parser_keys.QUEUED)  # search stopped, no results found, re-queue
+                    ml.log_event(f're-queueing search for {self.active_header}..')
+                    self._update_search_states(search_detail_parser_keys.QUEUED)  # no results found, re-queue
             elif _search_concluded:
                 pass
             else:
@@ -529,6 +536,7 @@ class QbitTasker:
 
     def _qbit_get_search_results(self):
         try:
+            # FIXME this needs to handle invalid search id values.. such as values from previous runs
             search_id = self._get_active_search_id()
             if search_id:
                 results = self.qbit_client.search_results(search_id)
