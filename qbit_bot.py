@@ -287,7 +287,7 @@ class QbitTasker:
             ml.log_event('get filename regex pattern for active header \'{}\''.format(self.active_header))
             for result in results[metadata_parser_keys.RESULT]:
                 filename = result[metadata_parser_keys.NAME]
-                search_pattern = self._parsers_get_filename_regex()
+                search_pattern = self._search_parser_get_filename_regex()
                 if self._pattern_matches(search_pattern, filename):
                     filtered_results.append(result)
                     filtered_result_count += 1
@@ -463,19 +463,6 @@ class QbitTasker:
                     ml.log_event('detail added to metadata parser with attribute key \'{}\''.format(h_attr))
                     self.config.parser.parsers.metadata_parser[header][h_attr] = d_attr
                     self.pause_on_event(user_config_parser_keys.WAIT_FOR_USER)
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def _parsers_get_filename_regex(self) -> str:
-        try:
-            search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
-            search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
-            filename_regex = search_detail_parser_at_active_header[search_parser_keys.REGEX_FILTER_FOR_FILENAME]
-            if filename_regex not in search_detail_parser_at_active_header.keys():
-                filename_regex = '.*'
-                return filename_regex
-            filename_regex = self.config.parser.parsers.search_detail_parser[self.active_header][filename_regex]
-            return filename_regex
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -716,6 +703,19 @@ class QbitTasker:
             if search_id == self.active_search_ids[self.active_header]:
                 return True
             return False
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _search_parser_get_filename_regex(self) -> str:
+        try:
+            search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
+            search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
+            filename_regex = search_detail_parser_at_active_header[search_parser_keys.REGEX_FILTER_FOR_FILENAME]
+            if filename_regex not in search_detail_parser_at_active_header.keys():
+                filename_regex = '.*'
+                return filename_regex
+            filename_regex = self.config.parser.parsers.search_detail_parser[self.active_header][filename_regex]
+            return filename_regex
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
