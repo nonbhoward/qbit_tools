@@ -551,6 +551,13 @@ class QbitTasker:
             ml.log_event(f'getting search status for header \'{self.active_header}\' with search id \'{search_id}\'')
             if search_id in self.active_search_ids.values():
                 ongoing_search = self.qbit_client.search_status(search_id=search_id)
+                if ongoing_search is None:
+                    ml.log_event(f'are you sure that search id \'{search_id}\' is valid?')
+                    ml.log_event(f'known valid search ids are..')
+                    for search_header, search_id in self.active_search_ids:
+                        ml.log_event(f'\t header \'{search_id}\' with id \'{search_id}\'')
+                    pass  # FIXME
+                # FIXME ASAP line above is causing a NoneType return, soft-freezing the state-machine
                 search_status = ongoing_search.data[0]['status']
             if search_status is None:  # TODO fyi new line, monitor, delete comment after
                 ml.log_event(f'search status is \'{search_status}\' for section \'{self.active_header}\'',
