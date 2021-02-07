@@ -468,13 +468,15 @@ class QbitTasker:
 
     def _pattern_matches(self, search_pattern, filename) -> bool:
         try:
+            user_config_parser = self._get_user_config_parser()
+            user_config_parser_keys = self._get_keyring_for_user_config_parser()
             pattern_match = findall(search_pattern, filename)
             if pattern_match:
                 search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
                 search_detail_parser_keys = self._get_keyring_for_search_detail_parser()
                 # FIXME i don't like how this line is but if i split it up it looks worse somehow so.. what to do
                 ml.log_event(f'@\'{self.active_header}\' w/ search term \'{search_detail_parser_at_active_header[search_detail_parser_keys.PRIMARY_SEARCH_TERM]}\' matched pattern regex \'{search_pattern}\' to results filename.. \n\n{filename}\n')
-                sleep(1)  # TODO this log entry is very spammy, maybe slow it down
+                self.pause_on_event(user_config_parser_keys.WAIT_FOR_USER)
                 return True
             return False
         except Exception as e_err:
