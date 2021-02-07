@@ -143,7 +143,7 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def _get_active_search_ids(self) -> str:
+    def _get_active_search_id(self) -> str:
         try:
             active_search_id = self.active_search_ids.get(self.active_header)
             ml.log_event('get active search id \'{}\' for \'{}\''.format(active_search_id, self.active_header))
@@ -529,7 +529,7 @@ class QbitTasker:
 
     def _qbit_get_search_results(self):
         try:
-            search_id = self._get_active_search_ids()
+            search_id = self._get_active_search_id()
             if search_id:
                 results = self.qbit_client.search_results(search_id)
                 if results is None:
