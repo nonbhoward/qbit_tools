@@ -82,6 +82,14 @@ class QbitTasker:
     def transfer_files_to_remote(self):
         pass
 
+    def _active_header_search_id_is_valid(self) -> bool:
+        try:
+            if self.active_header in self.active_search_ids:
+                return True
+            return False
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
     def _all_searches_concluded(self) -> bool:
         # TODO would be nice to exit if all jobs exceed set limits, not currently in-use
         try:
@@ -281,8 +289,9 @@ class QbitTasker:
     def _get_regex_filtered_results_and_count(self) -> tuple:
         try:
             # FIXME this function is getting called on headers that don't have active search ids
-            metadata_parser_keys = self._get_keyring_for_metadata_parser()
             results = self._qbit_get_search_results()
+
+            metadata_parser_keys = self._get_keyring_for_metadata_parser()
             filtered_results = list()
             filtered_result_count = 0
             if results is None:
@@ -433,8 +442,6 @@ class QbitTasker:
                 else:
                     self._update_search_states(search_detail_parser_keys.QUEUED)  # search status unexpected, re-queue
             elif _search_stopped:
-                # FIXME check that the header has an active search id in self.active_search_ids
-                # FIXME otherwise this attempts to fetch results that do not exist
                 regex_filtered_results, regex_filtered_results_count = self._get_regex_filtered_results_and_count()
                 if regex_filtered_results is not None and regex_filtered_results_count > 0:
                     # TODO results_key.supply could be sort by any key, how to get that value here?
@@ -628,21 +635,20 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def _save_remote_metadata_to_local_results_sorting_by_(self, attribute, regex_filtered_results: list) -> bool:
+    def _save_remote_metadata_to_local_results_sorting_by_(self, search_priority, regex_filtered_results: list) -> bool:
         """
         parse the results returned by the search term & filter, attempt to add new result to local stored results
         :return: bool, success or failure of adding new result to local stored results
         """
         try:
             search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
-            ml.log_event('add results by {}'.format(attribute), event_completed=False)
+            ml.log_event('add results by {}'.format(search_priority), event_completed=False)
             # TODO implement attribute here, 'rKey.nbSeeders' instead of 'popularity
             most_popular_results = self._get_most_popular_results(regex_filtered_results)
-            # search_id_valid = self._active_header_search_id_is_valid()  # i think i deleted this function?
-            # if not search_id_valid:
-            #     ml.log_event('search id for {} is invalid'.format(self.active_header))
-            #     self._update_search_states(search_parser_keys.QUEUED)  # wanted to add result but id bad, re-queue search
-            #     return
+            if not self._active_header_search_id_is_valid():
+                ml.log_event('search id for {} is invalid'.format(self.active_header))
+                self._update_search_states(search_parser_keys.QUEUED)  # wanted to add result but id bad, re-queue search
+                return
             if most_popular_results is not None:
                 self._check_if_search_is_concluded()  # we found some results, have we met our 'concluded' criteria?
                 self._set_search_id_as_inactive()
