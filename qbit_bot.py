@@ -291,8 +291,8 @@ class QbitTasker:
             ml.log_event('get filename regex pattern for active header \'{}\''.format(self.active_header))
             for result in results[metadata_parser_keys.RESULT]:
                 filename = result[metadata_parser_keys.NAME]
-                search_pattern = self._search_parser_get_filename_regex()
-                if self._pattern_matches(search_pattern, filename):
+                filename_regex = self._search_parser_get_filename_regex()
+                if self._regex_matches(filename_regex, filename):
                     filtered_results.append(result)
                     filtered_result_count += 1
             ml.log_event('\'{}\' filtered results have been found'.format(filtered_result_count))
@@ -473,16 +473,18 @@ class QbitTasker:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def _pattern_matches(self, search_pattern, filename) -> bool:
+    def _regex_matches(self, filename_regex, filename) -> bool:
         try:
+            search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
+            search_detail_parser_keys = self._get_keyring_for_search_detail_parser()
             user_config_parser = self._get_user_config_parser()
             user_config_parser_keys = self._get_keyring_for_user_config_parser()
-            pattern_match = findall(search_pattern, filename)
-            if pattern_match:
-                search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
-                search_detail_parser_keys = self._get_keyring_for_search_detail_parser()
+            primary_search_term = search_detail_parser_at_active_header[search_detail_parser_keys.PRIMARY_SEARCH_TERM]
+            regex_match = findall(filename_regex, filename)
+            if regex_match:
                 # FIXME i don't like how this line is but if i split it up it looks worse somehow so.. what to do
-                ml.log_event(f'@\'{self.active_header}\' w/ search term \'{search_detail_parser_at_active_header[search_detail_parser_keys.PRIMARY_SEARCH_TERM]}\' matched pattern regex \'{search_pattern}\' to results filename.. \n\n{filename}\n')
+                ml.log_event(f'@\'{self.active_header}\' w/ search term \'{primary_search_term}\' matched regex'
+                             f' pattern \'{filename_regex}\' to results filename.. \n\n{filename}\n')
                 self.pause_on_event(user_config_parser_keys.WAIT_FOR_USER)
                 return True
             return False
