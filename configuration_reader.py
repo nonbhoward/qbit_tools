@@ -10,6 +10,7 @@ ml = MinimalLog(__name__)
 
 ##### ##### ##### ##### ##### ##### ##### ##### TIER 3 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
 class ConfigParserPathNames:  # Configuration.HardCoded.DirectoryNames.ConfigParserDirectoryNames
+    # project's config directory names, cannot be changed without changing project structure
     def __init__(self):
         self.user_config_path_name = 'user_configuration'
         self.data_path_name = 'data_src'
@@ -28,14 +29,13 @@ class MetadataParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
         # default section name
         self.DEFAULT = 'DEFAULT'
         # keys for reading the SearchResultsDictionary containing the metadata in results['results']
-        self.RESULT = 'results'
+        self.RESULT = 'results'  # don't delete this (again).. it is used in one spot..
         self.STATUS = 'status'
         self.TOTAL = 'total'
         # keys for reading & writing core metadata info
         self.DEMAND = 'nbLeechers'
         self.LINK = 'descrLink'
         self.NAME = 'fileName'
-        # self.RESULT = 'results'
         self.SIZE = 'fileSize'
         self.SITE = 'siteUrl'
         self.SUPPLY = 'nbSeeders'
@@ -46,33 +46,42 @@ class MetadataParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
 class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
     # keys for reading & writing search details
     def __init__(self):
+        # meta elements
+        time_last_read = 'time_last_read'
+        time_last_searched = 'time_last_searched'
+        time_last_written = 'time_last_written'
+        self.DATETIME_ELEMENT_LIST = [time_last_read, time_last_searched, time_last_written]
         # FYI, ***FOR KEY REFERENCES ONLY*** trying to keep properties singular for predictability,
         # key strings can be plural or singular since they are never directly referenced
         self.AVG_SEED_COUNT = 'average_seed_count'
         self.DEFAULT = 'DEFAULT'
         self.EMPTY = ''
         self.EXPECTED_SEARCH_RESULT_COUNT = 'expected_search_result_count'
-        self.LAST_READ = 'last_read'
-        self.LAST_WRITE = 'last_write'
-        self.MAX_SEARCH_ATTEMPT_COUNT = 'maximum_search_attempts'
-        self.MIN_SEED_COUNT = 'minimum_seeds'
-        self.REGEX_FILTER_FOR_FILENAME = 'regex_filter_for_filename'
+        self.MAX_SEARCH_ATTEMPT_COUNT = 'maximum_search_attempt_count'
+        self.MAX_FILE_SIZE = 'max_file_size'  # TODO add
+        self.MIN_SEED = 'minimum_seed_count'
+        self.PRIMARY_SEARCH_TERM = 'primary_search_term'  # if empty, will take the value of the section header
+        self.REGEX_FILTER_FOR_FILENAME = 'regex_filter_for_filename'  # TODO allow a list of tilers?
         self.RESET = 'reset'
-        self.RESULT_ADDED_COUNT = 'results_added'
-        self.RESULT_COUNT = 'results_count'  # this relies on being in DEFAULTS or program errors?
-        self.RESULT_REQUIRED_COUNT = 'results_required'
+        self.RESULTS_ADDED_COUNT = 'results_added_count'  # TODO can this trigger a conclude? untested
+        self.RESULTS_COUNT = 'results_count'  # this relies on being in DEFAULTS or program errors?
+        self.RESULTS_REQUIRED_COUNT = 'results_required_count'
         self.SEARCH_ATTEMPT_COUNT = 'search_attempt_count'
         self.SEARCH_ID = 'search_id'
+        self.SEARCH_RANK = 'search_rank'
         self.SEARCH_STOPPED_REASON = 'search_stopped_reason'
-        self.SEARCH_TERM = 'search_term'
-        # search state keys, RUNNING and STOPPED are api return state keys
-        self.CONCLUDED = 'concluded'  # this indicates that the search will not start again
-        self.QUEUED = 'queued'  # this indicates that the search should be started soon
-        self.RUNNING = 'Running'  # this is a web api status return value, indicates search is running
-        self.STOPPED = 'Stopped'  # this is a web api status return value, indicates search is or has stopped
+        self.TIME_LAST_READ = time_last_read
+        self.TIME_LAST_SEARCHED = time_last_searched  # TODO add
+        self.TIME_LAST_WRITTEN = time_last_written
+        # search state keys, 'concluded' and 'queued' are arbitrary names and can be changed
+        self.CONCLUDED = 'concluded'  # the search will not start again
+        self.QUEUED = 'queued'  # the search is waiting to start
+        # search state keys, **CANNOT BE CHANGED** as they are compared to the api return values
+        self.RUNNING = 'Running'  # this is a web api status return value, search is running, needs time to finish
+        self.STOPPED = 'Stopped'  # this is a web api status return value, search is stopped, will be processed
         # boolean state keys
-        self.NO = 'no'  # False
-        self.YES = 'yes'  # True
+        self.NO = 'no'  # ConfigParser equivalent of False
+        self.YES = 'yes'  # ConfigParser equivalent of True
         # search stopped reasons
         self.REQUIRED_RESULT_COUNT_FOUND = 'required results found!'
         self.TIMED_OUT = 'search timed out!'
@@ -99,7 +108,7 @@ class DirectoryNames:  # Configuration.HardCoded.DirectoryNames
 
 class Extensions:  # Configuration.HardCoded.Extensions
     def __init__(self):
-        self.config = '.cfg'
+        self.cfg = '.cfg'
 
 
 class FileNames:  # Configuration.HardCoded.FileNames
@@ -167,7 +176,7 @@ class HardCoded:  # Configuration.HardCoded
 
 class Parser:  # Configuration.Parser
     def __init__(self, configuration):
-        self.paths = ParserPaths(configuration)
+        self.parser_paths = ParserPaths(configuration)
         self.parsers = Parsers(configuration)
 
 
