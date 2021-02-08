@@ -4,7 +4,7 @@
 from configparser import ConfigParser
 from minimalog.minimal_log import MinimalLog
 from os import getcwd, remove, walk
-from pathlib2 import Path
+from pathlib import Path
 ml = MinimalLog(__name__)
 
 
@@ -12,8 +12,8 @@ ml = MinimalLog(__name__)
 class ConfigParserPathNames:  # Configuration.HardCoded.DirectoryNames.ConfigParserDirectoryNames
     # project's config directory names, cannot be changed without changing project structure
     def __init__(self):
-        self.user_config_path_name = 'user_configuration'
-        self.data_path_name = 'data_src'
+        self.user_config_path_name = ''
+        self.data_path_name = '../data_src'
 
 
 class ConfigParserFileNames:  # Configuration.HardCoded.FileNames.ConfigParserFileNames
@@ -244,7 +244,7 @@ class ProjectFiles:  # Configuration.ProjectFiles
 
 
 ##### ##### ##### ##### ##### ##### ##### ###### TIER 0 CLASS ###### ##### ##### ##### ##### ##### ##### ######
-class Configuration:  # ROOT @ Configuration
+class ConfigurationManager:  # ROOT @ Configuration
     def __init__(self, parse_all_project_files=False):  # FYI, module entry point is here
         self.hardcoded = HardCoded()  # lots of hardcoded 'string"keys" and project properties/variables
         self.paths = Paths(self)  # a list of relevant paths used to build the project
@@ -260,9 +260,9 @@ class Configuration:  # ROOT @ Configuration
             ml.log_event(o_err)
 
 
-def get_user_configuration() -> Configuration:  # this is the only export required?
+def get_user_configuration() -> ConfigurationManager:  # this is the only export required?
     try:
-        configuration = Configuration(parse_all_project_files=True)
+        configuration = ConfigurationManager(parse_all_project_files=True)
         return configuration
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
@@ -323,7 +323,7 @@ def _parser_modify_test_sections(configparser: ConfigParser) -> bool:
 
 if __name__ == '__main__':
     ml = MinimalLog()
-    cf = Configuration(parse_all_project_files=True)
+    cf = ConfigurationManager(parse_all_project_files=True)
     pass
 else:
     ml = MinimalLog(__name__)
