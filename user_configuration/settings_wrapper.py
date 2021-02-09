@@ -135,7 +135,7 @@ class ParserPaths:  # Configuration.Parser.ParserPaths
 class Parsers:  # Configuration.Parser.Parsers
     def __init__(self, configuration):
         # TODO not scalable in the long term, will have to think about how to restructure this
-        parser_paths = configuration.paths.get_parser_paths_from_(configuration)
+        parser_paths = configuration.paths._get_parser_paths_from_(configuration)
         self.parsers_keyed_by_file_path = self.get_parsers_from_(parser_paths)
         self.metadata_parser = self.parsers_keyed_by_file_path[parser_paths[0]]
         self.search_detail_parser = self.parsers_keyed_by_file_path[parser_paths[1]]
@@ -143,11 +143,6 @@ class Parsers:  # Configuration.Parser.Parsers
 
     @staticmethod
     def get_parsers_from_(parser_paths) -> dict:
-        """
-        TODO how should this function handle situation where sections are not found?
-        TODO most likely scenario is parser did not successfully read
-        TODO for now it will not be added, which will cause Parsers to fatal exception
-        """
         try:
             parsers = dict()
             for parser_path in parser_paths:

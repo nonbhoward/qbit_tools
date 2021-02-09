@@ -1,4 +1,3 @@
-from qbit_interface.config_helper import QbitConfig
 from datetime import datetime
 from minimalog.minimal_log import MinimalLog
 from user_configuration.WEB_API_CREDENTIALS import *
@@ -6,12 +5,12 @@ import qbittorrentapi
 ml = MinimalLog(__name__)
 
 
-class QbitBot:
+class QbitApiCaller:
     def __init__(self):
-        self.qbit_client_connected = True if self._client_is_connected() else False
-        self._connection_time_start = datetime.now()
-        self.qbc = QbitConfig()
-        self.qbc.reset_search_ids()
+        self.qbit_client_connected = True if self.client_is_connected() else False
+        self.active_search_ids = dict()
+        if self.qbit_client_connected:
+            self.connection_time_start = datetime.now()
 
     def add_result(self, result):
         try:
@@ -34,6 +33,25 @@ class QbitBot:
                     str(int(search_detail_parser_at_active_header[search_parser_keys.RESULTS_ADDED_COUNT]))
                 return
             ml.log_event('client failed to add \'{}\''.format(result[metadata_parser_keys.NAME]), level=ml.WARNING)
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def client_is_connected(self) -> bool:
+        """
+        connect to the client, fetch check app version and web api version
+        :return: bool, true if able to populate all data successfully
+        """
+        ml.log_event('connect to client', event_completed=False)
+        try:
+            self.qbit_client = qbittorrentapi.Client(host=HOST, username=USER, password=PASS)
+            app_version = self.qbit_client.app_version
+            web_api_version = self.qbit_client.app_web_api_version
+            if app_version is not None and web_api_version is not None:
+                # TODO could unpack more details here just for readability
+                ml.log_event('connect to client with.. \n\n\tclient app version {} \n\tweb api version {}\n\n'.format(
+                    app_version, web_api_version), event_completed=True)
+                return True
+            return False
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -105,26 +123,33 @@ class QbitBot:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def _client_is_connected(self) -> bool:
-        """
-        connect to the client, fetch check app version and web api version
-        :return: bool, true if able to populate all data successfully
-        """
-        ml.log_event('connect to client', event_completed=False)
+    def start_search_for_(self, parser, section, s_keys):
         try:
-            self.qbit_client = qbittorrentapi.Client(host=HOST, username=USER, password=PASS)
-            app_version = self.qbit_client.app_version
-            web_api_version = self.qbit_client.app_web_api_version
-            if app_version is not None and web_api_version is not None:
-                # TODO could unpack more details here just for readability
-                ml.log_event('connect to client with.. \n\n\tclient app version {} \n\tweb api version {}\n\n'.format(
-                    app_version, web_api_version), event_completed=True)
-                return True
-            return False
+            search_term = parser[section][s_keys.SEARCH_TERM]
+            search_properties = self.create_search_job(search_term, 'all', 'all')
+            search_job, search_status, search_state, search_id, search_count = search_properties
+
+            if search_id is not None:
+                if search_id != '':
+                    self.active_search_ids[self.active_section] = search_id
+            if s_keys.RUNNING in search_state:  # search started successfully
+
+                self.set_time_last_searched_for_active_header()
+                ml.log_event('search started for \'{}\' with search id \'{}\''.format(self.active_section, search_id),
+                             event_completed=True, announce=True)
+                # TODO this function IS the error, search_ids are never added which is causing problems
+                self.set_search_id_as_active()
+                self._update_search_states(search_parser_keys.RUNNING)
+            elif search_parser_keys.STOPPED in search_status:
+                ml.log_event('search not successfully started for \'{}\''.format(
+                    self.active_section), announce=True, level=ml.WARNING)
+            else:
+                ml.log_event('search_state is not \'{}\' or \'{}\', there was a problem starting the search!'.format(
+                    search_parser_keys.RUNNING, search_parser_keys.STOPPED), level=ml.ERROR)
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
 
 if __name__ == '__main__':
-    qba = QbitBot()
+    qba = QbitApiCaller()
     pass

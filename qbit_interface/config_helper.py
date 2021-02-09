@@ -157,6 +157,26 @@ class QbitConfig:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
+    def set_search_rank_using_(self, sort_key):
+        """
+        1. sort the key:value pair of the dict into a tuple of 2 (key, value), sorted by sort_key's value
+        2. assign a search rank to each search header based on previous sort
+        3. write the search rank to the search detail parser
+        :param sort_key:
+        :return:
+        """
+        try:
+            parser = self.search_detail_parser
+            s_keys = self.search_detail_keys
+            sdp_as_dict = self.get_parser_as_sortable_(search_detail=True)
+            sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key])
+            number_of_sections = len(sdp_as_dict_sorted)
+            for search_rank in range(number_of_sections):
+                header = sdp_as_dict_sorted[search_rank][0]
+                parser[header][s_keys.SEARCH_RANK] = str(search_rank)
+                ml.log_event(f'search rank \'{search_rank}\' assigned to header \'{header}\'')
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
 
     def write_config_to_disk(self):
         ml.log_event('writing parser configurations to disk')
@@ -165,7 +185,7 @@ class QbitConfig:
             for parser_path, parser in parsers_dict.items():
                 with open(parser_path, 'w') as parser_to_write:
                     parser.write(parser_to_write)
-                    ml.log_event('parser update for {}'.format(parser))
-                    ml.log_event('successfully written parser to disk at \'{}\''.format(parser_path))
+                    ml.log_event(f'parser update for {parser}')
+                    ml.log_event(f'successfully written parser to disk at \'{parser_path}\'')
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
