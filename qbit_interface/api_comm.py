@@ -1,16 +1,17 @@
+from qbit_interface.config_helper import QbitConfig
 from datetime import datetime
-from user_configuration.settings_wrapper import get_user_configuration
 from minimalog.minimal_log import MinimalLog
+from user_configuration.WEB_API_CREDENTIALS import *
+import qbittorrentapi
 ml = MinimalLog(__name__)
 
 
 class QbitBot:
     def __init__(self):
-        self.config = get_user_configuration()
-        assert self.config is not None, ml.log_event('!! no user configuration !!', announce=True, level=ml.ERROR)
         self.qbit_client_connected = True if self._client_is_connected() else False
         self._connection_time_start = datetime.now()
-        self._reset_search_ids()
+        self.qbc = QbitConfig()
+        self.qbc.reset_search_ids()
 
     def add_result(self, result):
         try:

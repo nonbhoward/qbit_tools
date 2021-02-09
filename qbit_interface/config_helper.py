@@ -17,6 +17,20 @@ class QbitConfig:
         self.search_detail_keys = self.get_keyring_for_(search_detail=True)
         self.user_config_keys = self.get_keyring_for_(user_config=True)
 
+    def get_all_sections_from_parser_(self, metadata=False, search_detail=False, user_config=False) -> list:
+        try:
+            sections = list()
+            if metadata:
+                sections = self.metadata_parser.sections()
+            if search_detail:
+                sections = self.search_detail_parser.sections()
+            if user_config:
+                sections = self.user_config_parser.sections()
+            assert len(sections) > 0, 'no sections found'
+            return sections
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
     def get_keyring_for_(self, metadata=False, search_detail=False, user_config=False):
         """
         :param metadata: flag for metadata parser
@@ -90,87 +104,68 @@ class QbitConfig:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def read_parser_value_with_(self, parser_key, section='DEFAULT', 
-                                metadata=True, search_detail=False, user_config=False) -> str:
+    def parser_value_read_with_(self, parser_key, section='DEFAULT',
+                                metadata=False, search_detail=False, user_config=False) -> str:
         try:
+            parser = None
             if metadata:
                 assert section in self.metadata_parser, 'metadata section not found'
                 parser = self.metadata_parser[section]
                 assert parser_key in parser, 'metadata key not found'
-                value = parser[parser_key]
-                return value
             if search_detail:
                 assert section in self.search_detail_parser, 'search detail section not found'
                 parser = self.search_detail_parser[section]
                 assert parser_key in parser, 'search detail key not found'
-                value = parser[parser_key]
-                return value
             if user_config:
                 assert section in self.user_config_parser, 'user config section not found'
-                parser = self.user_config_parser
+                parser = self.user_config_parser[section]
                 assert parser_key in parser, 'user config key not found'
-                value = parser[parser_key]
-                return value
+            value = parser[parser_key]
+            return value
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def search_has_started_at_(self, section):
-        """
-        # TODO rework this or delete it
-        """
+    def parser_value_write_with_(self, parser_key, value='', section='DEFAULT',
+                                 metadata=False, search_detail=False, user_config=False) -> bool:
         try:
-            active_search_term = self.get_search_term_from_search_detail_parser_at_active_header()
-            if active_search_term in self.active_search_ids.keys():
+            if metadata:
+                assert section in self.metadata_parser, 'metadata section not found'
+                parser = self.metadata_parser[section]
+                parser[parser_key] = str(value)
+                return True
+            if search_detail:
+                assert section in self.search_detail_parser, 'search detail section not found'
+                parser = self.search_detail_parser[section]
+                parser[parser_key] = str(value)
+                return True
+            if user_config:
+                assert section in self.user_config_parser, 'user config section not found'
+                parser = self.user_config_parser
+                parser[parser_key] = str(value)
                 return True
             return False
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def get_all_sections_from_parser_(self, metadata=False, search_detail=False, user_config=False) -> list:
+    def reset_search_ids(self):
         try:
-            sections = list()
-            if metadata:
-                sections = self.metadata_parser.sections()
-            if search_detail:
-                sections = self.search_detail_parser.sections()
-            if user_config:
-                sections = self.user_config_parser.sections()
-            assert len(sections) > 0, 'no sections found'
-            return sections
+            parser = self.search_detail_parser
+            keys = self.search_detail_keys
+            for section in parser.sections():
+                ml.log_event(f'reset search id for section \'{section}\'')
+                parser[section][keys.SEARCH_ID] = str(0)
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
+
 
     def write_config_to_disk(self):
         ml.log_event('writing parser configurations to disk')
         try:
             parsers_dict = self.config.parser.parsers.parsers_keyed_by_file_path
-            search_detail_parser_keys = self.get_keyring_for_search_detail_parser()
             for parser_path, parser in parsers_dict.items():
                 with open(parser_path, 'w') as parser_to_write:
                     parser.write(parser_to_write)
                     ml.log_event('parser update for {}'.format(parser))
                     ml.log_event('successfully written parser to disk at \'{}\''.format(parser_path))
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def write_parser_value_with_(self, parser_key, value='', section='DEFAULT',
-                                 metadata=True, search_detail=False, user_config=False) -> bool:
-        try:
-            if metadata:
-                assert section in self.metadata_parser, 'metadata section not found'
-                parser = self.metadata_parser[section]
-                parser[parser_key] = str(value)
-                return True
-            if search_detail:
-                assert section in self.search_detail_parser, 'search detail section not found'
-                parser = self.search_detail_parser[section]
-                parser[parser_key] = str(value)
-                return True
-            if user_config:
-                assert section in self.user_config_parser, 'user config section not found'
-                parser = self.user_config_parser
-                parser[parser_key] = str(value)
-                return True
-            return False
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)

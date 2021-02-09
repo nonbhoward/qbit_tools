@@ -118,7 +118,7 @@ class QbitStateManager:
                     # TODO results_key.supply could be sort by any key, how to get that value here?
                     # search_priority = self._get_priority_key_for_search_result_sorting()  # TODO delete
                     u_key = self.config.user_config_keys
-                    search_priority = self.config.read_parser_value_with_(
+                    search_priority = self.config.parser_value_read_with_(
                         parser_key=u_key.USER_PRIORITY, user_config=True)
                     self._save_remote_metadata_to_local_results_sorting_by_(
                         search_priority, regex_filtered_results)  # search is finished, attempt to add results
