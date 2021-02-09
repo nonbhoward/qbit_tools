@@ -1,3 +1,4 @@
+from qbit_interface.config_helper import QbitConfig
 from configparser import ConfigParser  # only used to type a return value
 from datetime import datetime
 from minimalog.minimal_log import MinimalLog
@@ -10,7 +11,7 @@ import qbittorrentapi
 class QbitStateManager:
     def __init__(self, manage_log_files=False):
         ml.log_event('initialize \'{}\''.format(self.__class__), event_completed=False, announce=True)
-        self.config = ''  # FIXME
+        self.config = QbitConfig()
         self.main_loop_count = 0
         self.active_search_ids, self.active_header = dict(), ''
         ml.log_event('initialize \'{}\''.format(self.__class__), event_completed=True, announce=True)
@@ -115,7 +116,10 @@ class QbitStateManager:
                 regex_filtered_results, regex_filtered_results_count = self._get_regex_filtered_results_and_count()
                 if regex_filtered_results is not None and regex_filtered_results_count > 0:
                     # TODO results_key.supply could be sort by any key, how to get that value here?
-                    search_priority = self._get_priority_key_for_search_result_sorting()
+                    # search_priority = self._get_priority_key_for_search_result_sorting()  # TODO delete
+                    u_key = self.config.user_config_keys
+                    search_priority = self.config.read_parser_value_with_(
+                        parser_key=u_key.USER_PRIORITY, user_config=True)
                     self._save_remote_metadata_to_local_results_sorting_by_(
                         search_priority, regex_filtered_results)  # search is finished, attempt to add results
                 else:

@@ -3,7 +3,7 @@ from pathlib import Path
 ml = MinimalLog(__name__)
 
 
-class Box:
+class MediaBox:
     def __init__(self, root, types: list, compress=True):
         self.sender_inventory = self.get_content_from_sender(root)
         self.contents = {}
@@ -17,5 +17,5 @@ class Box:
 
 
 if __name__ == '__main__':
-    b = Box()
+    b = MediaBox()
     pass

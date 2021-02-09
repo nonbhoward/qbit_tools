@@ -1,5 +1,5 @@
 from datetime import datetime
-from user_configuration.manager import get_user_configuration
+from user_configuration.settings_wrapper import get_user_configuration
 from minimalog.minimal_log import MinimalLog
 ml = MinimalLog(__name__)
 

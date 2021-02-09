@@ -1,9 +1,6 @@
-# TODO any self.properties of the Keys classes may need to also be changed in the associated config file
-# TODO unless the bot does this now by setting default values, as of now it does not
-# TODO you change key here, also change in .cfg
 from configparser import ConfigParser
 from minimalog.minimal_log import MinimalLog
-from os import getcwd, remove, walk
+from os import getcwd, walk
 from pathlib import Path
 ml = MinimalLog(__name__)
 
@@ -12,7 +9,7 @@ ml = MinimalLog(__name__)
 class ConfigParserPathNames:  # Configuration.HardCoded.DirectoryNames.ConfigParserDirectoryNames
     # project's config directory names, cannot be changed without changing project structure
     def __init__(self):
-        self.user_config_path_name = ''
+        self.user_config_path_name = ''  # TODO why empty?
         self.data_path_name = '../data_src'
 
 
@@ -125,10 +122,10 @@ class KeyRing:  # Configuration.HardCoded.KeyRing
 
 class ParserPaths:  # Configuration.Parser.ParserPaths
     def __init__(self, configuration):
-        self.metadata_parser_path = self._get_parser_paths_from_(configuration)
+        self.metadata_parser_path = self.get_parser_paths_from_(configuration)
 
     @staticmethod
-    def _get_parser_paths_from_(configuration):
+    def get_parser_paths_from_(configuration):
         try:
             print('todo')
         except Exception as e_err:
@@ -138,14 +135,14 @@ class ParserPaths:  # Configuration.Parser.ParserPaths
 class Parsers:  # Configuration.Parser.Parsers
     def __init__(self, configuration):
         # TODO not scalable in the long term, will have to think about how to restructure this
-        parser_paths = configuration.paths._get_parser_paths_from_(configuration)
-        self.parsers_keyed_by_file_path = self._get_parsers_from_(parser_paths)
+        parser_paths = configuration.paths.get_parser_paths_from_(configuration)
+        self.parsers_keyed_by_file_path = self.get_parsers_from_(parser_paths)
         self.metadata_parser = self.parsers_keyed_by_file_path[parser_paths[0]]
         self.search_detail_parser = self.parsers_keyed_by_file_path[parser_paths[1]]
         self.user_config_parser = self.parsers_keyed_by_file_path[parser_paths[2]]
 
     @staticmethod
-    def _get_parsers_from_(parser_paths) -> dict:
+    def get_parsers_from_(parser_paths) -> dict:
         """
         TODO how should this function handle situation where sections are not found?
         TODO most likely scenario is parser did not successfully read
@@ -246,8 +243,8 @@ class ProjectFiles:  # Configuration.ProjectFiles
 ##### ##### ##### ##### ##### ##### ##### ###### TIER 0 CLASS ###### ##### ##### ##### ##### ##### ##### ######
 class ConfigurationManager:  # ROOT @ Configuration
     def __init__(self, parse_all_project_files=False):  # FYI, module entry point is here
-        self.hardcoded = HardCoded()  # lots of hardcoded 'string"keys" and project properties/variables
-        self.paths = Paths(self)  # a list of relevant paths used to build the project
+        self.hardcoded = HardCoded()  # lots of hardcoded "keys" and project properties/variables
+        self.paths = Paths(self)  # relevant paths used to build the project
         if parse_all_project_files:
             self.files = ProjectFiles(self)  # a list of the Path object for every project file
         self.parser = Parser(self)  # all parsers containing parsed .cfg file data
