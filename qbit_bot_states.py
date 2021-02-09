@@ -1,13 +1,12 @@
 from qbit_interface.api_comm import QbitApiCaller
 from qbit_interface.api_helper import *
 from qbit_interface.config_helper import QbitConfig
-from datetime import datetime
 from minimalog.minimal_log import MinimalLog
 from time import sleep
 
 
 class QbitStateManager:
-    def __init__(self, manage_log_files=False):
+    def __init__(self):
         ml.log_event('initialize \'{}\''.format(self.__class__), event_completed=False, announce=True)
         self.api = QbitApiCaller()
         self.cfg = QbitConfig()
@@ -18,8 +17,8 @@ class QbitStateManager:
         self.pause_on_event(self.cfg.user_config_keys.WAIT_FOR_USER)
 
     def increment_loop_count(self):
-        self.main_loop_count += 1
         ml.log_event(f'current connection to client was started at \'{self.api.connection_time_start}\'')
+        self.main_loop_count += 1
         ml.log_event(f'main loop has ended, {self.main_loop_count} total loops..')
         for _ in range(3):
             ml.log_event('when in doubt, compare parsed file keys with '
@@ -27,13 +26,13 @@ class QbitStateManager:
 
     def initiate_and_monitor_searches(self):
         try:
-            search_headers = self.cfg.get_all_sections_from_parser_(search_detail=True)
+            search_sections = self.cfg.get_all_sections_from_parser_(search_detail=True)
             s_keys = self.cfg.get_keyring_for_(search_detail=True)
             u_keys = self.cfg.get_keyring_for_(user_config=True)
             self.cfg.set_search_rank_using_(s_keys.TIME_LAST_SEARCHED)
             self.pause_on_event(u_keys.WAIT_FOR_USER)
-            for search_detail_parser_section_header in search_headers:
-                self.active_section = search_detail_parser_section_header
+            for search_section in search_sections:
+                self.active_section = search_section
                 ml.log_event(f'monitoring search header \'{self.active_section}\'')
                 search_state = self.get_search_state()
                 self.manage_state_updates(search_state)
@@ -73,18 +72,20 @@ class QbitStateManager:
         :return: search states
         """
         try:
-            parser_at_active_section = self.cfg.search_detail_parser[self.active_section]
+            parser_at_active = self.cfg.search_detail_parser[self.active_section]
             keys = self.cfg.search_detail_keys
-            # record a timestamp of this read action
-            parser_at_active_section[keys.TIME_LAST_READ] = str(datetime.now())
+            parser_at_active[keys.TIME_LAST_READ] = str(datetime.now())
             # get search status from file
-            _search_queued = parser_at_active_section.getboolean(keys.QUEUED)
-            _search_running = parser_at_active_section.getboolean(keys.RUNNING)
-            _search_stopped = parser_at_active_section.getboolean(keys.STOPPED)
-            _search_concluded = parser_at_active_section.getboolean(keys.CONCLUDED)
-            ml.log_event('search state for \'{}\': \n\tqueued: {}\n\trunning: {}\n\tstopped: {}\n\tconcluded: {}'.format(
-                self.active_section, _search_queued, _search_running, _search_stopped, _search_concluded), announce=True)
-            return _search_queued, _search_running, _search_stopped, _search_concluded
+            search_queued = parser_at_active.getboolean(keys.QUEUED)
+            search_running = parser_at_active.getboolean(keys.RUNNING)
+            search_stopped = parser_at_active.getboolean(keys.STOPPED)
+            search_concluded = parser_at_active.getboolean(keys.CONCLUDED)
+            ml.log_event(f'search state for \'{self.active_section}\': '
+                         f'\n\tqueued: {search_queued}'
+                         f'\n\trunning: {search_running}'
+                         f'\n\tstopped: {search_stopped}'
+                         f'\n\tconcluded: {search_concluded}', announce=True)
+            return search_queued, search_running, search_stopped, search_concluded
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -98,7 +99,7 @@ class QbitStateManager:
             u_keys = self.cfg.user_config_keys
             search_rank = int(parser_at_active_section[s_keys.SEARCH_RANK])
             if _search_queued and not self._search_queue_full() and search_rank < 3:  # TODO un-hardcode this
-                self.api.start_search_for_(parser, self.active_section, s_keys)  # search is in queue and queue not full
+                self.api.start_search_for_(parser, s_keys, self.active_section)
             elif _search_running:
                 search_status = get_search_status()  # FIXME
                 if s_keys.RUNNING in search_status:
@@ -131,19 +132,17 @@ class QbitStateManager:
     def _search_queue_full(self) -> bool:
         ml.log_event('check search queue..')
         try:
-            if self._search_at_active_header_is_already_started():
-                return True  # TODO, add this feature
             active_search_count = len(self.active_search_ids.keys())
             if active_search_count < 5:
                 ml.log_event('search queue is NOT full..')
                 ml.log_event('active search headers are..')
                 for active_search_header_name in self.active_search_ids.keys():
-                    ml.log_event('search header : \'{}\''.format(active_search_header_name))
+                    ml.log_event(f'search header : \'{active_search_header_name}\'')
                 return False
-            ml.log_event('search queue is FULL, cannot add header \'{}\''.format(self.active_section, announce=True))
+            ml.log_event(f'search queue is FULL, cannot add header \'{self.active_section}\'', announce=True)
             ml.log_event('active search headers are..')
             for active_search_header_name in self.active_search_ids.keys():
-                ml.log_event('search header : \'{}\''.format(active_search_header_name))
+                ml.log_event(f'search header : \'{active_search_header_name}\'')
             return True
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)

@@ -123,7 +123,7 @@ class QbitApiCaller:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def start_search_for_(self, parser, section, s_keys):
+    def start_search_for_(self, parser, s_keys, section):
         try:
             search_term = parser[section][s_keys.SEARCH_TERM]
             search_properties = self.create_search_job(search_term, 'all', 'all')
@@ -131,11 +131,10 @@ class QbitApiCaller:
 
             if search_id is not None:
                 if search_id != '':
-                    self.active_search_ids[self.active_section] = search_id
-            if s_keys.RUNNING in search_state:  # search started successfully
-
+                    self.active_search_ids[section] = search_id
+            if s_keys.RUNNING in search_state:
                 self.set_time_last_searched_for_active_header()
-                ml.log_event('search started for \'{}\' with search id \'{}\''.format(self.active_section, search_id),
+                ml.log_event(f'search started for \'{section}\' with search id \'{search_id}\'',
                              event_completed=True, announce=True)
                 # TODO this function IS the error, search_ids are never added which is causing problems
                 self.set_search_id_as_active()
