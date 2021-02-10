@@ -55,6 +55,24 @@ def enough_results_in_(filtered_results, expected_result_count):
         ml.log_event(e_err, level=ml.ERROR)
 
 
+def fetch_metadata_from_(m_parser) -> dict:
+    """
+    :param m_parser: metadata parser
+    :return:
+    """
+    ml.log_event('fetching results from disk', event_completed=False)
+    try:
+        result_data = dict()
+        for section in m_parser.sections():
+            result_data[hash_metadata(section, True)] = dict()
+            for key, detail in m_parser[section].items():
+                result_data[hash_metadata(section, True)][key] = hash_metadata(detail, True)
+        ml.log_event('fetching results from disk', event_completed=True)
+        return result_data
+    except Exception as e_err:
+        ml.log_event(e_err, level=ml.ERROR)
+
+
 def get_active_search_id(self) -> str:
     try:
         if self.active_section not in self.active_search_ids.keys():
@@ -205,20 +223,6 @@ def result_has_enough_seeds(self, result) -> bool:
             ml.log_event('result {} has {} seeds, attempting to add'.format(result['fileName'], result_seeds))
             return True
         return False
-    except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
-
-
-def results_fetch_all_data(self) -> dict:
-    ml.log_event('fetching results from disk', event_completed=False)
-    try:
-        all_data = dict()
-        for section in self.config.parser.parsers.metadata_parser.sections():
-            all_data[self.hash_metadata(section, True)] = dict()
-            for key, detail in self.config.parser.parsers.metadata_parser[section].items():
-                all_data[self.hash_metadata(section, True)][key] = self.hash_metadata(detail, True)
-        ml.log_event('fetching results from disk', event_completed=True)
-        return all_data
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 

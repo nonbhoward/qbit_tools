@@ -83,13 +83,17 @@ class QbitStateManager:
             if search_queued and not self.search_queue_full() and search_rank < 3:  # TODO un-hardcode this
                 self.start_search()
             elif search_running:
-                search_status = self.api.get_search_status()
+                search_id = self.active_search_ids[self.active_section]
+                search_status = self.api.get_search_status(search_id)
+                ml.log_event(f'ongoing searches are..')
+                for section_header, search_id in self.active_search_ids:
+                    ml.log_event(f'\t header \'{section_header}\' with id \'{search_id}\'')
                 if s_keys.RUNNING in search_status:
-                    pass  # search is ongoing, do nothing
+                    pass  # search ongoing, do nothing
                 elif s_keys.STOPPED in search_status:
                     self.update_search_states(s_keys.STOPPED)  # mark search as stopped (finished)
                 else:
-                    self.update_search_states(s_keys.QUEUED)  # search status unexpected, re-queue
+                    self.update_search_states(s_keys.QUEUED)  # unexpected state, re-queue
             elif search_stopped:
                 regex_filtered_results, regex_filtered_results_count = self._get_regex_filtered_results_and_count()
                 if regex_filtered_results is not None and regex_filtered_results_count > 0:
