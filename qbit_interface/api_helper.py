@@ -29,22 +29,6 @@ def all_searches_concluded(self) -> bool:
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def check_if_search_is_concluded(self):
-    try:
-        search_parser_keys = self.get_keyring_for_search_detail_parser()
-        if self.search_has_yielded_required_results():
-            ml.log_event('search \'{}\' has concluded, disabling'.format(self.active_section), announce=True)
-            self.update_search_states(search_parser_keys.CONCLUDED)
-    except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
-
-
-def check_if_section_header_metadata_exists_as_local_result(self) -> bool:
-    delete_me = self.config  # suppress @staticmethod warning
-    ml.log_event('TODO : ..just return hardcoded False..', level=ml.WARNING)
-    return False  # TODO
-
-
 def enough_results_in_(filtered_results, expected_result_count):
     try:
         filtered_results_count = len(filtered_results)
@@ -56,10 +40,6 @@ def enough_results_in_(filtered_results, expected_result_count):
 
 
 def fetch_metadata_from_(m_parser) -> dict:
-    """
-    :param m_parser: metadata parser
-    :return:
-    """
     ml.log_event('fetching results from disk', event_completed=False)
     try:
         result_data = dict()
@@ -69,18 +49,6 @@ def fetch_metadata_from_(m_parser) -> dict:
                 result_data[hash_metadata(section, True)][key] = hash_metadata(detail, True)
         ml.log_event('fetching results from disk', event_completed=True)
         return result_data
-    except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
-
-
-def get_active_search_id(self) -> str:
-    try:
-        if self.active_section not in self.active_search_ids.keys():
-            ml.log_event(f'active header \'{self.active_section}\' is not in active search ids', level=ml.WARNING)
-            return 0  # TODO, check back in on this
-        active_search_id = self.active_search_ids.get(self.active_section)
-        ml.log_event('get active search id \'{}\' for \'{}\''.format(active_search_id, self.active_section))
-        return active_search_id
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -140,32 +108,16 @@ def get_regex_filtered_results_and_count(self) -> tuple:
 
 
 def hash_metadata(self, x, undo=False):
-    # TODO add option in user config file to skip this and just write human readable data to metadata.cfg
-    # TODO could also be accomplished by setting unicode_offset to 0
+    # TODO how to get u_keys here?
     try:
         _undo = -1 if undo else 1
         _ucp_keys = self.get_keyring_for_user_config_parser()
-        # TODO the bug is in this expression
         _hash = ''.join([chr(ord(e) + int(
             self.config.parser.parsers.user_config_parser[_ucp_keys.DEFAULT][_ucp_keys.UNI_SHIFT])) * _undo
                          for e in str(x) if x])
 
         ml.log_event('hashed from {} to {}'.format(x, _hash))
         return _hash
-    except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
-
-
-def log_file_is_too_large(self):
-    # TODO yep it's growing
-    pass
-
-
-def manage_log_files(self):
-    # TODO .. someday .. when it seems interesting
-    try:
-        if self.log_file_is_too_large():
-            pass  # idk delete it or something
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -255,10 +207,7 @@ def save_remote_metadata_to_local_results_sorting_by_(self, search_priority, reg
 
 
 def search_has_yielded_required_results(self) -> bool:
-    """
-    decides if search is ready to be marked as completed (ADDED)
-    :return: bool, search completed
-    """
+    # TODO move this to state machine?
     ml.log_event('check if search can be concluded', event_completed=False)
     try:
         search_parser_keys = self.get_keyring_for_search_detail_parser()
@@ -288,51 +237,6 @@ def search_has_yielded_required_results(self) -> bool:
             return True
         ml.log_event(f'search \'{self.active_section}\' will be allowed to continue', event_completed=True)
         return False
-    except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
-
-
-def search_id_active(self) -> bool:
-    try:
-        search_detail_parser_at_active_header = self.get_search_detail_parser_at_active_header()
-        search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
-        search_id = search_detail_parser_at_active_header[search_parser_keys.SEARCH_ID]
-        if search_id == self.active_search_ids[self.active_section]:
-            return True
-        return False
-    except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
-
-
-def search_set_end_reason(self, reason):
-    try:
-        search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
-        ml.log_event('setting end reason \'{}\' for search header {}'.format(reason, self.active_section))
-        self.config.parser.parsers.search_detail_parser[self.active_section][search_parser_keys.SEARCH_STOPPED_REASON] = reason
-    except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
-
-
-def set_search_id_as_active(self):
-    search_id = self.active_search_ids[self.active_section]
-    search_detail_parser_at_active_header = self.get_search_detail_parser_at_active_header()
-    ml.log_event('search id \'{}\' set as active'.format(search_id))
-    try:
-        s_keys = self.get_keyring_for_search_detail_parser()
-        search_detail_parser_at_active_header[s_keys.SEARCH_ID] = search_id
-        self.active_search_ids[self.active_section] = search_id
-    except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
-
-
-def set_search_id_as_inactive(self):
-    try:
-        search_detail_parser_at_active_header = self.get_search_detail_parser_at_active_header()
-        search_id = self.config.hardcoded.keys.search_parser_keyring.SEARCH_ID
-        if self.search_id_active():
-            search_detail_parser_at_active_header[search_id] = str(0)
-            ml.log_event('search id \'{}\' set as inactive'.format(search_id))
-            del self.active_search_ids[self.active_section]
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
