@@ -1,5 +1,6 @@
 from datetime import datetime
 from minimalog.minimal_log import MinimalLog
+from qbit_interface.config_helper import QbitConfig
 from user_configuration.WEB_API_CREDENTIALS import *
 import qbittorrentapi
 ml = MinimalLog(__name__)
@@ -8,7 +9,6 @@ ml = MinimalLog(__name__)
 class QbitApiCaller:
     def __init__(self):
         self.qbit_client_connected = True if self.client_is_connected() else False
-        self.active_search_ids = dict()
         if self.qbit_client_connected:
             self.connection_time_start = datetime.now()
 
@@ -120,31 +120,6 @@ class QbitApiCaller:
                 return search_status
             ml.log_event(f'search status is \'{search_status}\' for section \'{self.active_header}\'')
             return search_status
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    def start_search_for_(self, parser, s_keys, section):
-        try:
-            search_term = parser[section][s_keys.SEARCH_TERM]
-            search_properties = self.create_search_job(search_term, 'all', 'all')
-            search_job, search_status, search_state, search_id, search_count = search_properties
-
-            if search_id is not None:
-                if search_id != '':
-                    self.active_search_ids[section] = search_id
-            if s_keys.RUNNING in search_state:
-                self.set_time_last_searched_for_active_header()
-                ml.log_event(f'search started for \'{section}\' with search id \'{search_id}\'',
-                             event_completed=True, announce=True)
-                # TODO this function IS the error, search_ids are never added which is causing problems
-                self.set_search_id_as_active()
-                self._update_search_states(search_parser_keys.RUNNING)
-            elif search_parser_keys.STOPPED in search_status:
-                ml.log_event('search not successfully started for \'{}\''.format(
-                    self.active_section), announce=True, level=ml.WARNING)
-            else:
-                ml.log_event('search_state is not \'{}\' or \'{}\', there was a problem starting the search!'.format(
-                    search_parser_keys.RUNNING, search_parser_keys.STOPPED), level=ml.ERROR)
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 

@@ -34,7 +34,7 @@ def check_if_search_is_concluded(self):
         search_parser_keys = self.get_keyring_for_search_detail_parser()
         if self.search_has_yielded_required_results():
             ml.log_event('search \'{}\' has concluded, disabling'.format(self.active_section), announce=True)
-            self._update_search_states(search_parser_keys.CONCLUDED)
+            self.update_search_states(search_parser_keys.CONCLUDED)
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -138,17 +138,6 @@ def hash_metadata(self, x, undo=False):
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def increment_search_attempt_count(self):
-    try:
-        search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
-        search_detail_parser_at_active_header = self.get_search_detail_parser_at_active_header()
-        search_attempt_count = int(search_detail_parser_at_active_header[search_parser_keys.SEARCH_ATTEMPT_COUNT])
-        ml.log_event('search try counter at {}, incrementing..'.format(search_attempt_count))
-        search_detail_parser_at_active_header[search_parser_keys.SEARCH_ATTEMPT_COUNT] = str(search_attempt_count + 1)
-    except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
-
-
 def log_file_is_too_large(self):
     # TODO yep it's growing
     pass
@@ -246,7 +235,7 @@ def save_remote_metadata_to_local_results_sorting_by_(self, search_priority, reg
         most_popular_results = self.get_most_popular_results(regex_filtered_results)
         if not self.active_header_search_id_is_valid():
             ml.log_event('search id for {} is invalid'.format(self.active_section))
-            self._update_search_states(search_parser_keys.QUEUED)  # wanted to add result but id bad, re-queue search
+            self.update_search_states(search_parser_keys.QUEUED)  # wanted to add result but id bad, re-queue search
             return
         if most_popular_results is not None:
             self.check_if_search_is_concluded()  # we found some results, have we met our 'concluded' criteria?
