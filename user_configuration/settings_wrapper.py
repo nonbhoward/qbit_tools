@@ -16,9 +16,9 @@ class ConfigParserPathNames:  # Configuration.HardCoded.DirectoryNames.ConfigPar
 class ConfigParserFileNames:  # Configuration.HardCoded.FileNames.ConfigParserFileNames
     # project's configuration file names, cannot be changed without changing project structure
     def __init__(self):
-        self.metadata = 'metadata.cfg'
-        self.search_detail = 'search_details.cfg'
-        self.user_config = 'user_configuration.cfg'
+        self.config = 'EDIT_SETTINGS_HERE.cfg'
+        self.metadata = 'metadata_history.cfg'
+        self.search = 'search.cfg'
 
 
 class MetadataParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
@@ -89,7 +89,7 @@ class UserConfigParserKeys:  # Configuration.HardCoded.KeyRing.UserConfigKeys
         # keys for reading & writing user configuration
         self.DEFAULT = 'DEFAULT'
         self.UNI_MEMBER_COUNT = 'unicode_total_character_count'
-        self.UNI_SHIFT = 'unicode_shift_offset_for_scrambling_results_cfg_file'
+        self.UNI_SHIFT = 'unicode_shift_offset_for_scrambling_metadata_parser'
         self.USER_PRIORITY = 'metadata_value_sort_priority'
         self.WAIT_FOR_MAIN_LOOP = 'seconds_to_wait_after_each_main_loop'
         self.WAIT_FOR_SEARCH_RESULT_ADD = 'seconds_to_wait_after_each_torrent_add_attempt'
@@ -195,9 +195,9 @@ class Paths:  # Configuration.Paths
         try:
             # data paths
             metadata_parser_path = Path(path.data, configuration.hardcoded.filenames.config_parser.metadata)
-            search_details_path = Path(path.data, configuration.hardcoded.filenames.config_parser.search_detail)
+            search_details_path = Path(path.data, configuration.hardcoded.filenames.config_parser.search)
             # user config paths
-            user_config_path = Path(path.user_config, configuration.hardcoded.filenames.config_parser.user_config)
+            user_config_path = Path(path.user_config, configuration.hardcoded.filenames.config_parser.config)
             # build and return
             parser_paths = [metadata_parser_path, search_details_path, user_config_path]
             return * parser_paths,

@@ -17,10 +17,10 @@ def all_searches_concluded(self) -> bool:
     # TODO would be nice to exit if all jobs exceed set limits, not currently in-use
     try:
         search_parser_keys, concluded = self.config.hardcoded.keys.search_parser_keyring, list()
-        for section in self.config.parser.parsers.search_detail_parser.sections():
+        for section in self.config.parser.parsers.search_settings_and_status.sections():
             for key in section:
                 if key == search_parser_keys.SEARCH_CONCLUDED:
-                    search_concluded = self.config.parser.parsers.search_detail_parser[section].getboolean(key)
+                    search_concluded = self.config.parser.parsers.search_settings_and_status[section].getboolean(key)
                     concluded.append(search_concluded)
         if all(concluded):
             return True
@@ -175,33 +175,6 @@ def result_has_enough_seeds(self, result) -> bool:
             ml.log_event('result {} has {} seeds, attempting to add'.format(result['fileName'], result_seeds))
             return True
         return False
-    except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
-
-
-def save_remote_metadata_to_local_results_sorting_by_(self, search_priority, regex_filtered_results: list) -> bool:
-    """
-    parse the results returned by the search term & filter, attempt to add new result to local stored results
-    :return: bool, success or failure of adding new result to local stored results
-    """
-    try:
-        search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
-        ml.log_event('add results by {}'.format(search_priority), event_completed=False)
-        # TODO implement attribute here, 'rKey.nbSeeders' instead of 'popularity
-        most_popular_results = self.get_most_popular_results(regex_filtered_results)
-        if not self.active_header_search_id_is_valid():
-            ml.log_event('search id for {} is invalid'.format(self.active_section))
-            self.update_search_states(search_parser_keys.QUEUED)  # wanted to add result but id bad, re-queue search
-            return
-        if most_popular_results is not None:
-            self.check_if_search_is_concluded()  # we found some results, have we met our 'concluded' criteria?
-            self.set_search_id_as_inactive()
-            ml.log_event('results sorted by popularity for {}'.format(self.active_section))
-            for result in most_popular_results:
-                if self.result_has_enough_seeds(result):
-                    # TODO if add was not successful, log FAILED
-                    self._qbit_add_result(result)
-        ml.log_event('add results by popularity', event_completed=True)
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
