@@ -1,0 +1,37 @@
+[project structure]
+data_src
+    A. no modules here
+extra
+    A. log_mgmt.py
+        1. TODO
+media
+    A. packager.py
+        1. TODO
+network
+    A. dispatcher.py
+        1. TODO
+qbit_interface
+    A. api_comm.py
+        1. api comm(unication) manages..
+            1. any direct qbittorrent api calls
+            2. verification of data input/output with api
+    B. api_helper.py
+        1. general helper functions to prevent api_comm from becoming cluttered
+        2. misc functions # TODO own module?
+    C. config_helper.py
+        1. config helper manages..
+            i. get for any parser
+            ii. set/get for any parser key
+
+project directory's root folder
+    A. main_loop.py
+        1. entire program execution abstracted to as few lines as possible
+    B. qbit_bot_states.py
+        1. state machine which stores state data in configuration files
+            i. writes state data..
+            ii. reads state data..
+            iii. manages following parsers based on state data
+                a. metadata
+                b. search
+            iv. uses following parsers to fetch environment variables
+                a. user config
