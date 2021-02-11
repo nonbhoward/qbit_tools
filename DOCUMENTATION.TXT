@@ -25,7 +25,8 @@ qbit_interface
 
 project directory's root folder
     A. main_loop.py
-        1. entire program execution abstracted to as few lines as possible
+        1. entire program execution abstracted to as few lines as possible..
+           ..while trying to remain descriptive and readable (self documenting)
     B. qbit_bot_states.py
         1. state machine which stores state data in configuration files
             i. writes state data..
