@@ -15,7 +15,7 @@ class QbitConfig:
         # parser keys
         self.metadata_keys = self.get_keyring_for_(metadata=True)
         self.search_detail_keys = self.get_keyring_for_(search=True)
-        self.user_config_keys = self.get_keyring_for_(settings=True)
+        self.settings = self.get_keyring_for_(settings=True)
 
     def get_all_sections_from_parser_(self, metadata=False, search=False, settings=False) -> list:
         try:
@@ -131,7 +131,7 @@ class QbitConfig:
             keys = self.search_detail_keys
             for section in parser.sections():
                 ml.log_event(f'reset search id for section \'{section}\'')
-                parser[section][keys.SEARCH_ID] = str(0)
+                parser[section][keys.ID] = str(0)
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -151,7 +151,7 @@ class QbitConfig:
             number_of_sections = len(sdp_as_dict_sorted)
             for search_rank in range(number_of_sections):
                 header = sdp_as_dict_sorted[search_rank][0]
-                parser[header][search.SEARCH_RANK] = str(search_rank)
+                parser[header][search.RANK] = str(search_rank)
                 ml.log_event(f'search rank \'{search_rank}\' assigned to header \'{header}\'')
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)

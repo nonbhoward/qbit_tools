@@ -13,7 +13,7 @@ def main_loop():
             ml.log_event(event='new loop starting at {}'.format(datetime.now(), announce=True))
             qsm.initiate_and_monitor_searches()
             qsm.increment_loop_count()
-            qsm.pause_on_event(qsm.cfg.user_config_keys.WAIT_FOR_MAIN_LOOP)
+            qsm.pause_on_event(qsm.cfg.settings.WAIT_FOR_MAIN_LOOP)
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 

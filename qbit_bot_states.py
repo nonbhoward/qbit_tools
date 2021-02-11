@@ -13,7 +13,7 @@ class QbitStateManager:
         self.active_search_ids = dict()
         self.active_section = ''
         ml.log_event('initialize \'{}\''.format(self.__class__), event_completed=True, announce=True)
-        self.pause_on_event(self.cfg.user_config_keys.WAIT_FOR_USER)
+        self.pause_on_event(self.cfg.settings.WAIT_FOR_USER)
 
     def get_search_state(self) -> tuple:
         try:
@@ -76,8 +76,8 @@ class QbitStateManager:
             parser = self.cfg.search_settings_and_status
             parser_at_active = parser[self.active_section]
             search = self.cfg.search_detail_keys
-            settings = self.cfg.user_config_keys
-            _temp = self.cfg.read_parser_value_with_key_(search.SEARCH_RANK, self.active_section, search=True)
+            settings = self.cfg.settings
+            _temp = self.cfg.read_parser_value_with_key_(search.RANK, self.active_section, search=True)
             search_rank = int(_temp)
             if search_queued and not self.search_queue_full() and search_rank < 3:  # TODO un-hardcode this
                 self.start_search()
@@ -156,7 +156,7 @@ class QbitStateManager:
         try:
             timestamp = datetime.now()
             parser = self.cfg.user_config_parser
-            keys = self.cfg.user_config_keys
+            keys = self.cfg.settings
             parser_at_default = parser[keys.DEFAULT]
             if pause_type == keys.WAIT_FOR_MAIN_LOOP:
                 delay = int(parser_at_default[keys.WAIT_FOR_MAIN_LOOP])
@@ -201,7 +201,7 @@ class QbitStateManager:
         try:
             parser = self.cfg.search_settings_and_status
             keys = self.cfg.search_detail_keys
-            search_term = parser[self.active_section][keys.PRIMARY_SEARCH_TERM]
+            search_term = parser[self.active_section][keys.TOPIC]
             search_properties = self.api.create_search_job(search_term, 'all', 'all')
             search_job, search_status, search_state, search_id, search_count = search_properties
             if search_id is None or empty_(search_id):
@@ -234,7 +234,7 @@ class QbitStateManager:
                 parser_at_active[search.RUNNING] = search.NO
                 parser_at_active[search.STOPPED] = search.NO
                 parser_at_active[search.CONCLUDED] = search.NO
-                parser.remove_section(search.SEARCH_ID)  # queued, delete any existing search id
+                parser.remove_section(search.ID)  # queued, delete any existing search id
                 ml.log_event('search for \'{}\' is queued, will be started when search queue has vacancy'.format(
                     self.active_section))
             elif api_state_key == search.RUNNING:
