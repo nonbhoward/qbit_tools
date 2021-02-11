@@ -1,3 +1,6 @@
+[top project priorities]
+keep functions readable, as brief as possible.. but err on the side of descriptive
+* note, i'm writing this to learn so there will be plenty of mistakes
 [project structure]
 data_src
     A. no modules here
