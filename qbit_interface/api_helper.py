@@ -4,26 +4,10 @@ from minimalog.minimal_log import MinimalLog
 ml = MinimalLog(__name__)
 
 
-def active_header_search_id_is_valid(self) -> bool:
-    try:
-        if self.active_section in self.active_search_ids:
-            return True
-        return False
-    except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
-
-
 def all_searches_concluded(self) -> bool:
     # TODO would be nice to exit if all jobs exceed set limits, not currently in-use
     try:
-        search_parser_keys, concluded = self.config.hardcoded.keys.search_parser_keyring, list()
-        for section in self.config.parser.parsers.search_settings_and_status.sections():
-            for key in section:
-                if key == search_parser_keys.SEARCH_CONCLUDED:
-                    search_concluded = self.config.parser.parsers.search_settings_and_status[section].getboolean(key)
-                    concluded.append(search_concluded)
-        if all(concluded):
-            return True
+
         return False
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)

@@ -117,44 +117,48 @@ class QbitStateManager:
                     found_result_count = len(regex_filtered_results)
                     if not enough_results_in_(regex_filtered_results, expected_search_result_count):
                         expected_search_result_count = found_result_count
-                    try:
-                        search_priority = u_parser_at_default[u_key.USER_PRIORITY]
-                        _sort_arg = self.get_metadata_arg_from_user_config_(search_priority)
-                        popularity_sorted_list = sorted(regex_filtered_results, key=lambda k: k[_sort_arg],
-                                                        reverse=True)
-                        most_popular_results = list()
-                        for index in range(expected_search_result_count):
-                            # TODO should do some debug here to and see if indexes are working as expected
-                            most_popular_results.append(popularity_sorted_list[index])
-                    except Exception as e_err:
-                        ml.log_event(e_err, level=ml.ERROR)
-                    if not self.active_header_search_id_is_valid():
-                        ml.log_event('search id for {} is invalid'.format(self.active_section))
-                        self.update_search_states(
-                            s_key.QUEUED)  # wanted to add result but id bad, re-queue search
-                        return
-                    if most_popular_results is not None:
-                        self.check_if_search_is_concluded()  # we found some results, have we met our 'concluded' criteria?
-                        self.set_search_id_as_inactive()
-                        ml.log_event('results sorted by popularity for {}'.format(self.active_section))
-                        for result in most_popular_results:
-                            if self.result_has_enough_seeds(result):
-                                # self._qbit_add_result(result)  # FIXME, deleted this function and put code below..
-                                count_before = self.count_all_local_results()
-                                ml.log_event(f'local machine has {count_before} stored results before add attempt..')
-                                self.qbit_client.torrents_add(urls=result[metadata_parser_keys.URL], is_paused=True)
-                                self.pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
-                                results_added = self.count_all_local_results() - count_before
-                                # TODO why does client fail to add so much? async opportunity? bad results? dig into api code perhaps
-                                if results_added > 0:  # successful add
-                                    self._metadata_parser_write_to_metadata_config_file(result)
-                                    s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = \
-                                        str(int(s_parser_at_active[
-                                                    s_key.RESULTS_ADDED_COUNT]))
-                                    return
-                                ml.log_event('client failed to add \'{}\''.format(result[metadata_parser_keys.NAME]),
-                                             level=ml.WARNING)
-                                # TODO if add was not successful, log FAILED
+                    search_priority = u_parser_at_default[u_key.USER_PRIORITY]
+                    _sort_arg = self.get_metadata_arg_from_user_config_(search_priority)
+                    popularity_sorted_list = sorted(regex_filtered_results,
+                                                    key=lambda k: k[_sort_arg],
+                                                    reverse=True)
+                    most_popular_results = list()
+                    for index in range(expected_search_result_count):
+                        # TODO should do some debug here to and see if indexes are working as expected
+                        most_popular_results.append(popularity_sorted_list[index])
+                    assert self.active_section in self.active_search_ids, 'active section not in active search ids!'
+                    ml.log_event('search id for {} is invalid'.format(self.active_section))
+                    self.update_search_states(s_key.QUEUED)  # wanted to add result but id bad, re-queue search
+                    assert most_popular_results is not None, 'most popular results is None!'
+                    concluded = list()
+                    for section in s_parser.sections():
+                        for key in section:
+                            if key == s_key.SEARCH_CONCLUDED:
+                                search_concluded = s_parser[section].getboolean(key)
+                                concluded.append(search_concluded)
+                    self.set_search_id_as_inactive()
+                    if all(concluded):
+                        ml.log_event('all search tasks concluded, exiting program')
+                        exit()
+                    ml.log_event('results sorted by popularity for {}'.format(self.active_section))
+                    for result in most_popular_results:
+                        if self.result_has_enough_seeds(result):
+                            # self._qbit_add_result(result)  # FIXME, deleted this function and put code below..
+                            count_before = self.count_all_local_results()
+                            ml.log_event(f'local machine has {count_before} stored results before add attempt..')
+                            self.qbit_client.torrents_add(urls=result[metadata_parser_keys.URL], is_paused=True)
+                            self.pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
+                            results_added = self.count_all_local_results() - count_before
+                            # TODO why does client fail to add so much? async opportunity? bad results? dig into api code perhaps
+                            if results_added > 0:  # successful add
+                                self._metadata_parser_write_to_metadata_config_file(result)
+                                s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = \
+                                    str(int(s_parser_at_active[
+                                                s_key.RESULTS_ADDED_COUNT]))
+                                return
+                            ml.log_event('client failed to add \'{}\''.format(result[metadata_parser_keys.NAME]),
+                                         level=ml.WARNING)
+                            # TODO if add was not successful, log FAILED
                     ml.log_event('add results by popularity', event_completed=True)
                     # TODO add_result goes here
                 else:
