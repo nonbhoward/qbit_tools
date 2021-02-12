@@ -54,31 +54,8 @@ def fetch_metadata_from_(m_parser) -> dict:
 
 
 def get_most_popular_results(self, regex_filtered_results: list) -> list:
-    search_detail_parser_keys, user_config_parser_keys = \
-        self.get_keyring_for_search_detail_parser(), self.get_keyring_for_user_config_parser()
-    search_detail_parser_at_active_header = self.get_search_detail_parser_at_active_header()
-    expected_search_result_count = \
-        int(search_detail_parser_at_active_header[search_detail_parser_keys.EXPECTED_SEARCH_RESULT_COUNT])
-    # TODO why is expected_search_result_count == 0?
-    ml.log_event(f'get most popular results up to count {expected_search_result_count}', event_completed=False)
-    # TODO BUG happens here : '<' not supported between instances of 'int' and 'str'
-    found_result_count = len(regex_filtered_results)
-    if not enough_results_in_(regex_filtered_results, expected_search_result_count):
-        expected_search_result_count = found_result_count
     try:
-        search_detail_parser_keys, user_config_parser_keys = \
-            self.get_keyring_for_search_detail_parser(), self.get_keyring_for_user_config_parser()
-        user_config_parser_default_section = \
-            self.config.parser.parsers.user_config_parser[user_config_parser_keys.DEFAULT]
-        # TODO BUG this line breaks the program due to int/str type issues
-        _priority = user_config_parser_default_section[user_config_parser_keys.USER_PRIORITY]
-        _sort_arg = self.get_metadata_arg_from_user_config_(_priority)
-        popularity_sorted_list = sorted(regex_filtered_results, key=lambda k: k[_sort_arg], reverse=True)
-        most_popular_results = list()
-        for index in range(expected_search_result_count):
-            # TODO should do some debug here to and see if indexes are working as expected
-            most_popular_results.append(popularity_sorted_list[index])
-        return most_popular_results
+        pass
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 

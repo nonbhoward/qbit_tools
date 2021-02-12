@@ -97,25 +97,41 @@ class QbitStateManager:
                 regex_filtered_results, regex_filtered_results_count = self._get_regex_filtered_results_and_count()
                 if regex_filtered_results is not None and regex_filtered_results_count > 0:
                     # TODO results_key.supply could be sort by any key, how to get that value here?
-                    # search_priority = self._get_priority_key_for_search_result_sorting()  # TODO delete
                     s_parser = self.cfg.get_parser_for_(search=True)
+                    s_parser_at_active = s_parser[self.active_section]
                     s_key = self.cfg.get_keyring_for_(search=True)
                     u_parser = self.cfg.get_parser_for_(settings=True)
-                    # u_key = self.config.user_config_keys  # TODO delete me
                     u_key = self.cfg.get_keyring_for_(settings=True)
-                    # search_priority = self.config.parser_value_read_with_(
-                    #     parser_key=u_key.USER_PRIORITY, settings=True)
+                    u_parser_at_default = u_parser[u_key.DEFAULT]
                     search_priority = u_parser[u_key.USER_PRIORITY]
                     # FIXME below function deleted and code moved below.. delete after consolidation..
                     # self._save_remote_metadata_to_local_results_sorting_by_(search_priority, regex_filtered_results)
-                    search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
                     ml.log_event('add results by {}'.format(search_priority), event_completed=False)
-                    # TODO implement attribute here, 'rKey.nbSeeders' instead of 'popularity
-                    most_popular_results = self.get_most_popular_results(regex_filtered_results)
+                    # FIXME below function deleted and code moved below.. delete after consolidation..
+                    # most_popular_results = self.get_most_popular_results(regex_filtered_results)
+                    expected_search_result_count = int(s_parser_at_active[s_key.EXPECTED_SEARCH_RESULT_COUNT])
+                    # TODO why is expected_search_result_count == 0?
+                    ml.log_event(f'get most popular results up to count {expected_search_result_count}',
+                                 event_completed=False)
+                    # TODO BUG happens here : '<' not supported between instances of 'int' and 'str'
+                    found_result_count = len(regex_filtered_results)
+                    if not enough_results_in_(regex_filtered_results, expected_search_result_count):
+                        expected_search_result_count = found_result_count
+                    try:
+                        search_priority = u_parser_at_default[u_key.USER_PRIORITY]
+                        _sort_arg = self.get_metadata_arg_from_user_config_(search_priority)
+                        popularity_sorted_list = sorted(regex_filtered_results, key=lambda k: k[_sort_arg],
+                                                        reverse=True)
+                        most_popular_results = list()
+                        for index in range(expected_search_result_count):
+                            # TODO should do some debug here to and see if indexes are working as expected
+                            most_popular_results.append(popularity_sorted_list[index])
+                    except Exception as e_err:
+                        ml.log_event(e_err, level=ml.ERROR)
                     if not self.active_header_search_id_is_valid():
                         ml.log_event('search id for {} is invalid'.format(self.active_section))
                         self.update_search_states(
-                            search_parser_keys.QUEUED)  # wanted to add result but id bad, re-queue search
+                            s_key.QUEUED)  # wanted to add result but id bad, re-queue search
                         return
                     if most_popular_results is not None:
                         self.check_if_search_is_concluded()  # we found some results, have we met our 'concluded' criteria?
@@ -127,14 +143,14 @@ class QbitStateManager:
                                 count_before = self.count_all_local_results()
                                 ml.log_event(f'local machine has {count_before} stored results before add attempt..')
                                 self.qbit_client.torrents_add(urls=result[metadata_parser_keys.URL], is_paused=True)
-                                self.pause_on_event(user_config_parser_keys.WAIT_FOR_SEARCH_RESULT_ADD)
+                                self.pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
                                 results_added = self.count_all_local_results() - count_before
                                 # TODO why does client fail to add so much? async opportunity? bad results? dig into api code perhaps
                                 if results_added > 0:  # successful add
                                     self._metadata_parser_write_to_metadata_config_file(result)
-                                    search_detail_parser_at_active_header[search_parser_keys.RESULTS_ADDED_COUNT] = \
-                                        str(int(search_detail_parser_at_active_header[
-                                                    search_parser_keys.RESULTS_ADDED_COUNT]))
+                                    s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = \
+                                        str(int(s_parser_at_active[
+                                                    s_key.RESULTS_ADDED_COUNT]))
                                     return
                                 ml.log_event('client failed to add \'{}\''.format(result[metadata_parser_keys.NAME]),
                                              level=ml.WARNING)
@@ -155,8 +171,8 @@ class QbitStateManager:
     def pause_on_event(self, pause_type):
         try:
             timestamp = datetime.now()
-            parser = self.cfg.user_config_parser
-            keys = self.cfg.settings
+            parser = self.cfg.get_parser_for_(settings=True)
+            keys = self.cfg.get_keyring_for_(settings=True)
             parser_at_default = parser[keys.DEFAULT]
             if pause_type == keys.WAIT_FOR_MAIN_LOOP:
                 delay = int(parser_at_default[keys.WAIT_FOR_MAIN_LOOP])
