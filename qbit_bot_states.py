@@ -103,10 +103,13 @@ class QbitStateManager:
                     u_parser = self.cfg.get_parser_for_(settings=True)
                     u_key = self.cfg.get_keyring_for_(settings=True)
                     u_parser_at_default = u_parser[u_key.DEFAULT]
+                    m_key = self.cfg.get_keyring_for_(metadata=True)
                     search_priority = u_parser[u_key.USER_PRIORITY]
+
                     # FIXME below function deleted and code moved below.. delete after consolidation..
                     # self._save_remote_metadata_to_local_results_sorting_by_(search_priority, regex_filtered_results)
                     ml.log_event('add results by {}'.format(search_priority), event_completed=False)
+
                     # FIXME below function deleted and code moved below.. delete after consolidation..
                     # most_popular_results = self.get_most_popular_results(regex_filtered_results)
                     expected_search_result_count = int(s_parser_at_active[s_key.EXPECTED_SEARCH_RESULT_COUNT])
@@ -117,11 +120,13 @@ class QbitStateManager:
                     found_result_count = len(regex_filtered_results)
                     if not enough_results_in_(regex_filtered_results, expected_search_result_count):
                         expected_search_result_count = found_result_count
+
                     search_priority = u_parser_at_default[u_key.USER_PRIORITY]
-                    _sort_arg = self.get_metadata_arg_from_user_config_(search_priority)
-                    popularity_sorted_list = sorted(regex_filtered_results,
-                                                    key=lambda k: k[_sort_arg],
-                                                    reverse=True)
+                    # _sort_arg = self.get_metadata_arg_from_user_config_(search_priority)
+                    _sort_arg = 'nbSeeders'
+
+                    # sort the results by their key value, _sort_arg
+                    popularity_sorted_list = sorted(regex_filtered_results, key=lambda k: k[_sort_arg], reverse=True)
                     most_popular_results = list()
                     for index in range(expected_search_result_count):
                         # TODO should do some debug here to and see if indexes are working as expected
@@ -136,17 +141,24 @@ class QbitStateManager:
                             if key == s_key.SEARCH_CONCLUDED:
                                 search_concluded = s_parser[section].getboolean(key)
                                 concluded.append(search_concluded)
-                    self.set_search_id_as_inactive()
+                    self.set_search_id_as_()
                     if all(concluded):
                         ml.log_event('all search tasks concluded, exiting program')
                         exit()
                     ml.log_event('results sorted by popularity for {}'.format(self.active_section))
+                    minimum_seeds = int(s_parser_at_active[s_key.MIN_SEED])
                     for result in most_popular_results:
-                        if self.result_has_enough_seeds(result):
+                        enough_seeds = False
+                        result_seeds = result[m_key.SUPPLY]
+                        if result_seeds > minimum_seeds:
+                            enough_seeds = True
+                        else:
+                            enough_seeds = False
+                        if enough_seeds:
                             # self._qbit_add_result(result)  # FIXME, deleted this function and put code below..
                             count_before = self.count_all_local_results()
                             ml.log_event(f'local machine has {count_before} stored results before add attempt..')
-                            self.qbit_client.torrents_add(urls=result[metadata_parser_keys.URL], is_paused=True)
+                            self.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=True)
                             self.pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
                             results_added = self.count_all_local_results() - count_before
                             # TODO why does client fail to add so much? async opportunity? bad results? dig into api code perhaps
@@ -156,7 +168,7 @@ class QbitStateManager:
                                     str(int(s_parser_at_active[
                                                 s_key.RESULTS_ADDED_COUNT]))
                                 return
-                            ml.log_event('client failed to add \'{}\''.format(result[metadata_parser_keys.NAME]),
+                            ml.log_event('client failed to add \'{}\''.format(result[m_key.NAME]),
                                          level=ml.WARNING)
                             # TODO if add was not successful, log FAILED
                     ml.log_event('add results by popularity', event_completed=True)
@@ -214,6 +226,17 @@ class QbitStateManager:
             for active_search_header_name in self.active_search_ids.keys():
                 ml.log_event(f'search header : \'{active_search_header_name}\'')
             return True
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def set_search_id_as_(self, search_id: str, active=False):
+        try:
+            if not active:
+                ml.log_event(f'deleting dict entry for \'{search_id}\' at \'{self.active_section}\'')
+                del self.active_search_ids[self.active_section]
+                return
+            ml.log_event(f'creating dict entry for \'{search_id}\' at \'{self.active_section}\'')
+            self.active_search_ids[self.active_section] = search_id
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 

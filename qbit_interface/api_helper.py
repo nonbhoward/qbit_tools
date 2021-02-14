@@ -125,17 +125,7 @@ def regex_matches(self, filename_regex, filename) -> bool:
 
 def result_has_enough_seeds(self, result) -> bool:
     try:
-        metadata_parser_keys, search_parser_keys = \
-            self.config.hardcoded.keys.metadata_parser_keyring, self.config.hardcoded.keys.search_parser_keyring
-        search_detail_parser_at_active_header = self.get_search_detail_parser_at_active_header()
-        # minimum_seeds = int(self.search_parser[self.active_header][search_key.minimum_seeds])  # TODO delete
-        minimum_seeds = int(search_detail_parser_at_active_header[search_parser_keys.MIN_SEED])
-        # result_seeds = result[results_key.supply]
-        result_seeds = result[metadata_parser_keys.SUPPLY]
-        if result_seeds > minimum_seeds:
-            ml.log_event('result {} has {} seeds, attempting to add'.format(result['fileName'], result_seeds))
-            return True
-        return False
+        pass
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
