@@ -98,29 +98,29 @@ class QbitConfig:
                 parser = self.config.parser.parsers.search_settings_and_status
                 return parser
             if settings:
-                parser = self.config.parser.parsers.user_config_parser
+                parser = self.config.parser.parsers.user_settings_parser
                 return parser
             raise Exception('no parser has been chosen')
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def read_parser_value_with_key_(self, parser_key, section='DEFAULT',
-                                    metadata=False, search=False, settings=False) -> str:
+    def read_parser_value_with_(self, key, section='DEFAULT',
+                                metadata=False, search=False, settings=False) -> str:
         try:
             parser = None
             if metadata:
                 assert section in self.metadata_parser, 'metadata section not found'
                 parser = self.metadata_parser[section]
-                assert parser_key in parser, 'metadata key not found'
+                assert key in parser, 'metadata key not found'
             if search:
                 assert section in self.search_settings_and_status, 'search detail section not found'
                 parser = self.search_settings_and_status[section]
-                assert parser_key in parser, 'search detail key not found'
+                assert key in parser, 'search detail key not found'
             if settings:
                 assert section in self.user_config_parser, 'user config section not found'
                 parser = self.user_config_parser[section]
-                assert parser_key in parser, 'user config key not found'
-            value = parser[parser_key]
+                assert key in parser, 'user config key not found'
+            value = parser[key]
             return value
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)

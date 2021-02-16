@@ -55,10 +55,17 @@ class QbitApiCaller:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def get_search_results(self, search_id):
+    def get_search_results(self, search_id, use_filename_regex_filter=False, *args) -> list:
         try:
             results = self.qbit_client.search_results(search_id)
             assert results is not None, 'bad results, fix it or handle it'
+            results = results['results']  # TODO do this? or no?
+            filename_regex = s_key.REGEX_FILTER_FOR_FILENAME
+            filtered_results = list()
+            if use_filename_regex_filter:
+                ml.log_event(f'filtering results using filename regex \'{filename_regex}\'')
+                for result in results:
+                    filename = result[]
             return results
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)

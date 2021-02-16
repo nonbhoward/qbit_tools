@@ -16,9 +16,9 @@ class ConfigParserPathNames:  # Configuration.HardCoded.DirectoryNames.ConfigPar
 class ConfigParserFileNames:  # Configuration.HardCoded.FileNames.ConfigParserFileNames
     # project's configuration file names, cannot be changed without changing project structure
     def __init__(self):
-        self.config = 'EDIT_SETTINGS_HERE.cfg'
         self.metadata = 'metadata_history.cfg'
         self.search = 'search.cfg'
+        self.user_settings = 'EDIT_SETTINGS_HERE.cfg'
 
 
 class MetadataParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
@@ -55,8 +55,8 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.EMPTY = ''
         self.EXPECTED_SEARCH_RESULT_COUNT = 'expected_search_result_count'
         self.ID = 'search_id'
-        self.MAX_SEARCH_ATTEMPT_COUNT = 'maximum_search_attempt_count'
         self.MAX_FILE_SIZE = 'max_file_size'  # TODO add
+        self.MAX_SEARCH_ATTEMPT_COUNT = 'maximum_search_attempt_count'
         self.MIN_SEED = 'minimum_seed_count'
         self.RANK = 'search_rank'
         self.REGEX_FILTER_FOR_FILENAME = 'regex_filter_for_filename'  # TODO allow a list of tilers?
@@ -67,7 +67,7 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.SEARCH_ATTEMPT_COUNT = 'search_attempt_count'
         self.SEARCH_STOPPED_REASON = 'search_stopped_reason'
         self.TIME_LAST_READ = time_last_read
-        self.TIME_LAST_SEARCHED = time_last_searched  # TODO add
+        self.TIME_LAST_SEARCHED = time_last_searched
         self.TIME_LAST_WRITTEN = time_last_written
         self.TOPIC = 'topic'  # your search term
         # search state keys, 'concluded' and 'queued' are arbitrary names and can be changed
@@ -127,7 +127,7 @@ class ParserPaths:  # Configuration.Parser.ParserPaths
     @staticmethod
     def get_parser_paths_from_(configuration):
         try:
-            print('todo')
+            print('todo? : ParserPaths().get_parser_paths_from_()')
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -138,8 +138,8 @@ class Parsers:  # Configuration.Parser.Parsers
         parser_paths = configuration.paths._get_parser_paths_from_(configuration)
         self.parsers_keyed_by_file_path = self.get_parsers_from_(parser_paths)
         self.metadata_parser = self.parsers_keyed_by_file_path[parser_paths[0]]
-        self.search_detail_parser = self.parsers_keyed_by_file_path[parser_paths[1]]
-        self.user_config_parser = self.parsers_keyed_by_file_path[parser_paths[2]]
+        self.search_parser = self.parsers_keyed_by_file_path[parser_paths[1]]
+        self.user_settings_parser = self.parsers_keyed_by_file_path[parser_paths[2]]
 
     @staticmethod
     def get_parsers_from_(parser_paths) -> dict:
@@ -197,7 +197,7 @@ class Paths:  # Configuration.Paths
             metadata_parser_path = Path(path.data, configuration.hardcoded.filenames.config_parser.metadata)
             search_details_path = Path(path.data, configuration.hardcoded.filenames.config_parser.search)
             # user config paths
-            user_config_path = Path(path.user_config, configuration.hardcoded.filenames.config_parser.config)
+            user_config_path = Path(path.user_config, configuration.hardcoded.filenames.config_parser.user_settings)
             # build and return
             parser_paths = [metadata_parser_path, search_details_path, user_config_path]
             return * parser_paths,

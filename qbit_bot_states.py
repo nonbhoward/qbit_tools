@@ -56,10 +56,10 @@ class QbitStateManager:
     def initiate_and_monitor_searches(self):
         try:
             search_sections = self.cfg.get_all_sections_from_parser_(search=True)
-            search = self.cfg.get_keyring_for_(search=True)
-            settings = self.cfg.get_keyring_for_(settings=True)
-            self.cfg.set_search_rank_using_(search.TIME_LAST_SEARCHED)
-            self.pause_on_event(u_keys.WAIT_FOR_USER)
+            s_key = self.cfg.get_keyring_for_(search=True)
+            u_key = self.cfg.get_keyring_for_(settings=True)
+            self.cfg.set_search_rank_using_(s_key.TIME_LAST_SEARCHED)
+            self.pause_on_event(u_key.WAIT_FOR_USER)
             for search_section in search_sections:
                 self.active_section = search_section
                 ml.log_event(f'monitoring search header \'{self.active_section}\'')
@@ -73,37 +73,59 @@ class QbitStateManager:
         try:
             ml.log_event('begin to manage state updates..')
             search_queued, search_running, search_stopped, search_concluded = section_search_state
-            parser = self.cfg.search_settings_and_status
-            parser_at_active = parser[self.active_section]
-            search = self.cfg.search_detail_keys
-            settings = self.cfg.settings
-            _temp = self.cfg.read_parser_value_with_key_(search.RANK, self.active_section, search=True)
-            search_rank = int(_temp)
+            # shared search parser variables
+            s_parser = self.cfg.get_parser_for_(search=True)
+            s_key = self.cfg.get_keyring_for_(search=True)
+            s_parser_at_active = s_parser[self.active_section]
+            # shared metadata parser variables
+            m_parser = self.cfg.get_parser_for_(metadata=True)
+            m_key = self.cfg.get_keyring_for_(metadata=True)
+            # shared user config parser variables
+            u_parser = self.cfg.get_parser_for_(settings=True)
+            u_key = self.cfg.get_keyring_for_(settings=True)
+            u_parser_at_default = u_parser[u_key.DEFAULT]
+            # shared variables
+            search_rank = int(self.cfg.read_parser_value_with_(s_key.RANK, self.active_section, search=True))
+            search_id = self.active_search_ids[self.active_section]
             if search_queued and not self.search_queue_full() and search_rank < 3:  # TODO un-hardcode this
                 self.start_search()
             elif search_running:
-                search_id = self.active_search_ids[self.active_section]
                 search_status = self.api.get_search_status(search_id)
                 ml.log_event(f'ongoing searches are..')
                 for section_header, search_id in self.active_search_ids:
                     ml.log_event(f'\t header \'{section_header}\' with id \'{search_id}\'')
-                if search.RUNNING in search_status:
+                if s_key.RUNNING in search_status:
                     pass  # search ongoing, do nothing
-                elif search.STOPPED in search_status:
-                    self.update_search_states(search.STOPPED)  # mark search as stopped (finished)
+                elif s_key.STOPPED in search_status:
+                    self.update_search_states(s_key.STOPPED)  # mark search as stopped (finished)
                 else:
-                    self.update_search_states(search.QUEUED)  # unexpected state, re-queue
+                    self.update_search_states(s_key.QUEUED)  # unexpected state, re-queue
             elif search_stopped:
-                regex_filtered_results, regex_filtered_results_count = self._get_regex_filtered_results_and_count()
+                # FIXME this function is getting called on headers that don't have active search ids
+                args = [s_key.REGEX_FILTER_FOR_FILENAME,
+                        m_key.RESULT]
+                results = self.api.get_search_results(search_id=search_id,
+                                                      use_filename_regex_filter=True,
+                                                      args=args)
+                # TODO START
+                filtered_results = list()
+                filtered_result_count = 0
+                if results is not None:
+                    ml.log_event('get filename regex pattern for active header \'{}\''.format(self.active_section))
+                    for result in results[m_key.RESULT]:
+                        filename = result[m_key.NAME]
+                        filename_regex = self.cfg.read_parser_value_with_(key=s_key.REGEX_FILTER_FOR_FILENAME, section=self.active_section, search=True)
+                        if regex_matches(filename_regex, filename):
+                            filtered_results.append(result)
+                            filtered_result_count += 1
+                    ml.log_event('\'{}\' filtered results have been found'.format(filtered_result_count))
+                elif results is None:
+                    ml.log_event('no search results for \'{}\''.format(self.active_section), level=ml.WARNING)
+                regex_filtered_results = filtered_results
+                regex_filtered_results_count = filtered_result_count
+                # TODO END
                 if regex_filtered_results is not None and regex_filtered_results_count > 0:
                     # TODO results_key.supply could be sort by any key, how to get that value here?
-                    s_parser = self.cfg.get_parser_for_(search=True)
-                    s_parser_at_active = s_parser[self.active_section]
-                    s_key = self.cfg.get_keyring_for_(search=True)
-                    u_parser = self.cfg.get_parser_for_(settings=True)
-                    u_key = self.cfg.get_keyring_for_(settings=True)
-                    u_parser_at_default = u_parser[u_key.DEFAULT]
-                    m_key = self.cfg.get_keyring_for_(metadata=True)
                     search_priority = u_parser[u_key.USER_PRIORITY]
 
                     # FIXME below function deleted and code moved below.. delete after consolidation..
@@ -156,12 +178,12 @@ class QbitStateManager:
                             enough_seeds = False
                         if enough_seeds:
                             # self._qbit_add_result(result)  # FIXME, deleted this function and put code below..
-                            count_before = self.count_all_local_results()
+                            count_before = self.api.count_all_local_results()
                             ml.log_event(f'local machine has {count_before} stored results before add attempt..')
-                            self.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=True)
+                            self.api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=True)
                             self.pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
                             results_added = self.count_all_local_results() - count_before
-                            # TODO why does client fail to add so much? async opportunity? bad results? dig into api code perhaps
+                            # TODO why does client fail to add so often?
                             if results_added > 0:  # successful add
                                 self._metadata_parser_write_to_metadata_config_file(result)
                                 s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = \
@@ -175,12 +197,12 @@ class QbitStateManager:
                     # TODO add_result goes here
                 else:
                     ml.log_event(f're-queueing search for {self.active_section}..')
-                    self.update_search_states(search.QUEUED)  # no results found, re-queue
+                    self.update_search_states(s_key.QUEUED)  # no results found, re-queue
             elif search_concluded:
                 pass
             else:
-                self.update_search_states(search.QUEUED)
-            self.pause_on_event(u_keys.WAIT_FOR_SEARCH_STATUS_CHECK)
+                self.update_search_states(s_key.QUEUED)
+            self.pause_on_event(u_key.WAIT_FOR_SEARCH_STATUS_CHECK)
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -242,26 +264,26 @@ class QbitStateManager:
 
     def start_search(self):
         try:
-            parser = self.cfg.search_settings_and_status
-            keys = self.cfg.search_detail_keys
-            search_term = parser[self.active_section][keys.TOPIC]
+            s_parser = self.cfg.search_settings_and_status
+            s_key = self.cfg.search_detail_keys
+            search_term = s_parser[self.active_section][s_key.TOPIC]
             search_properties = self.api.create_search_job(search_term, 'all', 'all')
             search_job, search_status, search_state, search_id, search_count = search_properties
             if search_id is None or empty_(search_id):
                 raise Exception('search id invalid, no! no! no! no! no!')
-            if keys.RUNNING in search_state:  # for search sorting
-                key = keys.TIME_LAST_SEARCHED
+            if s_key.RUNNING in search_state:  # for search sorting
+                key = s_key.TIME_LAST_SEARCHED
                 tls = datetime.now()
                 self.cfg.write_parser_value_with_key_(key, tls, self.active_section, search=True)
                 ml.log_event(f'search started for \'{self.active_section}\' with search id \'{search_id}\'',
                              event_completed=True, announce=True)
                 self.active_search_ids[self.active_section] = search_id
-                self.update_search_states(keys.RUNNING)
-            elif keys.STOPPED in search_status:
+                self.update_search_states(s_key.RUNNING)
+            elif s_key.STOPPED in search_status:
                 ml.log_event(f'search not successfully started for \'{self.active_section}\'',
                              announce=True, level=ml.WARNING)
             else:
-                ml.log_event(f'search_state is not \'{keys.RUNNING}\' or \'{keys.STOPPED}\', there was a '
+                ml.log_event(f'search_state is not \'{s_key.RUNNING}\' or \'{s_key.STOPPED}\', there was a '
                              f'problem starting the search!', level=ml.ERROR)
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)

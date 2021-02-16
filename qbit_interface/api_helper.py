@@ -44,26 +44,9 @@ def get_most_popular_results(self, regex_filtered_results: list) -> list:
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def get_regex_filtered_results_and_count(self) -> tuple:
+def filter_results_using_(filename_regex, results) -> list:
     try:
-        # FIXME this function is getting called on headers that don't have active search ids
-        results = self._qbit_get_search_results()
 
-        metadata_parser_keys = self.get_keyring_for_metadata_parser()
-        filtered_results = list()
-        filtered_result_count = 0
-        if results is None:
-            ml.log_event('no search results for \'{}\''.format(self.active_section), level=ml.WARNING)
-            return None, 0
-        ml.log_event('get filename regex pattern for active header \'{}\''.format(self.active_section))
-        for result in results[metadata_parser_keys.RESULT]:
-            filename = result[metadata_parser_keys.NAME]
-            filename_regex = self.search_parser_get_filename_regex()
-            if self.regex_matches(filename_regex, filename):
-                filtered_results.append(result)
-                filtered_result_count += 1
-        ml.log_event('\'{}\' filtered results have been found'.format(filtered_result_count))
-        return filtered_results, filtered_result_count
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -74,7 +57,7 @@ def hash_metadata(self, x, undo=False):
         _undo = -1 if undo else 1
         _ucp_keys = self.get_keyring_for_user_config_parser()
         _hash = ''.join([chr(ord(e) + int(
-            self.config.parser.parsers.user_config_parser[_ucp_keys.DEFAULT][_ucp_keys.UNI_SHIFT])) * _undo
+            self.user_settings.parser.parsers.user_settings_parser[_ucp_keys.DEFAULT][_ucp_keys.UNI_SHIFT])) * _undo
                          for e in str(x) if x])
 
         ml.log_event('hashed from {} to {}'.format(x, _hash))
@@ -89,23 +72,23 @@ def metadata_parser_write_to_metadata_config_file(self, result):
             self.get_keyring_for_metadata_parser(), self.get_keyring_for_user_config_parser()
         ml.log_event(f'save metadata result to file: {result[metadata_parser_keys.NAME]}')
         metadata_section = self.hash_metadata(result[metadata_parser_keys.NAME])
-        if not self.config.parser.parsers.metadata_parser.has_section(metadata_section):
+        if not self.user_settings.parser.parsers.metadata_parser.has_section(metadata_section):
             ml.log_event(f'qbit client has added result \'{result[metadata_parser_keys.NAME]}\' for header'
                          f' \'{self.active_section}\'', announce=True)
-            self.config.parser.parsers.metadata_parser.add_section(metadata_section)
+            self.user_settings.parser.parsers.metadata_parser.add_section(metadata_section)
             header = metadata_section
             for attribute, detail in result.items():
                 # TODO there are some redundant log commands 'above' and 'below' this entry
                 # TODO i think this entry is causing the redundant log commands with _hash() calls
                 h_attr, d_attr = self.hash_metadata(attribute), self.hash_metadata(detail)
                 ml.log_event(f'detail added to metadata parser with attribute key \'{h_attr}\'')
-                self.config.parser.parsers.metadata_parser[header][h_attr] = d_attr
+                self.user_settings.parser.parsers.metadata_parser[header][h_attr] = d_attr
                 self.pause_on_event(user_config_parser_keys.WAIT_FOR_USER)
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def regex_matches(self, filename_regex, filename) -> bool:
+def regex_matches(filename_regex, filename) -> bool:
     try:
         search_detail_parser_at_active_header = self.get_search_detail_parser_at_active_header()
         search_detail_parser_keys = self.get_keyring_for_search_detail_parser()
