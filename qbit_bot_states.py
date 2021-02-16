@@ -85,8 +85,11 @@ class QbitStateManager:
             u_key = self.cfg.get_keyring_for_(settings=True)
             u_parser_at_default = u_parser[u_key.DEFAULT]
             # shared variables
-            search_rank = int(self.cfg.read_parser_value_with_(s_key.RANK, self.active_section, search=True))
+            expected_results_count = int(s_parser_at_active[s_key.EXPECTED_SEARCH_RESULT_COUNT])
+            unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
             search_id = self.active_search_ids[self.active_section]
+            search_priority = u_parser[u_key.USER_PRIORITY]
+            search_rank = int(self.cfg.read_parser_value_with_(s_key.RANK, self.active_section, search=True))
             if search_queued and not self.search_queue_full() and search_rank < 3:  # TODO un-hardcode this
                 self.start_search()
             elif search_running:
@@ -101,75 +104,39 @@ class QbitStateManager:
                 else:
                     self.update_search_states(s_key.QUEUED)  # unexpected state, re-queue
             elif search_stopped:
-                # FIXME this function is getting called on headers that don't have active search ids
-                args = [s_key.REGEX_FILTER_FOR_FILENAME,
-                        m_key.RESULT]
+                filename_regex = self.cfg.read_parser_value_with_(key=s_key.REGEX_FILTER_FOR_FILENAME, section=self.active_section, search=True)
                 results = self.api.get_search_results(search_id=search_id,
                                                       use_filename_regex_filter=True,
-                                                      args=args)
-                # TODO START
-                filtered_results = list()
-                filtered_result_count = 0
-                if results is not None:
-                    ml.log_event('get filename regex pattern for active header \'{}\''.format(self.active_section))
-                    for result in results[m_key.RESULT]:
-                        filename = result[m_key.NAME]
-                        filename_regex = self.cfg.read_parser_value_with_(key=s_key.REGEX_FILTER_FOR_FILENAME, section=self.active_section, search=True)
-                        if regex_matches(filename_regex, filename):
-                            filtered_results.append(result)
-                            filtered_result_count += 1
-                    ml.log_event('\'{}\' filtered results have been found'.format(filtered_result_count))
-                elif results is None:
-                    ml.log_event('no search results for \'{}\''.format(self.active_section), level=ml.WARNING)
-                regex_filtered_results = filtered_results
-                regex_filtered_results_count = filtered_result_count
-                # TODO END
-                if regex_filtered_results is not None and regex_filtered_results_count > 0:
-                    # TODO results_key.supply could be sort by any key, how to get that value here?
-                    search_priority = u_parser[u_key.USER_PRIORITY]
-
-                    # FIXME below function deleted and code moved below.. delete after consolidation..
-                    # self._save_remote_metadata_to_local_results_sorting_by_(search_priority, regex_filtered_results)
+                                                      filename_regex=filename_regex,
+                                                      metadata_filename_key=m_key.NAME)
+                results_count = len(results)
+                if results is not None and results_count > 0:
+                    # TODO results_key.supply could be sort by any key
                     ml.log_event('add results by {}'.format(search_priority), event_completed=False)
-
-                    # FIXME below function deleted and code moved below.. delete after consolidation..
-                    # most_popular_results = self.get_most_popular_results(regex_filtered_results)
-                    expected_search_result_count = int(s_parser_at_active[s_key.EXPECTED_SEARCH_RESULT_COUNT])
-                    # TODO why is expected_search_result_count == 0?
-                    ml.log_event(f'get most popular results up to count {expected_search_result_count}',
-                                 event_completed=False)
-                    # TODO BUG happens here : '<' not supported between instances of 'int' and 'str'
-                    found_result_count = len(regex_filtered_results)
-                    if not enough_results_in_(regex_filtered_results, expected_search_result_count):
-                        expected_search_result_count = found_result_count
-
-                    search_priority = u_parser_at_default[u_key.USER_PRIORITY]
-                    # _sort_arg = self.get_metadata_arg_from_user_config_(search_priority)
-                    _sort_arg = 'nbSeeders'
-
-                    # sort the results by their key value, _sort_arg
-                    popularity_sorted_list = sorted(regex_filtered_results, key=lambda k: k[_sort_arg], reverse=True)
-                    most_popular_results = list()
-                    for index in range(expected_search_result_count):
-                        # TODO should do some debug here to and see if indexes are working as expected
-                        most_popular_results.append(popularity_sorted_list[index])
+                    ml.log_event(f'get most popular \'{expected_results_count}\' count results', event_completed=False)
+                    if not enough_results_in_(results, expected_results_count):
+                        expected_results_count = results_count
+                    # TODO remove hardcode
+                    sorted_results = sorted(results, key=lambda k: k['nbSeeders'], reverse=True)
+                    top_results = list()
+                    for index in range(expected_results_count):
+                        top_results.append(sorted_results[index])
                     assert self.active_section in self.active_search_ids, 'active section not in active search ids!'
-                    ml.log_event('search id for {} is invalid'.format(self.active_section))
                     self.update_search_states(s_key.QUEUED)  # wanted to add result but id bad, re-queue search
-                    assert most_popular_results is not None, 'most popular results is None!'
-                    concluded = list()
+                    assert top_results is not None, 'top results is None!'
+                    concluded_searches = list()
                     for section in s_parser.sections():
                         for key in section:
                             if key == s_key.SEARCH_CONCLUDED:
                                 search_concluded = s_parser[section].getboolean(key)
-                                concluded.append(search_concluded)
-                    self.set_search_id_as_()
-                    if all(concluded):
+                                concluded_searches.append(search_concluded)
+                    self.set_search_id_as_(search_id, active=False)
+                    if all(concluded_searches):
                         ml.log_event('all search tasks concluded, exiting program')
                         exit()
                     ml.log_event('results sorted by popularity for {}'.format(self.active_section))
                     minimum_seeds = int(s_parser_at_active[s_key.MIN_SEED])
-                    for result in most_popular_results:
+                    for result in top_results:
                         enough_seeds = False
                         result_seeds = result[m_key.SUPPLY]
                         if result_seeds > minimum_seeds:
@@ -182,16 +149,25 @@ class QbitStateManager:
                             ml.log_event(f'local machine has {count_before} stored results before add attempt..')
                             self.api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=True)
                             self.pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
-                            results_added = self.count_all_local_results() - count_before
+                            results_added = self.api.count_all_local_results() - count_before
                             # TODO why does client fail to add so often?
                             if results_added > 0:  # successful add
-                                self._metadata_parser_write_to_metadata_config_file(result)
-                                s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = \
-                                    str(int(s_parser_at_active[
-                                                s_key.RESULTS_ADDED_COUNT]))
+                                ml.log_event(f'save metadata result to file: {result[m_key.NAME]}')
+                                metadata_section = hash_metadata(result[m_key.NAME], offset=unicode_offset)
+                                if m_parser.has_section(metadata_section):
+                                    ml.log_event(f'metadata parser already has section \'{metadata_section}\'', level=ml.WARNING)
+                                    ml.log_event(f'qbit client has added result \'{result[m_key.NAME]}\' for header \'{self.active_section}\'', announce=True)
+                                    m_parser.add_section(metadata_section)
+                                    header = metadata_section
+                                    for attribute, detail in result.items():
+                                        h_attr, d_attr = hash_metadata(attribute, offset=unicode_offset), \
+                                                         hash_metadata(detail, offset=unicode_offset)
+                                        ml.log_event(f'detail added to metadata parser with attribute key \'{h_attr}\'')
+                                        m_parser[header][h_attr] = d_attr
+                                        self.pause_on_event(u_key.WAIT_FOR_USER)
+                                s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = str(int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT]))
                                 return
-                            ml.log_event('client failed to add \'{}\''.format(result[m_key.NAME]),
-                                         level=ml.WARNING)
+                            ml.log_event('client failed to add \'{}\''.format(result[m_key.NAME]), level=ml.WARNING)
                             # TODO if add was not successful, log FAILED
                     ml.log_event('add results by popularity', event_completed=True)
                     # TODO add_result goes here

@@ -1,3 +1,4 @@
+from api_helper import *
 from datetime import datetime
 from minimalog.minimal_log import MinimalLog
 from user_configuration.WEB_API_CREDENTIALS import *
@@ -55,17 +56,24 @@ class QbitApiCaller:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def get_search_results(self, search_id, use_filename_regex_filter=False, *args) -> list:
+    def get_search_results(self,
+                           search_id,
+                           filename_regex,
+                           metadata_filename_key,
+                           use_filename_regex_filter=False) -> list:
         try:
             results = self.qbit_client.search_results(search_id)
             assert results is not None, 'bad results, fix it or handle it'
             results = results['results']  # TODO do this? or no?
-            filename_regex = s_key.REGEX_FILTER_FOR_FILENAME
             filtered_results = list()
             if use_filename_regex_filter:
                 ml.log_event(f'filtering results using filename regex \'{filename_regex}\'')
                 for result in results:
-                    filename = result[]
+                    filename = result[metadata_filename_key]
+                    if regex_matches(filename_regex, filename):
+                        filtered_results.append(result)
+                assert filtered_results is not None, 'bad filtered results, fix it or handle it'
+                results = filtered_results
             return results
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)

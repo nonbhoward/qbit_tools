@@ -51,15 +51,11 @@ def filter_results_using_(filename_regex, results) -> list:
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def hash_metadata(self, x, undo=False):
+def hash_metadata(x, undo=False, offset=0):
     # TODO how to get u_keys here?
     try:
         _undo = -1 if undo else 1
-        _ucp_keys = self.get_keyring_for_user_config_parser()
-        _hash = ''.join([chr(ord(e) + int(
-            self.user_settings.parser.parsers.user_settings_parser[_ucp_keys.DEFAULT][_ucp_keys.UNI_SHIFT])) * _undo
-                         for e in str(x) if x])
-
+        _hash = ''.join([chr(ord(e) + int(offset)) * _undo for e in str(x) if x])
         ml.log_event('hashed from {} to {}'.format(x, _hash))
         return _hash
     except Exception as e_err:
@@ -68,22 +64,7 @@ def hash_metadata(self, x, undo=False):
 
 def metadata_parser_write_to_metadata_config_file(self, result):
     try:
-        metadata_parser_keys, user_config_parser_keys = \
-            self.get_keyring_for_metadata_parser(), self.get_keyring_for_user_config_parser()
-        ml.log_event(f'save metadata result to file: {result[metadata_parser_keys.NAME]}')
-        metadata_section = self.hash_metadata(result[metadata_parser_keys.NAME])
-        if not self.user_settings.parser.parsers.metadata_parser.has_section(metadata_section):
-            ml.log_event(f'qbit client has added result \'{result[metadata_parser_keys.NAME]}\' for header'
-                         f' \'{self.active_section}\'', announce=True)
-            self.user_settings.parser.parsers.metadata_parser.add_section(metadata_section)
-            header = metadata_section
-            for attribute, detail in result.items():
-                # TODO there are some redundant log commands 'above' and 'below' this entry
-                # TODO i think this entry is causing the redundant log commands with _hash() calls
-                h_attr, d_attr = self.hash_metadata(attribute), self.hash_metadata(detail)
-                ml.log_event(f'detail added to metadata parser with attribute key \'{h_attr}\'')
-                self.user_settings.parser.parsers.metadata_parser[header][h_attr] = d_attr
-                self.pause_on_event(user_config_parser_keys.WAIT_FOR_USER)
+        pass
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
