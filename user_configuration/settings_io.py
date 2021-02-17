@@ -7,7 +7,7 @@ ml = MinimalLog()
 
 class QbitConfig:
     def __init__(self):
-        self.config = get_user_configuration()
+        self.config = get_user_configuration(parse_all_project_files=False)
         # parsers
         self.metadata_parser = self.get_parser_for_(metadata=True)
         self.search_settings_and_status = self.get_parser_for_(search=True)
@@ -95,7 +95,7 @@ class QbitConfig:
                 parser = self.config.parser.parsers.metadata_parser
                 return parser
             if search:
-                parser = self.config.parser.parsers.search_settings_and_status
+                parser = self.config.parser.parsers.search_parser
                 return parser
             if settings:
                 parser = self.config.parser.parsers.user_settings_parser

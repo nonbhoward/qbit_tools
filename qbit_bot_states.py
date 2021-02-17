@@ -1,5 +1,5 @@
+from qbit_bot_helper import *
 from qbit_interface.api_comm import QbitApiCaller
-from qbit_interface.api_helper import *
 from user_configuration.settings_io import QbitConfig
 from time import sleep
 
@@ -9,11 +9,13 @@ class QbitStateManager:
         ml.log_event('initialize \'{}\''.format(self.__class__), event_completed=False, announce=True)
         self.api = QbitApiCaller()
         self.cfg = QbitConfig()
+        u_key = self.cfg.get_keyring_for_(settings=True)
+        u_parser_at_default = self.cfg.get_parser_for_(settings=True)[u_key.DEFAULT]
         self.main_loop_count = 0
         self.active_search_ids = dict()
         self.active_section = ''
         ml.log_event('initialize \'{}\''.format(self.__class__), event_completed=True, announce=True)
-        self.pause_on_event(self.cfg.settings.WAIT_FOR_USER)
+        self.pause_on_event(u_parser_at_default[u_key.WAIT_FOR_USER])
 
     def get_search_state(self) -> tuple:
         try:

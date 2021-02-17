@@ -1,4 +1,4 @@
-from api_helper import *
+from qbit_bot_helper import *
 from datetime import datetime
 from minimalog.minimal_log import MinimalLog
 from user_configuration.WEB_API_CREDENTIALS import *

@@ -46,7 +46,7 @@ def get_most_popular_results(self, regex_filtered_results: list) -> list:
 
 def filter_results_using_(filename_regex, results) -> list:
     try:
-
+        return list()
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 

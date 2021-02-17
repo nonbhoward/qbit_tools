@@ -9,8 +9,8 @@ ml = MinimalLog(__name__)
 class ConfigParserPathNames:  # Configuration.HardCoded.DirectoryNames.ConfigParserDirectoryNames
     # project's config directory names, cannot be changed without changing project structure
     def __init__(self):
-        self.user_config_path_name = ''  # TODO why empty?
-        self.data_path_name = '../data_src'
+        self.user_config_path_name = 'user_configuration'
+        self.data_path_name = 'data_src'
 
 
 class ConfigParserFileNames:  # Configuration.HardCoded.FileNames.ConfigParserFileNames
@@ -105,7 +105,7 @@ class DirectoryNames:  # Configuration.HardCoded.DirectoryNames
 
 class Extensions:  # Configuration.HardCoded.Extensions
     def __init__(self):
-        self.cfg = '.cfg'
+        self.cfg = '.cfg'  # FIXME, delimiter in string could cause issues
 
 
 class FileNames:  # Configuration.HardCoded.FileNames
@@ -252,9 +252,9 @@ class ConfigurationManager:  # ROOT @ Configuration
             ml.log_event(o_err)
 
 
-def get_user_configuration() -> ConfigurationManager:  # this is the only export required?
+def get_user_configuration(parse_all_project_files: bool) -> ConfigurationManager:  # this is the only export required?
     try:
-        configuration = ConfigurationManager(parse_all_project_files=True)
+        configuration = ConfigurationManager(parse_all_project_files)
         return configuration
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
