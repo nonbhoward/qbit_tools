@@ -66,10 +66,10 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.RESULTS_REQUIRED_COUNT = 'results_required_count'
         self.SEARCH_ATTEMPT_COUNT = 'search_attempt_count'
         self.SEARCH_STOPPED_REASON = 'search_stopped_reason'
+        self.TERM = 'search_term'  # your search term
         self.TIME_LAST_READ = time_last_read
         self.TIME_LAST_SEARCHED = time_last_searched
         self.TIME_LAST_WRITTEN = time_last_written
-        self.TOPIC = 'topic'  # your search term
         # search state keys, 'concluded' and 'queued' are arbitrary names and can be changed
         self.CONCLUDED = 'concluded'  # the search will not start again
         self.QUEUED = 'queued'  # the search is waiting to start

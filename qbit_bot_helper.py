@@ -74,7 +74,7 @@ def regex_matches(filename_regex, filename) -> bool:
         search_detail_parser_at_active_header = self.get_search_detail_parser_at_active_header()
         search_detail_parser_keys = self.get_keyring_for_search_detail_parser()
         user_config_parser_keys = self.get_keyring_for_user_config_parser()
-        primary_search_term = search_detail_parser_at_active_header[search_detail_parser_keys.TOPIC]
+        primary_search_term = search_detail_parser_at_active_header[search_detail_parser_keys.TERM]
         regex_match = findall(filename_regex, filename)
         if regex_match:
             # FIXME i don't like how this line is but if i split it up it looks worse somehow so.. what to do

@@ -115,6 +115,8 @@ class QbitConfig:
             if search:
                 assert section in self.search_settings_and_status, 'search detail section not found'
                 parser = self.search_settings_and_status[section]
+                if key == self.search_detail_keys.TERM and key not in parser:
+                    return section
                 assert key in parser, 'search detail key not found'
             if settings:
                 assert section in self.user_config_parser, 'user config section not found'

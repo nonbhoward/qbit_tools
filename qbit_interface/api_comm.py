@@ -82,7 +82,7 @@ class QbitApiCaller:
         try:
             ml.log_event(f'check search status for search id \'{search_id}\'')
             search_status = self.qbit_client.search_status(search_id=search_id)
-            assert search_status is not None, 'bad search status, fix it or handle it'
+            assert len(search_status) > 1, 'bad search status, fix it or handle it'
             search_status = search_status.data[0]['status']
             assert search_status is not None, 'bad search status attribute, fix it or handle it'
             return search_status
