@@ -287,6 +287,8 @@ class QbitStateManager:
                 parser_at_active[search.STOPPED] = search.NO
                 parser_at_active[search.CONCLUDED] = search.NO
                 parser.remove_section(search.ID)  # queued, delete any existing search id
+                if self.active_section in self.active_search_ids:
+                    del self.active_search_ids[self.active_section]
                 ml.log_event('search for \'{}\' is queued, will be started when search queue has vacancy'.format(
                     self.active_section))
             elif api_state_key == search.RUNNING:
