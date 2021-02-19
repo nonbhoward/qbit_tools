@@ -50,6 +50,7 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.DATETIME_ELEMENT_LIST = [time_last_read, time_last_searched, time_last_written]
         # FYI, ***FOR KEY REFERENCES ONLY*** trying to keep properties singular for predictability,
         # key strings can be plural or singular since they are never directly referenced
+        self.ADD_MODE = 'add_mode'  # FIXME add feature
         self.AVG_SEED_COUNT = 'average_seed_count'
         self.DEFAULT = 'DEFAULT'
         self.EMPTY = ''
