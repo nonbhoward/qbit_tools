@@ -91,7 +91,7 @@ class QbitStateManager:
                 search_id = self.active_search_ids[self.active_section]
             else:
                 search_id = ''
-            search_priority = u_parser_at_default[u_key.USER_PRIORITY]
+            search_priority = u_parser_at_default[u_key.USER_PRIORITY]  # TODO allow for other priorities?
             search_rank = int(self.cfg.read_parser_value_with_(s_key.RANK, self.active_section, search=True))
             if search_queued and not self.search_queue_full() and search_rank < 3:  # TODO un-hardcode this
                 self.start_search()
@@ -99,7 +99,7 @@ class QbitStateManager:
                 search_status = self.api.get_search_status(search_id)
                 if search_status is None:
                     ml.log_event(f'bad search id \'{search_id}\', ignored and re-queued', level=ml.WARNING)
-                    self.update_search_states(s_key.QUEUED)
+                    self.update_search_states(s_key.QUEUED)  # search should be running, but status is None.. requeue
                     return
                 ml.log_event(f'ongoing searches are..')
                 for section_header, search_id in self.active_search_ids.items():
@@ -116,14 +116,14 @@ class QbitStateManager:
                                                       use_filename_regex_filter=True,
                                                       filename_regex=filename_regex,
                                                       metadata_filename_key=m_key.NAME)
-                if results is None:
-                    ml.log_event(f'search results for \'{self.active_section}\' is None, re-queued', level=ml.WARNING)
+                if results is None or self.active_section not in self.active_search_ids:
+                    ml.log_event(f'search \'{self.active_section}\' is not active, re-queued', level=ml.WARNING)
                     self.update_search_states(s_key.QUEUED)
                     return
                 results_count = len(results)
                 # TODO results_key.supply could be sort by any key
-                ml.log_event('add results by {}'.format(search_priority), event_completed=False)
-                ml.log_event(f'get most popular \'{expected_results_count}\' count results', event_completed=False)
+                ml.log_event('add results by {}'.format(search_priority))
+                ml.log_event(f'get most popular \'{expected_results_count}\' count results')
                 if not enough_results_in_(results, expected_results_count):
                     expected_results_count = results_count
                 # TODO remove hardcode
@@ -233,7 +233,7 @@ class QbitStateManager:
             ml.log_event(f'search queue is FULL, cannot add header \'{self.active_section}\'', announce=True)
             ml.log_event('active search headers are..')
             for active_search_header_name in self.active_search_ids.keys():
-                ml.log_event(f'search header : \'{active_search_header_name}\'')
+                ml.log_event(f'\tsearch header : \'{active_search_header_name}\'')
             return True
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
@@ -258,7 +258,8 @@ class QbitStateManager:
             search_properties = self.api.create_search_job(search_term, 'all', 'all')
             search_job, search_status, search_state, search_id, search_count = search_properties
             if search_id is None or empty_(search_id):
-                raise Exception('search id invalid, no! no! no! no! no!')
+                ml.log_event(f'invalid API return \'{search_id}\'', level=ml.ERROR)
+                raise Exception('search id from API is invalid')
             if s_key.RUNNING in search_state:  # for search sorting
                 key = s_key.TIME_LAST_SEARCHED
                 tls = datetime.now()
@@ -268,7 +269,7 @@ class QbitStateManager:
                 self.active_search_ids[self.active_section] = search_id
                 self.update_search_states(s_key.RUNNING)
             elif s_key.STOPPED in search_status:
-                ml.log_event(f'search not successfully started for \'{self.active_section}\'',
+                ml.log_event(f'search status is stopped immediately after starting for \'{self.active_section}\'',
                              announce=True, level=ml.WARNING)
             else:
                 ml.log_event(f'search_state is not \'{s_key.RUNNING}\' or \'{s_key.STOPPED}\', there was a '
@@ -290,29 +291,29 @@ class QbitStateManager:
                 parser.remove_section(search.ID)  # queued, delete any existing search id
                 if self.active_section in self.active_search_ids:
                     del self.active_search_ids[self.active_section]
-                ml.log_event('search for \'{}\' is queued, will be started when search queue has vacancy'.format(
-                    self.active_section))
+                ml.log_event(f'search for \'{self.active_section}\' is queued, will '
+                             f'be started when search queue has vacancy')
             elif api_state_key == search.RUNNING:
                 parser_at_active[search.QUEUED] = search.NO
                 parser_at_active[search.RUNNING] = search.YES
                 parser_at_active[search.STOPPED] = search.NO
                 parser_at_active[search.CONCLUDED] = search.NO
                 self.increment_search_attempt_count()
-                ml.log_event('search for \'{}\' is running.. please stand by..'.format(self.active_section))
+                ml.log_event(f'search for \'{self.active_section}\' is running.. please stand by..')
             elif api_state_key == search.STOPPED:
                 parser_at_active[search.QUEUED] = search.NO
                 parser_at_active[search.RUNNING] = search.NO
                 parser_at_active[search.STOPPED] = search.YES
                 parser_at_active[search.CONCLUDED] = search.NO
-                ml.log_event('search for \'{}\' is stopped and will be processed on next program loop'.format(
-                    self.active_section))
+                ml.log_event(f'search for \'{self.active_section}\' is stopped and will '
+                             f'be processed on next loop')
             elif api_state_key == search.CONCLUDED:
                 parser_at_active[search.QUEUED] = search.NO
                 parser_at_active[search.RUNNING] = search.NO
                 parser_at_active[search.STOPPED] = search.NO
                 parser_at_active[search.CONCLUDED] = search.YES
-                ml.log_event('search for \'{}\' has concluded due to exceeding user preferences, '
-                             'no further action to be taken'.format(self.active_section))
+                ml.log_event(f'search for \'{self.active_section}\' has concluded due to '
+                             f'exceeding user preferences, no further action to be taken')
             else:
                 pass
             parser_at_active[search.TIME_LAST_WRITTEN] = str(datetime.now())  # TODO what???
