@@ -187,6 +187,7 @@ class QbitStateManager:
             elif search_concluded:
                 pass
             else:
+                ml.log_event(f'unknown search state..', level=ml.WARNING)
                 self.update_search_states(s_key.QUEUED)
             self.pause_on_event(u_key.WAIT_FOR_SEARCH_STATUS_CHECK)
         except Exception as e_err:
