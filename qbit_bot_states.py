@@ -40,8 +40,8 @@ class QbitStateManager:
         self.main_loop_count += 1
         ml.log_event(f'main loop has ended, {self.main_loop_count} total loops..')
         for _ in range(3):
-            ml.log_event('when in doubt, compare parsed file keys with '
-                         'config reader string values', level=ml.WARNING)
+            ml.log_event('REMEMBER, when debugging, start by comparing parser '
+                         'keys with settings io string values', level=ml.WARNING)
 
     def increment_search_attempt_count(self):
         try:
@@ -117,7 +117,8 @@ class QbitStateManager:
                                                       filename_regex=filename_regex,
                                                       metadata_filename_key=m_key.NAME)
                 if results is None or self.active_section not in self.active_search_ids:
-                    ml.log_event(f'search \'{self.active_section}\' is not active, re-queued', level=ml.WARNING)
+                    # FIXME there is an undiscovered bug less than 100us before this log event call
+                    ml.log_event(f'search \'{self.active_section}\' is stale, re-queued', level=ml.WARNING)
                     self.update_search_states(s_key.QUEUED)
                     return
                 results_count = len(results)
@@ -137,7 +138,7 @@ class QbitStateManager:
                 concluded_searches = list()
                 for section in s_parser.sections():
                     for key in section:
-                        if key == s_key.SEARCH_CONCLUDED:
+                        if key == s_key.CONCLUDED:
                             search_concluded = s_parser[section].getboolean(key)
                             concluded_searches.append(search_concluded)
                 self.set_search_id_as_(search_id, active=False)
@@ -187,7 +188,8 @@ class QbitStateManager:
             elif search_concluded:
                 pass
             else:
-                ml.log_event(f'unknown search state..', level=ml.WARNING)
+                ml.log_event(f'header \'{self.active_section}\' is restricted from starting '
+                             f'by search rank, this is by design', level=ml.WARNING)
                 self.update_search_states(s_key.QUEUED)
             self.pause_on_event(u_key.WAIT_FOR_SEARCH_STATUS_CHECK)
         except Exception as e_err:
