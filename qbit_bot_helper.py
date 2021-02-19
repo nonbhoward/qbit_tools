@@ -1,6 +1,7 @@
 from configparser import ConfigParser  # for type-checking
 from datetime import datetime
 from minimalog.minimal_log import MinimalLog
+from re import findall
 ml = MinimalLog(__name__)
 
 
@@ -17,7 +18,10 @@ def enough_results_in_(filtered_results, expected_result_count):
     try:
         filtered_results_count = len(filtered_results)
         if filtered_results_count < expected_result_count:
+            ml.log_event(f'not enough results were found! \'{filtered_results_count}\' '
+                         f'results, consider adjusting search parameters', level=ml.WARNING)
             return False
+        ml.log_event(f'search yielded adequate results, \'{filtered_results_count}\' results found')
         return True
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
@@ -71,16 +75,10 @@ def metadata_parser_write_to_metadata_config_file(self, result):
 
 def regex_matches(filename_regex, filename) -> bool:
     try:
-        search_detail_parser_at_active_header = self.get_search_detail_parser_at_active_header()
-        search_detail_parser_keys = self.get_keyring_for_search_detail_parser()
-        user_config_parser_keys = self.get_keyring_for_user_config_parser()
-        primary_search_term = search_detail_parser_at_active_header[search_detail_parser_keys.TERM]
         regex_match = findall(filename_regex, filename)
         if regex_match:
-            # FIXME i don't like how this line is but if i split it up it looks worse somehow so.. what to do
-            ml.log_event(f'@\'{self.active_section}\' w/ search term \'{primary_search_term}\' matched regex'
-                         f' pattern \'{filename_regex}\' to results filename.. \n\n{filename}\n')
-            self.pause_on_event(user_config_parser_keys.WAIT_FOR_USER)
+            ml.log_event(f'pattern \'{filename_regex}\' matched against '
+                         f'filename \'{filename}\'')
             return True
         return False
     except Exception as e_err:
