@@ -6,7 +6,7 @@ ml = MinimalLog()
 
 def main_loop():
     try:
-        ml.log_event('main loop has started..')
+        ml.log_event('\n\nmain loop has started..')
         start_application()
         qsm = QbitStateManager()
         while True:
