@@ -117,32 +117,34 @@ class QbitStateManager:
                                                       filename_regex=filename_regex,
                                                       metadata_filename_key=m_key.NAME)
                 if results is None or self.active_section not in self.active_search_ids:
+                    ml.log_event(f'^^ ???what the fuck is this call occurring <100us prior??? ^^')
                     # FIXME there is an undiscovered bug less than 100us before this log event call
                     ml.log_event(f'search \'{self.active_section}\' is stale, re-queued', level=ml.WARNING)
                     self.update_search_states(s_key.QUEUED)
                     return
+                assert self.active_section in self.active_search_ids, 'active section not in active search ids!'
+                self.set_search_id_as_(search_id, active=False)  # TODO should this be moved earlier or later?
                 results_count = len(results)
                 # TODO results_key.supply could be sort by any key
                 ml.log_event('add results by {}'.format(search_priority))
                 ml.log_event(f'get most popular \'{expected_results_count}\' count results')
                 if not enough_results_in_(results, expected_results_count):
                     expected_results_count = results_count
-                # TODO remove hardcode
+                # TODO remove hardcoded nbSeeders
                 sorted_results = sorted(results, key=lambda k: k['nbSeeders'], reverse=True)
                 top_results = list()
                 for index in range(expected_results_count):
                     top_results.append(sorted_results[index])
-                assert self.active_section in self.active_search_ids, 'active section not in active search ids!'
                 self.update_search_states(s_key.QUEUED)  # wanted to add result but id bad, re-queue search
                 assert top_results is not None, 'top results is None!'
-                concluded_searches = list()
+                searches_concluded = dict()
+                active_is_concluded = s_parser_at_active.getboolean(s_key.CONCLUDED)
+                if active_is_concluded:
+                    self.cfg.write_parser_value_with_key_(parser_key=s_key.CONCLUDED, value='yes',
+                                                          section=self.active_section, search=True)
                 for section in s_parser.sections():
-                    for key in section:  # FIXME i am THE bug, section is a string
-                        if key == s_key.CONCLUDED:
-                            search_concluded = s_parser[section].getboolean(key)
-                            concluded_searches.append(search_concluded)
-                self.set_search_id_as_(search_id, active=False)
-                if all(concluded_searches):
+                    searches_concluded[section] = s_parser_at_active.getboolean(s_key.CONCLUDED)
+                if all(searches_concluded.values()):
                     ml.log_event('all search tasks concluded, exiting program')
                     exit()
                 ml.log_event('results sorted by popularity for {}'.format(self.active_section))
@@ -150,14 +152,12 @@ class QbitStateManager:
                 for result in top_results:
                     enough_seeds = False
                     result_seeds = result[m_key.SUPPLY]
-                    if result_seeds > minimum_seeds:
-                        enough_seeds = True
-                    else:
-                        enough_seeds = False
+                    enough_seeds = True if result_seeds > minimum_seeds else False
                     if enough_seeds:
                         # self._qbit_add_result(result)  # TODO debug, deleted this function and put code below..
                         count_before = self.api.count_all_local_results()
                         ml.log_event(f'local machine has {count_before} stored results before add attempt..')
+                        # FIXME NEXT, move api call to api_comm.py
                         self.api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=True)
                         self.pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
                         results_added = self.api.count_all_local_results() - count_before
@@ -180,7 +180,7 @@ class QbitStateManager:
                             return
                         ml.log_event('client failed to add \'{}\''.format(result[m_key.NAME]), level=ml.WARNING)
                         # TODO if add was not successful, log FAILED
-                    ml.log_event('add results by popularity', event_completed=True)
+                    # ml.log_event('add results by popularity', event_completed=True)
                     # TODO add_result goes here
                 else:
                     ml.log_event(f're-queueing search for {self.active_section}..')
@@ -188,8 +188,8 @@ class QbitStateManager:
             elif search_concluded:
                 pass
             else:
-                ml.log_event(f'header \'{self.active_section}\' is restricted from starting '
-                             f'by search rank, this is by design', level=ml.WARNING)
+                ml.log_event(f'header \'{self.active_section}\' is restricted from starting by search '
+                             f'rank and/or search queue, this is by design', level=ml.WARNING)
                 self.update_search_states(s_key.QUEUED)
             self.pause_on_event(u_key.WAIT_FOR_SEARCH_STATUS_CHECK)
         except Exception as e_err:
@@ -244,7 +244,9 @@ class QbitStateManager:
         try:
             if not active:
                 ml.log_event(f'deleting dict entry for \'{search_id}\' at \'{self.active_section}\'')
-                del self.active_search_ids[self.active_section]
+                section_exists = True if self.active_section in self.active_search_ids else False
+                if section_exists:
+                    del self.active_search_ids[self.active_section]
                 return
             ml.log_event(f'creating dict entry for \'{search_id}\' at \'{self.active_section}\'')
             self.active_search_ids[self.active_section] = search_id
