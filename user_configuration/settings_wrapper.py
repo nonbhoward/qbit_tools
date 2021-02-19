@@ -105,7 +105,7 @@ class DirectoryNames:  # Configuration.HardCoded.DirectoryNames
 
 class Extensions:  # Configuration.HardCoded.Extensions
     def __init__(self):
-        self.cfg = '.cfg'  # FIXME, delimiter in string could cause issues
+        self.cfg = '.cfg'  # FIXME, reminder that delimiter in string could cause issues, test this
 
 
 class FileNames:  # Configuration.HardCoded.FileNames
