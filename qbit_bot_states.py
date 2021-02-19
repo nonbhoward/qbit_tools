@@ -137,7 +137,7 @@ class QbitStateManager:
                 assert top_results is not None, 'top results is None!'
                 concluded_searches = list()
                 for section in s_parser.sections():
-                    for key in section:
+                    for key in section:  # FIXME i am THE bug, section is a string
                         if key == s_key.CONCLUDED:
                             search_concluded = s_parser[section].getboolean(key)
                             concluded_searches.append(search_concluded)
@@ -155,7 +155,7 @@ class QbitStateManager:
                     else:
                         enough_seeds = False
                     if enough_seeds:
-                        # self._qbit_add_result(result)  # FIXME, deleted this function and put code below..
+                        # self._qbit_add_result(result)  # TODO debug, deleted this function and put code below..
                         count_before = self.api.count_all_local_results()
                         ml.log_event(f'local machine has {count_before} stored results before add attempt..')
                         self.api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=True)
