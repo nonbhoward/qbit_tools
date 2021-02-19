@@ -1,41 +1,59 @@
-[top project priorities]
-keep functions readable, as brief as possible.. but err on the side of descriptive
-* note, i'm writing this to learn so there will be plenty of mistakes
-[project structure]
-data_src
-    A. no modules here
-extra
-    A. log_mgmt.py
-        1. TODO
-media
-    A. packager.py
-        1. TODO
-network
-    A. dispatcher.py
-        1. TODO
-qbit_interface
-    A. api_comm.py
-        1. api comm(unication) manages..
-            1. any direct qbittorrent api calls
-            2. verification of data input/output with api
-    B. api_helper.py
-        1. general helper functions to prevent api_comm from becoming cluttered
-        2. misc functions # TODO own module?
-    C. config_helper.py
-        1. config helper manages..
-            i. get for any parser
-            ii. set/get for any parser key
+[PRIORITIES]
+    keep functions readable, as brief as possible.. but err on the side of descriptive
+    * note, i'm writing this to learn so there will be plenty of mistakes
 
-project directory's root folder
-    A. main_loop.py
-        1. entire program execution abstracted to as few lines as possible..
-           ..while trying to remain descriptive and readable (self documenting)
-    B. qbit_bot_states.py
-        1. state machine which stores state data in configuration files
-            i. writes state data..
-            ii. reads state data..
-            iii. manages following parsers based on state data
-                a. metadata
-                b. search
-            iv. uses following parsers to fetch environment variables
-                a. user config
+[PROJECT STRUCTURE]
+    data_src
+        A. modules? None
+    extra
+        A. log_mgmt.py
+            1. TODO, has no content
+    media
+        A. packager.py
+            1. TODO, has no content
+    network
+        A. dispatcher.py
+            1. TODO, has no content
+    qbit_interface
+        A. api_comm.py
+            1. api comm(unication) manages..
+                1. any direct qbittorrent api calls
+                2. verification of data input/output with api
+    user_configuration
+        A. settings_io.py
+            1. manages get/set for any parser
+        B. settings_wrapper.py
+            2. TODO, write description
+    [PROJECT ROOT]
+        A. main_loop.py
+            1. entire program execution abstracted to a few statements
+        B. qbit_bot_helper.py
+            1. general helper functions that aren't easily categorized
+               # TODO, categorize them if patterns are noticed..
+        C. qbit_bot_states.py
+            1. state machine which stores state data in configuration files
+                i. writes state data..
+                ii. reads state data..
+                iii. manages following parsers based on state data
+                    a. metadata
+                    b. search
+                iv. uses following parsers to fetch environment variables
+                    a. user config
+
+[STATE MACHINE NOTES]
+    search states : queued, running, stopped, concluded
+    1. queued
+        when to go to 2? start_search -> search_status = RUNNING
+        when to go to 3? never?
+        when to go to 4? never?
+    2. running
+        when to go to 1? if bad data, reset to 1
+        when to go to 3? search_status = STOPPED
+        when to go to 4? never?
+    3. stopped
+        when to go to 1? if bad results or no results, reset to 1
+        when to go to 2? never?
+        when to go to 4? if exceed user thresholds
+    4. concluded
+        by design, NEVER EXIT THIS STATE..
+        ..must manual override via configuration
