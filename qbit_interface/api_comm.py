@@ -12,6 +12,7 @@ class QbitApiCaller:
         self.qbit_client = qbittorrentapi.Client('', None, None, None)
         self.qbit_client_connected = True if self.client_is_connected() else False
         if self.qbit_client_connected:
+            self.dump_surface_client()
             self.connection_time_start = datetime.now()
 
     def add_result(self, result, m_key):
@@ -27,8 +28,7 @@ class QbitApiCaller:
             app_version = self.qbit_client.app_version
             web_api_version = self.qbit_client.app_web_api_version
             if app_version is not None and web_api_version is not None:
-                ml.log_event(f'connect to client with.. \n\n\tclient app version {app_version} \n\t'
-                             f'web api version {web_api_version}\n\n', event_completed=True)
+                ml.log_event('connect to client', event_completed=True)
                 return True
             return False
         except Exception as e_err:
@@ -54,6 +54,30 @@ class QbitApiCaller:
             count = status.data[0]['total']
             ml.log_event('qbit client created search job for \'{}\''.format(pattern))
             return job, status, state, sid, count
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def dump_surface_client(self):
+        try:
+            core = self.qbit_client
+            dump = {
+                'app':                  core.app,
+                'application':          core.application,
+                'host':                 core.host,
+                'is_logged_in':         core.is_logged_in,
+                'log':                  core.log,
+                'port':                 core.port,
+                'rss':                  core.rss,
+                'search':               core.search,
+                'sync':                 core.sync,
+                'torrent_categories':   core.torrent_categories,
+                'torrent_tags':         core.torrent_tags,
+                'torrents':             core.torrents,
+                'transfer':             core.transfer,
+                'username':             core.username
+            }
+            for surface_key, surface_attr in dump.items():
+                ml.log_event(f'\'{surface_key}\' : \'{surface_attr}\'')
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -84,6 +108,10 @@ class QbitApiCaller:
             ml.log_event(f'check search status for search id \'{search_id}\'')
             search_status = self.qbit_client.search_status(search_id=search_id)
             assert isinstance(search_status, SearchStatusesList), 'bad search status, fix it or handle it'
+            # TODO note that search_status.data[n] has attribute 'id', this could be useful for validation
+            if len(search_status.data) == 0:
+                ml.log_event('search status yielded from expired or null search id, discarding', level=ml.WARNING)
+                return None
             search_status = search_status.data[0]['status']
             assert search_status is not None, 'bad search status attribute, fix it or handle it'
             return search_status
