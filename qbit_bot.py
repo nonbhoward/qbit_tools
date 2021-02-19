@@ -424,11 +424,10 @@ class QbitTasker:
         try:
             search_parser_keys = self.config.hardcoded.keys.search_parser_keyring
             search_detail_parser_at_active_header = self._get_search_detail_parser_at_active_header()
-            filename_regex = search_detail_parser_at_active_header[search_parser_keys.REGEX_FILTER_FOR_FILENAME]
-            if filename_regex not in search_detail_parser_at_active_header.keys():
+            if search_parser_keys.REGEX_FILTER_FOR_FILENAME not in search_detail_parser_at_active_header:
                 filename_regex = '.*'
                 return filename_regex
-            filename_regex = self.config.parser.parsers.search_detail_parser[self.active_header][filename_regex]
+            filename_regex = search_detail_parser_at_active_header[search_parser_keys.REGEX_FILTER_FOR_FILENAME]
             return filename_regex
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
