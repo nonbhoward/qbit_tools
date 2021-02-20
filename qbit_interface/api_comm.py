@@ -17,7 +17,7 @@ class QbitApiCaller:
 
     def add_result(self, result, m_key):
         try:
-            pass
+            pass  # TODO delete this function?
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 

@@ -8,8 +8,7 @@ ml = MinimalLog(__name__)
 def all_searches_concluded(self) -> bool:
     # TODO would be nice to exit if all jobs exceed set limits, not currently in-use
     try:
-
-        return False
+        pass  # TODO delete this function?
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -43,7 +42,7 @@ def fetch_metadata_from_(m_parser) -> dict:
 
 def get_most_popular_results(self, regex_filtered_results: list) -> list:
     try:
-        pass
+        pass  # TODO delete this function?
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -51,6 +50,7 @@ def get_most_popular_results(self, regex_filtered_results: list) -> list:
 def filter_results_using_(filename_regex, results) -> list:
     try:
         return list()
+        pass  # TODO delete this function?
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -68,7 +68,7 @@ def hash_metadata(x, undo=False, offset=0):
 
 def metadata_parser_write_to_metadata_config_file(self, result):
     try:
-        pass
+        pass  # TODO delete this function?
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -87,7 +87,7 @@ def regex_matches(filename_regex, filename) -> bool:
 
 def result_has_enough_seeds(self, result) -> bool:
     try:
-        pass
+        pass  # TODO delete this function?
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -129,9 +129,7 @@ def search_has_yielded_required_results(self) -> bool:
 
 def set_time_last_searched_for_active_header(self):
     try:
-        search_parser_at_active_header = self.get_search_detail_parser_at_active_header()
-        search_parser_detail_keys = self.get_keyring_for_search_detail_parser()
-        search_parser_at_active_header[search_parser_detail_keys.TIME_LAST_SEARCHED] = str(datetime.now())
+        pass  # TODO delete this function?
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
