@@ -23,8 +23,8 @@ def application_is_running(app_path: Path) -> bool:
     try:
         # FIXME
         return False
-        psp = '/proc'
-        app_name, ps = str(app_path).split('/')[-1], ls(psp)
+        ps_path = '/proc'
+        app_name, ps = str(app_path).split('/')[-1], ls(ps_path)
         if app_name in ps:
             return True
         return False
