@@ -1,8 +1,19 @@
-TODO top priorities.. TODO add more to this..
+# TODO top bugs
+    1. search rank soft-lock
+    2. conclusion state never reached
+    3. search parser not tracking added result count
+    4. add_result adds to expected_add_count - 1 instead of expected_add_count
 
-    ..focusing on program function
-        1. prioritize searches based on when they were last-run
+..focusing on program function  # TODO document current efforts
+    1. implement add_mode, rename to add_state?
+    2. implement size filters
+    3. maximize results by framing section header terms as permutations bookended AND delimited by permissive regex aka .*
 
-    ..focusing on program organization
-        1. make sure getters handle all key/parser fetches
-        2. make sure setters handle all key/parser fetches
+..focusing on program organization  # TODO document current efforts
+    1. delete unused functions
+    2. refactor parsers/keys as globally scoped?
+
+COMPLETED
+    1. prioritize searches based on when they were last-run
+    1. make sure getters handle all key/parser fetches
+    2. make sure setters handle all key/parser fetches
