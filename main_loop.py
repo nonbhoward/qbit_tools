@@ -4,6 +4,7 @@ from os import getcwd as cwd, listdir as ls
 from os.path import exists
 from pathlib import Path
 from qbit_bot_states import QbitStateManager
+from subprocess import Popen
 from subprocess import run as launch
 from sys import platform
 ml = MinimalLog()
@@ -21,8 +22,10 @@ def main_loop():
 
 def application_is_running(app_path: Path) -> bool:
     try:
-        # FIXME
+        Popen('ps aux')  # TODO get the cmd w args working before list comp
         return False
+        # FIXME
+        data = [(int(p), c) for p, c in [x.rstrip(']n').split(' ', 1) for x in Popen('ps h -eo pid:1,command')]]
         ps_path = '/proc'
         app_name, ps = str(app_path).split('/')[-1], ls(ps_path)
         if app_name in ps:
