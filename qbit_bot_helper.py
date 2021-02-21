@@ -1,5 +1,3 @@
-from configparser import ConfigParser  # for type-checking
-from datetime import datetime
 from minimalog.minimal_log import MinimalLog
 from re import findall
 ml = MinimalLog(__name__)

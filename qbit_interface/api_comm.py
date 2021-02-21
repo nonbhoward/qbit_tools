@@ -1,5 +1,3 @@
-from datetime import datetime
-from minimalog.minimal_log import MinimalLog
 from qbit_bot_helper import *
 from qbittorrentapi.search import SearchStatusesList
 from user_configuration.WEB_API_CREDENTIALS import *
