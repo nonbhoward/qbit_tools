@@ -1,4 +1,5 @@
-# TODO top bugs
+# TODO top bugs, sorted by priority
+    0. after adding a single result, the processing code crashes
     1. search rank soft-lock
     2. conclusion state never reached
     3. search parser not tracking added result count
