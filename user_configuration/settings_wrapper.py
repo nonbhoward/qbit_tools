@@ -10,7 +10,8 @@ class ConfigParserPathNames:  # Configuration.HardCoded.DirectoryNames.ConfigPar
     # project's config directory names, cannot be changed without changing project structure
     def __init__(self):
         self.user_config_path_name = 'user_configuration'
-        self.data_path_name = 'data_src'
+        self.metadata_path_name = 'data_meta'
+        self.search_data_path_name = 'data_search'
 
 
 class ConfigParserFileNames:  # Configuration.HardCoded.FileNames.ConfigParserFileNames
@@ -185,7 +186,7 @@ class Paths:  # Configuration.Paths
         :return: data path as path object
         """
         try:
-            data_directory_name = configuration.hardcoded.directory_names.config_parser_path_names.data_path_name
+            data_directory_name = configuration.hardcoded.directory_names.config_parser_path_names.search_data_path_name
             ml.log_event('get data path for {}..'.format(data_directory_name))
             return Path(path.project, data_directory_name)
         except OSError as o_err:
