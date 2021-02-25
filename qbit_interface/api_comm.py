@@ -1,3 +1,4 @@
+from datetime import datetime
 from qbit_bot_helper import *
 from qbittorrentapi.search import SearchStatusesList
 from user_configuration.WEB_API_CREDENTIALS import *
@@ -13,11 +14,8 @@ class QbitApiCaller:
             self.dump_surface_client()
             self.connection_time_start = datetime.now()
 
-    def add_result(self, result, m_key):
-        try:
-            pass  # TODO delete this function?
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+    def add_result(self):
+        pass  # TODO delete this function
 
     def client_is_connected(self) -> bool:
         ml.log_event('connect to client', event_completed=False)
@@ -79,11 +77,8 @@ class QbitApiCaller:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
-    def get_search_results(self,
-                           search_id,
-                           filename_regex,
-                           metadata_filename_key,
-                           use_filename_regex_filter=False) -> list:
+    def get_search_results(self, search_id, filename_regex,
+                           metadata_filename_key, use_filename_regex_filter=False) -> list:
         try:
             results = self.qbit_client.search_results(search_id)
             assert results is not None, 'bad results, fix it or handle it'
