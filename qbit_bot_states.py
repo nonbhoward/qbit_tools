@@ -1,3 +1,4 @@
+from datetime import datetime as dt
 from qbit_bot_helper import *
 from qbit_interface.api_comm import QbitApiCaller
 from user_configuration.settings_io import QbitConfig
@@ -20,7 +21,7 @@ class QbitStateManager:
         try:
             parser_at_active = self.cfg.search_settings_and_status[self.active_section]
             keys = self.cfg.search_detail_keys
-            parser_at_active[keys.TIME_LAST_READ] = str(datetime.now())
+            parser_at_active[keys.TIME_LAST_READ] = str(dt.now())
             # get search status from file
             search_queued = parser_at_active.getboolean(keys.QUEUED)
             search_running = parser_at_active.getboolean(keys.RUNNING)
@@ -150,7 +151,6 @@ class QbitStateManager:
                 ml.log_event('results sorted by popularity for {}'.format(self.active_section))
                 minimum_seeds = int(s_parser_at_active[s_key.MIN_SEED])
                 for result in top_results:
-                    enough_seeds = False
                     result_seeds = result[m_key.SUPPLY]
                     enough_seeds = True if result_seeds > minimum_seeds else False
                     if enough_seeds:
@@ -167,21 +167,24 @@ class QbitStateManager:
                             metadata_section = hash_metadata(result[m_key.NAME], offset=unicode_offset)
                             if m_parser.has_section(metadata_section):
                                 ml.log_event(f'metadata parser already has section \'{metadata_section}\'', level=ml.WARNING)
-                                ml.log_event(f'qbit client has added result \'{result[m_key.NAME]}\' for header \'{self.active_section}\'', announce=True)
-                                m_parser.add_section(metadata_section)
-                                header = metadata_section
-                                for attribute, detail in result.items():
-                                    h_attr, d_attr = hash_metadata(attribute, offset=unicode_offset), \
-                                                     hash_metadata(detail, offset=unicode_offset)
-                                    ml.log_event(f'detail added to metadata parser with attribute key \'{h_attr}\'')
-                                    m_parser[header][h_attr] = d_attr
-                                    self.pause_on_event(u_key.WAIT_FOR_USER)
-                            s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = str(int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT]))
+                                # FIXME this could be a bug if two files had the same name.. do i care? at this time, no
+                                continue
+                            ml.log_event(f'qbit client has added result \'{result[m_key.NAME]}\' for header \'{self.active_section}\'', announce=True)
+                            m_parser.add_section(metadata_section)
+                            header = metadata_section
+                            for attribute, detail in result.items():
+                                h_attr, d_attr = hash_metadata(attribute, offset=unicode_offset), \
+                                                 hash_metadata(detail, offset=unicode_offset)
+                                ml.log_event(f'detail added to metadata parser with attribute key \'{h_attr}\'')
+                                m_parser[header][h_attr] = d_attr
+                                self.pause_on_event(u_key.WAIT_FOR_USER)
+                            s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = \
+                                str(int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT]))
                             return
                         ml.log_event('client failed to add \'{}\''.format(result[m_key.NAME]), level=ml.WARNING)
                         # TODO if add was not successful, log FAILED
                     # ml.log_event('add results by popularity', event_completed=True)
-                    # TODO add_result goes here
+                    # TODO add_result goes here, what did i mean by this? outdated?
                 else:
                     ml.log_event(f're-queueing search for {self.active_section}..')
                     self.update_search_states(s_key.QUEUED)  # no results found, re-queue
@@ -197,7 +200,7 @@ class QbitStateManager:
 
     def pause_on_event(self, pause_type):
         try:
-            timestamp = datetime.now()
+            timestamp = dt.now()
             parser = self.cfg.get_parser_for_(settings=True)
             keys = self.cfg.get_keyring_for_(settings=True)
             parser_at_default = parser[keys.DEFAULT]
@@ -266,7 +269,7 @@ class QbitStateManager:
                 raise Exception('search id from API is invalid')
             if s_key.RUNNING in search_state:  # for search sorting
                 key = s_key.TIME_LAST_SEARCHED
-                tls = datetime.now()
+                tls = dt.now()
                 self.cfg.write_parser_value_with_key_(key, tls, self.active_section, search=True)
                 ml.log_event(f'search started for \'{self.active_section}\' with search id \'{search_id}\'',
                              event_completed=True, announce=True)
@@ -320,7 +323,7 @@ class QbitStateManager:
                              f'exceeding user preferences, no further action to be taken')
             else:
                 pass
-            parser_at_active[search.TIME_LAST_WRITTEN] = str(datetime.now())  # TODO what???
+            parser_at_active[search.TIME_LAST_WRITTEN] = str(dt.now())
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
