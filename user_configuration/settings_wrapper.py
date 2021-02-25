@@ -177,28 +177,41 @@ class Parser:  # Configuration.Parser
 class Paths:  # Configuration.Paths
     def __init__(self, configuration):
         self.project = configuration._get_project_path()
-        self.data = self._get_data_path_from_(configuration)
+        self.meta = self._get_meta_path_from(configuration)
+        self.search = self._get_search_path_from(configuration)
         self.user_config = self._get_user_config_path_from_(configuration)
         self.metadata_parser, self.search_parser, self.user_config_parser = self._get_parser_paths_from_(configuration)
 
-    def _get_data_path_from_(path, configuration) -> Path:
+    def _get_meta_path_from(path, configuration) -> Path:
         """
-        :return: data path as path object
+        :return: meta path as path object
         """
         try:
-            data_directory_name = configuration.hardcoded.directory_names.config_parser_path_names.search_data_path_name
-            ml.log_event('get data path for {}..'.format(data_directory_name))
-            return Path(path.project, data_directory_name)
+            meta_directory_name = configuration.hardcoded.directory_names.config_parser_path_names.metadata_path_name
+            ml.log_event(f'get metadata path for {meta_directory_name}')
+            return Path(path.project, meta_directory_name)
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    def _get_search_path_from(path, configuration) -> Path:
+        """
+        :return: search path as path object
+        """
+        try:
+            search_directory_name = configuration.hardcoded.directory_names.config_parser_path_names.search_data_path_name
+            ml.log_event(f'get data path for {search_directory_name}..')
+            return Path(path.project, search_directory_name)
         except OSError as o_err:
             ml.log_event(o_err, level=ml.ERROR)
 
     def _get_parser_paths_from_(path, configuration) -> tuple:
         # TODO this is basically hardcoded, do this better but lower priority than bugs
         try:
-            # data paths
-            metadata_parser_path = Path(path.data, configuration.hardcoded.filenames.config_parser.metadata)
-            search_details_path = Path(path.data, configuration.hardcoded.filenames.config_parser.search)
-            # user config paths
+            # results parser
+            metadata_parser_path = Path(path.meta, configuration.hardcoded.filenames.config_parser.metadata)
+            # search parser
+            search_details_path = Path(path.search, configuration.hardcoded.filenames.config_parser.search)
+            # user config parser
             user_config_path = Path(path.user_config, configuration.hardcoded.filenames.config_parser.user_settings)
             # build and return
             parser_paths = [metadata_parser_path, search_details_path, user_config_path]
