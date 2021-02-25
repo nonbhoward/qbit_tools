@@ -13,8 +13,12 @@
     3. maximize results by framing section header terms as permutations bookended AND delimited by permissive regex aka .*
 
 ..focusing on program organization  # TODO document current efforts
+    0. extend settings_wrapper with functions that return built classes based on args..
+        poorly worded but it's enough breadcrumbs to remember to re-visit this
     1. delete unused functions
     2. refactor parsers/keys as globally scoped?
+        tried, created recursion & organization issues, have to re-think..
+        ..this is still the biggest problem & biggest opportunity to learn
 
 COMPLETED
     1. prioritize searches based on when they were last-run
