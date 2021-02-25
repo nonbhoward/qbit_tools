@@ -1,7 +1,9 @@
 # TODO top bugs, sorted by priority
     0. after adding a single result, the processing code crashes
+        bug fix in place, testing
     1. search rank soft-lock
     2. conclusion state never reached
+        bug fix may be in place, same as for 0, testing
     3. search parser not tracking added result count
     4. add_result adds to expected_add_count - 1 instead of expected_add_count
 
