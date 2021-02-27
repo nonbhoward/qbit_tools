@@ -4,22 +4,18 @@ from qbit_interface.api_comm import QbitApiCaller
 from user_configuration.settings_io import QbitConfig
 from time import sleep
 conf = QbitConfig()
-m_key = conf.get_keyring_for_(metadata=True)
-s_key = conf.get_keyring_for_(search=True)
-u_key = conf.get_keyring_for_(settings=True)
-m_parser = conf.get_parser_for_(metadata=True)
-s_parser = conf.get_parser_for_(search=True)
-u_parser = conf.get_parser_for_(settings=True)
+m_key, s_key, u_key = conf.get_keyrings()
+m_parser, s_parser, u_parser = conf.get_parsers()
 
 
 class QbitStateManager:
     def __init__(self):
-        ml.log_event('initialize \'{}\''.format(self.__class__), event_completed=False, announce=True)
+        ml.log_event(f'initialize \'{self.__class__}\'', event_completed=False, announce=True)
         self.api = QbitApiCaller()
         self.main_loop_count = 0
         self.active_search_ids = dict()
         self.active_section = ''
-        ml.log_event('initialize \'{}\''.format(self.__class__), event_completed=True, announce=True)
+        ml.log_event(f'initialize \'{self.__class__}\'', event_completed=True, announce=True)
         self.pause_on_event(u_key.WAIT_FOR_USER)
 
     def get_search_state(self) -> tuple:
@@ -119,7 +115,7 @@ class QbitStateManager:
                 self.set_search_id_as_(search_id, active=False)  # TODO should this be moved earlier or later?
                 results_count = len(results)
                 # TODO results_key.supply could be sort by any key
-                ml.log_event('add results by {}'.format(search_priority))
+                ml.log_event(f'add results by {search_priority}')
                 ml.log_event(f'get most popular \'{expected_results_count}\' count results')
                 if not enough_results_in_(results, expected_results_count):
                     expected_results_count = results_count
@@ -140,7 +136,7 @@ class QbitStateManager:
                 if all(searches_concluded.values()):
                     ml.log_event('all search tasks concluded, exiting program')
                     exit()
-                ml.log_event('results sorted by popularity for {}'.format(self.active_section))
+                ml.log_event(f'results sorted by popularity for {self.active_section}')
                 minimum_seeds = int(s_parser_at_active[s_key.MIN_SEED])
                 for result in top_results:
                     result_seeds = result[m_key.SUPPLY]
@@ -173,7 +169,7 @@ class QbitStateManager:
                                 self.pause_on_event(u_key.WAIT_FOR_USER)
                             s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = \
                                 str(int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT]))
-                        ml.log_event('client failed to add \'{}\''.format(result[m_key.NAME]), level=ml.WARNING)
+                        ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
                         # TODO if add was not successful, log FAILED
                     # ml.log_event('add results by popularity', event_completed=True)
                     # TODO add_result goes here, what did i mean by this? outdated?
