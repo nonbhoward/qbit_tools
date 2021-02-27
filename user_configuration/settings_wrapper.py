@@ -267,7 +267,7 @@ class ConfigurationManager:  # ROOT @ Configuration
             ml.log_event(o_err)
 
 
-def get_user_configuration(parse_all_project_files: bool) -> ConfigurationManager:  # this is the only export required?
+def get_user_configuration(parse_all_project_files=False) -> ConfigurationManager:  # this is the only export required?
     try:
         configuration = ConfigurationManager(parse_all_project_files)
         return configuration
