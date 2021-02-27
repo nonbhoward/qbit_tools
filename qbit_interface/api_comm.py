@@ -1,5 +1,5 @@
 from datetime import datetime
-from qbit_bot_helper import *
+from state_machine_interface import *
 from qbittorrentapi.search import SearchStatusesList
 from user_configuration.settings_io import QbitConfig  # TODO use this or delete it
 from user_configuration.WEB_API_CREDENTIALS import *
