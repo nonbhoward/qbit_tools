@@ -35,6 +35,16 @@ class QbitConfig:
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
+    @classmethod
+    def get_keyrings(cls) -> tuple:
+        try:
+            mk = cls.get_keyring_for_(metadata=True)
+            sk = cls.get_keyring_for_(search=True)
+            uk = cls.get_keyring_for_(settings=True)
+            return mk, sk, uk
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
     @staticmethod
     def get_parser_as_sortable_(metadata=False, search=False, settings=False) -> dict:
         try:
@@ -87,6 +97,16 @@ class QbitConfig:
                 return parsers.search_parser
             if settings:
                 return parsers.user_settings_parser
+        except Exception as e_err:
+            ml.log_event(e_err, level=ml.ERROR)
+
+    @classmethod
+    def get_parsers(cls) -> tuple:
+        try:
+            mp = cls.get_parser_for_(metadata=True)
+            sp = cls.get_parser_for_(search=True)
+            up = cls.get_parser_for_(settings=True)
+            return mp, sp, up
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
