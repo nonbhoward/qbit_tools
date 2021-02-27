@@ -1,4 +1,5 @@
 # TODO top bugs, sorted by priority
+    0. search queueing and search rank is fucked
     1. search rank soft-lock
     3. search parser not tracking added result count
     4. add_result adds to expected_add_count - 1 instead of expected_add_count
