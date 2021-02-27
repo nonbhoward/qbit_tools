@@ -1,6 +1,7 @@
 # extensions to ignore
-# *.cfg
+*.cfg
 *.log
+*.swp
 
 
 # files to ignore
