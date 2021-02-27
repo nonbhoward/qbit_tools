@@ -4,11 +4,11 @@ main program loop, abstracted program behavior
   
 ### qbit_bot_states.py  
 the state machine  
-	automatically..  
-		..conduct searches..  
-		..filter results..  
-		..and acquire..  
-		..the latest linux images via bittorrent using qbittorrent's web api  
+  automatically..  
+    ..conduct searches..  
+    ..filter results..  
+    ..and acquire..  
+    ..the latest linux images via bittorrent using qbittorrent's web api  
   
 ### api_comm.py  
 the interface to the api  
@@ -47,9 +47,9 @@ dictates program behavior
 2. create virtual environment  
 3. activate virtual environment  
 4. pip install dependencies per requirements.txt  
-5. enable web ui [1]
+5. enable web ui [^1]
 6. enable search plugins
 7. supply web ui credentials (user, pass, host) as preferred  
 8. launch with 'python main_loop.py' or via IDE  
 
-[1] : https://github.com/lgallard/qBittorrent-Controller/wiki/How-to-enable-the-qBittorrent-Web-UI
+[^1] : https://github.com/lgallard/qBittorrent-Controller/wiki/How-to-enable-the-qBittorrent-Web-UI
