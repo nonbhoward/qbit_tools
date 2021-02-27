@@ -1,5 +1,8 @@
 from datetime import datetime as dt
-from qbit_bot_helper import *
+from minimalog.minimal_log import MinimalLog
+from qbit_bot_helper import enough_results_in_
+from qbit_bot_helper import hash_metadata
+from qbit_bot_helper import reduce_search_expectations_for_
 from qbit_interface.api_comm import QbitApiCaller
 from user_configuration.settings_io import QbitConfig
 from time import sleep
@@ -118,14 +121,11 @@ class QbitStateManager:
                 ml.log_event(f'add results by {search_priority}')
                 ml.log_event(f'get most popular \'{expected_results_count}\' count results')
                 if not enough_results_in_(results, expected_results_count):
+                    reduce_search_expectations_for_(self.active_section)
                     expected_results_count = results_count
                 # TODO remove hardcoded nbSeeders
                 sorted_results = sorted(results, key=lambda k: k['nbSeeders'], reverse=True)
-                top_results = list()
-                for index in range(expected_results_count):
-                    top_results.append(sorted_results[index])
                 self.update_search_states(s_key.QUEUED)  # wanted to add result but id bad, re-queue search
-                assert top_results is not None, 'top results is None!'
                 searches_concluded = dict()
                 active_is_concluded = s_parser_at_active.getboolean(s_key.CONCLUDED)
                 if active_is_concluded:
@@ -138,41 +138,46 @@ class QbitStateManager:
                     exit()
                 ml.log_event(f'results sorted by popularity for {self.active_section}')
                 minimum_seeds = int(s_parser_at_active[s_key.MIN_SEED])
-                for result in top_results:
+                for result in sorted_results:
+                    results_added_count = int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT])
+                    if results_added_count > expected_results_count:
+                        # TODO this would be a successful conclusion
+                        return  # enough results have been added for this header, stop
                     result_seeds = result[m_key.SUPPLY]
                     enough_seeds = True if result_seeds > minimum_seeds else False
                     if enough_seeds:
-                        # self._qbit_add_result(result)  # TODO debug, deleted this function and put code below..
                         count_before = self.api.count_all_local_results()
                         ml.log_event(f'local machine has {count_before} stored results before add attempt..')
                         # FIXME NEXT, move api call to api_comm.py
                         self.api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=True)
                         self.pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
                         results_added = self.api.count_all_local_results() - count_before
-                        # TODO why does client fail to add so often?
+                        # TODO why does client fail to add so often? outside project scope?
                         if results_added > 0:  # successful add
+                            results_added_count += 1
+                            s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = str(results_added_count)
                             ml.log_event(f'save metadata result to file: {result[m_key.NAME]}')
                             metadata_section = hash_metadata(result[m_key.NAME], offset=unicode_offset)
                             if m_parser.has_section(metadata_section):
-                                ml.log_event(f'metadata parser already has section \'{metadata_section}\'', level=ml.WARNING)
+                                ml.log_event(f'metadata parser already has section \'{metadata_section}\'',
+                                             level=ml.WARNING)
                                 # FIXME this could be a bug if two files had the same name.. do i care? at this time, no
                                 continue
-                            ml.log_event(f'qbit client has added result \'{result[m_key.NAME]}\' for header \'{self.active_section}\'', announce=True)
+                            ml.log_event(f'qbit client has added result \'{result[m_key.NAME]}\' for '
+                                         f'header \'{self.active_section}\'', announce=True)
                             m_parser.add_section(metadata_section)
-                            header = metadata_section
                             for attribute, detail in result.items():
                                 h_attr, d_attr = \
                                     hash_metadata(attribute, offset=unicode_offset), \
                                     hash_metadata(detail, offset=unicode_offset)
-                                ml.log_event(f'detail added to metadata parser with attribute key \'{h_attr}\'')
-                                m_parser[header][h_attr] = d_attr
+                                conf.write_parser_value_with_key_(parser_key=h_attr, value=d_attr,
+                                                                  section=metadata_section, metadata=True)
                                 self.pause_on_event(u_key.WAIT_FOR_USER)
+                            if results_added_count > expected_results_count:
+                                return
                             s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = \
                                 str(int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT]))
                         ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
-                        # TODO if add was not successful, log FAILED
-                    # ml.log_event('add results by popularity', event_completed=True)
-                    # TODO add_result goes here, what did i mean by this? outdated?
                 else:
                     ml.log_event(f're-queueing search for {self.active_section}..')
                     self.update_search_states(s_key.QUEUED)  # no results found, re-queue
