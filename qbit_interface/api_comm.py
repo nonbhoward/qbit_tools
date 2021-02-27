@@ -1,6 +1,7 @@
 from datetime import datetime
 from qbit_bot_helper import *
 from qbittorrentapi.search import SearchStatusesList
+from user_configuration.settings_io import QbitConfig  # TODO use this or delete it
 from user_configuration.WEB_API_CREDENTIALS import *
 import qbittorrentapi
 ml = MinimalLog(__name__)
@@ -15,7 +16,7 @@ class QbitApiCaller:
             self.connection_time_start = datetime.now()
 
     def add_result(self):
-        pass  # TODO delete this function
+        pass  # TODO write into this function?
 
     def client_is_connected(self) -> bool:
         ml.log_event('connect to client', event_completed=False)
@@ -48,7 +49,7 @@ class QbitApiCaller:
             state = status.data[0]['status']
             sid = str(status.data[0]['id'])
             count = status.data[0]['total']
-            ml.log_event('qbit client created search job for \'{}\''.format(pattern))
+            ml.log_event(f'qbit client created search job for \'{pattern}\'')
             return job, status, state, sid, count
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
