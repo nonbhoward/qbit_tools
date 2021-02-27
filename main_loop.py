@@ -1,8 +1,10 @@
 from datetime import datetime
+from minimalog.minimal_log import MinimalLog
 from os import getcwd as cwd, listdir as ls
 from os.path import exists
 from pathlib import Path
-from qbit_bot_states import *
+from state_machine import QbitStateManager
+from state_machine_interface import conf
 from subprocess import Popen
 from subprocess import run as launch
 from sys import platform
