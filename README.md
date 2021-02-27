@@ -48,4 +48,8 @@ dictates program behavior
 3. activate virtual environment  
 4. pip install dependencies per requirements.txt  
 5. launch with 'python main_loop.py'  
-6. supply web ui credentials (user, pass, host) as preferred  
+6. enable web ui [1]
+7. enable search plugins
+8. supply web ui credentials (user, pass, host) as preferred  
+
+[1] : https://github.com/lgallard/qBittorrent-Controller/wiki/How-to-enable-the-qBittorrent-Web-UI
