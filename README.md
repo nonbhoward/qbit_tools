@@ -1,29 +1,37 @@
-# source  
-### main_loop.py
-main program loop, abstracted program behavior described here  
-
-### configuration_reader.py
+# primary modules  
+### main_loop.py  
+main program loop, abstracted program behavior  
+  
+### qbit_bot_states.py  
+the state machine  
+	automatically..  
+		..conduct searches..  
+		..filter results..  
+		..and acquire..  
+		..the latest linux images via bittorrent using qbittorrent's web api  
+  
+### api_comm.py  
+the interface to the api  
+  
+### qbit_bot_helper.py  
+helper functions for state machine & api comm  
+  
+### settings_wrapper.py  
 module contains classes to parse configuration files  
-
-### qbit_bot.py
-automatically..  
-	..conduct searches..  
-	..filter results..  
-	..and acquire..  
-	..the latest linux images via bittorrent using qbittorrent's web api  
-
-
-
-# configuration
-### metadata.cfg  
+  
+### settings_io.py  
+interact (read/write) with settings on disk  
+  
+  
+# configuration  
+### metadata_history.cfg  
 search results information  
-
-### search_details.cfg
+  
+### search.cfg  
 dictates search behavior  
-
-### user_configuration.cfg
+  
+### user_configuration.cfg  
 dictates program behavior  
-
 
 
 # requirements & setup
@@ -34,6 +42,7 @@ dictates program behavior
 
 
 ### setup  
+0. install qbittorrent  
 1. clone project  
 2. create virtual environment  
 3. activate virtual environment  
