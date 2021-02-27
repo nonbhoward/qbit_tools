@@ -1,20 +1,18 @@
 # TODO top bugs, sorted by priority
+    0. results count not being tracked by search parser
     1. search rank soft-lock
-    3. search parser not tracking added result count correctly
     4. add_result adds to expected_add_count - 1 instead of expected_add_count
 
 ..focusing on program function  # TODO document current efforts
     1. implement add_mode, rename to add_state?
     2. implement size filters
     3. maximize results by framing section header terms as permutations bookended AND delimited by permissive regex aka .*
+    4. implement avg seed count
 
 ..focusing on program organization  # TODO document current efforts
     0. extend settings_wrapper with functions that return built classes based on args..
         poorly worded but it's enough breadcrumbs to remember to re-visit this
     1. delete unused functions
-    2. refactor parsers/keys as globally scoped?
-        tried, created recursion & organization issues, have to re-think..
-        ..this is still the biggest problem & biggest opportunity to learn
 
 COMPLETED
    -1. after 10 failed attempts, search processing stops
@@ -23,6 +21,8 @@ COMPLETED
         bug fix in place, testing, suspect it was the rogue return
     1. prioritize searches based on when they were last-run
     1. make sure getters handle all key/parser fetches
+    2. refactor parsers/keys as globally scoped? success
+        this was a large milestone
     2. make sure setters handle all key/parser fetches
     2. conclusion state never reached
         bug fix may be in place, same as for 0, testing
