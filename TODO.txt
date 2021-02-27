@@ -1,4 +1,5 @@
 # TODO top bugs, sorted by priority
+   -1. search_attempt_count is incrementing too often
     0. results count not being tracked by search parser
     1. search rank soft-lock
     4. add_result adds to expected_add_count - 1 instead of expected_add_count
