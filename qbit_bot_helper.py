@@ -6,7 +6,7 @@ ml = MinimalLog(__name__)
 def all_searches_concluded(self) -> bool:
     # TODO would be nice to exit if all jobs exceed set limits, not currently in-use
     try:
-        pass  # TODO delete this function?
+        pass  # TODO write this function
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -58,15 +58,8 @@ def hash_metadata(x, undo=False, offset=0):
     try:
         _undo = -1 if undo else 1
         _hash = ''.join([chr(ord(e) + int(offset)) * _undo for e in str(x) if x])
-        ml.log_event('hashed from {} to {}'.format(x, _hash))
+        ml.log_event(f'hashed from {x} to {_hash}')
         return _hash
-    except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
-
-
-def metadata_parser_write_to_metadata_config_file(self, result):
-    try:
-        pass  # TODO delete this function?
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -85,13 +78,13 @@ def regex_matches(filename_regex, filename) -> bool:
 
 def result_has_enough_seeds(self, result) -> bool:
     try:
-        pass  # TODO delete this function?
+        pass  # TODO refactor into this function
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
 
 def search_has_yielded_required_results(self) -> bool:
-    # TODO move this to state machine?
+    # TODO recator into this function
     ml.log_event('check if search can be concluded', event_completed=False)
     try:
         search_parser_keys = self.get_keyring_for_search_detail_parser()
@@ -127,8 +120,6 @@ def search_has_yielded_required_results(self) -> bool:
 
 def set_time_last_searched_for_active_header(self):
     try:
-        pass  # TODO delete this function?
+        pass  # TODO refactor into this function
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
-
-
