@@ -181,23 +181,18 @@ class QbitConfig:
 
     @staticmethod
     def write_parser_value_with_key_(parser_key, value='', section='DEFAULT',
-                                     metadata=False, search=False, settings=False) -> bool:
+                                     metadata=False, search=False, settings=False):
         try:
+            parser = None
             if metadata:
                 assert section in parsers.metadata_parser, 'metadata section not found'
                 parser = parsers.metadata_parser[section]
-                parser[parser_key] = str(value)
-                return True
             if search:
                 assert section in parsers.search_parser, 'search detail section not found'
                 parser = parsers.search_parser[section]
-                parser[parser_key] = str(value)
-                return True
             if settings:
                 assert section in parsers.user_config_parser, 'user config section not found'
                 parser = parsers.user_config_parser
-                parser[parser_key] = str(value)
-                return True
-            return False
+            parser[parser_key] = str(value)
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
