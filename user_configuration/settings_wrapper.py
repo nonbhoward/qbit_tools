@@ -44,13 +44,6 @@ class MetadataParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
 class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
     # keys for reading & writing search details
     def __init__(self):
-        # meta elements
-        time_last_read = 'time_last_read'
-        time_last_searched = 'time_last_searched'
-        time_last_written = 'time_last_written'
-        self.DATETIME_ELEMENT_LIST = [time_last_read, time_last_searched, time_last_written]
-        # FYI, ***FOR KEY REFERENCES ONLY*** trying to keep properties singular for predictability,
-        # key strings can be plural or singular since they are never directly referenced
         self.ADD_MODE = 'add_mode'  # FIXME add feature
         self.AVG_SEED_COUNT = 'average_seed_count'
         self.DEFAULT = 'DEFAULT'
@@ -70,9 +63,9 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.SEARCH_ATTEMPT_COUNT = 'search_attempt_count'
         self.SEARCH_STOPPED_REASON = 'search_stopped_reason'
         self.TERM = 'search_term'  # your search term
-        self.TIME_LAST_READ = time_last_read
-        self.TIME_LAST_SEARCHED = time_last_searched
-        self.TIME_LAST_WRITTEN = time_last_written
+        self.TIME_LAST_READ = 'time_last_read'
+        self.TIME_LAST_SEARCHED = 'time_last_searched'
+        self.TIME_LAST_WRITTEN = 'time_last_written'
         # search state keys, 'concluded' and 'queued' are arbitrary names and can be changed
         self.CONCLUDED = 'concluded'  # the search will not start again
         self.QUEUED = 'queued'  # the search is waiting to start
