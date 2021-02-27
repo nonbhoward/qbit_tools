@@ -65,6 +65,7 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.RESET = 'reset'
         self.RESULTS_ADDED_COUNT = 'results_added_count'  # TODO can this trigger a conclude? untested
         self.RESULTS_COUNT = 'results_count'  # this relies on being in DEFAULTS or program errors?
+        self.RESULTS_PER_CYCLE = 'results_to_add_per_search'
         self.RESULTS_REQUIRED_COUNT = 'results_required_count'
         self.SEARCH_ATTEMPT_COUNT = 'search_attempt_count'
         self.SEARCH_STOPPED_REASON = 'search_stopped_reason'
