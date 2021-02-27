@@ -173,14 +173,14 @@ class QbitStateManager:
                             m_parser.add_section(metadata_section)
                             header = metadata_section
                             for attribute, detail in result.items():
-                                h_attr, d_attr = hash_metadata(attribute, offset=unicode_offset), \
-                                                 hash_metadata(detail, offset=unicode_offset)
+                                h_attr, d_attr = \
+                                    hash_metadata(attribute, offset=unicode_offset), \
+                                    hash_metadata(detail, offset=unicode_offset)
                                 ml.log_event(f'detail added to metadata parser with attribute key \'{h_attr}\'')
                                 m_parser[header][h_attr] = d_attr
                                 self.pause_on_event(u_key.WAIT_FOR_USER)
                             s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = \
                                 str(int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT]))
-                            return
                         ml.log_event('client failed to add \'{}\''.format(result[m_key.NAME]), level=ml.WARNING)
                         # TODO if add was not successful, log FAILED
                     # ml.log_event('add results by popularity', event_completed=True)
