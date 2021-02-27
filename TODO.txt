@@ -1,4 +1,5 @@
 # TODO top bugs, sorted by priority
+   -1. after 10 failed attempts, search processing stops
     0. search queueing and search rank is fucked
     1. search rank soft-lock
     3. search parser not tracking added result count
