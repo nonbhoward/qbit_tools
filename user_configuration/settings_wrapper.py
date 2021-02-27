@@ -1,4 +1,4 @@
-from configparser import ConfigParser
+from configparser import RawConfigParser
 from minimalog.minimal_log import MinimalLog
 from os import getcwd, walk
 from pathlib import Path
@@ -148,11 +148,11 @@ class Parsers:  # Configuration.Parser.Parsers
         try:
             parsers = dict()
             for parser_path in parser_paths:
-                cp = ConfigParser()
-                cp.read(parser_path)
+                rcp = RawConfigParser()
+                rcp.read(parser_path)
                 # TODO check to be sure this statement works as expected
-                assert _parser_has_sections(cp), ml.log_event('fatal exception {} has no sections'.format(cp))
-                parsers[parser_path] = cp
+                assert _parser_has_sections(rcp), ml.log_event('fatal exception {} has no sections'.format(rcp))
+                parsers[parser_path] = rcp
             return parsers
         except Exception as e_err:
             ml.log_event(e_err, ml.ERROR)
@@ -275,14 +275,14 @@ def get_user_configuration(parse_all_project_files: bool) -> ConfigurationManage
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def _parser_has_sections(configparser: ConfigParser) -> bool:
+def _parser_has_sections(rawconfigparser: RawConfigParser) -> bool:
     try:
-        if _parser_has_defaults(configparser):
+        if _parser_has_defaults(rawconfigparser):
             return True
-        section_count = len(configparser.sections())
-        ml.log_event('configparser {} has {} sections'.format(configparser, section_count))
+        section_count = len(rawconfigparser.sections())
+        ml.log_event('configparser {} has {} sections'.format(rawconfigparser, section_count))
         if section_count < 1:
-            if _parser_able_to_read_write_(configparser):
+            if _parser_able_to_read_write_(rawconfigparser):
                 return True
             return False
         return True
@@ -290,38 +290,38 @@ def _parser_has_sections(configparser: ConfigParser) -> bool:
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def _parser_able_to_read_write_(configparser: ConfigParser) -> bool:
+def _parser_able_to_read_write_(rawconfigparser: RawConfigParser) -> bool:
     try:
-        parser_modified_test_sections = _parser_modify_test_sections(configparser)
+        parser_modified_test_sections = _parser_modify_test_sections(rawconfigparser)
         if parser_modified_test_sections:
-            ml.log_event('parser {} is able tod modify sections, parser is valid'.format(configparser))
+            ml.log_event('parser {} is able tod modify sections, parser is valid'.format(rawconfigparser))
             return True
         return False
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def _parser_has_defaults(configparser: ConfigParser) -> bool:
+def _parser_has_defaults(rawconfigparser: RawConfigParser) -> bool:
     try:
-        if configparser.defaults() is not None:
+        if rawconfigparser.defaults() is not None:
             return True
         return False
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def _parser_modify_test_sections(configparser: ConfigParser) -> bool:
+def _parser_modify_test_sections(rawconfigparser: RawConfigParser) -> bool:
     # TODO function completely untested, has never needed to run.. maybe just learn to use pytest?
     try:
         parser_test_section = 'configparser self test header, can be deleted'
-        if configparser.has_section(parser_test_section):
-            configparser.remove_section(parser_test_section)
-            if not configparser.has_section(parser_test_section):
+        if rawconfigparser.has_section(parser_test_section):
+            rawconfigparser.remove_section(parser_test_section)
+            if not rawconfigparser.has_section(parser_test_section):
                 return True
-        configparser.add_section(parser_test_section)
-        if configparser.has_section(parser_test_section):
-            configparser.remove_section(parser_test_section)
-            if not configparser.has_section(parser_test_section):
+        rawconfigparser.add_section(parser_test_section)
+        if rawconfigparser.has_section(parser_test_section):
+            rawconfigparser.remove_section(parser_test_section)
+            if not rawconfigparser.has_section(parser_test_section):
                 return True
         return False
     except Exception as e_err:
