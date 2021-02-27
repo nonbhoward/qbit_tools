@@ -1,8 +1,6 @@
 # TODO top bugs, sorted by priority
-   -1. after 10 failed attempts, search processing stops
-    0. search queueing and search rank is fucked
     1. search rank soft-lock
-    3. search parser not tracking added result count
+    3. search parser not tracking added result count correctly
     4. add_result adds to expected_add_count - 1 instead of expected_add_count
 
 ..focusing on program function  # TODO document current efforts
@@ -19,6 +17,8 @@
         ..this is still the biggest problem & biggest opportunity to learn
 
 COMPLETED
+   -1. after 10 failed attempts, search processing stops
+    0. search queueing and search rank is fucked
     0. after adding a single result, the processing code crashes
         bug fix in place, testing, suspect it was the rogue return
     1. prioritize searches based on when they were last-run
