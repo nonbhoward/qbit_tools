@@ -76,11 +76,16 @@ def hash_metadata(x, undo=False, offset=0):
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def read_parser_value_with_(key, section, search):
+def read_parser_value_with_(key, section, search=False, metadata=False, settings=False):
     # TODO this interface is lazy, above is a bool, and what is below? this is needlessly confusing
     # FIXME address this after refactor
     try:
-        conf.read_parser_value_with_(key, section, search)
+        if metadata:
+            return conf.read_parser_value_with_(key, section, metadata=True)
+        if search:
+            return conf.read_parser_value_with_(key, section, search=True)
+        if settings:
+            return conf.read_parser_value_with_(key, section, settings=True)
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -172,9 +177,14 @@ def write_config_to_disk():
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def write_parser_value_with_key_(parser_key, value, section, search):
-    # FIXME same issue as read, lazy interface
+def write_parser_value_with_key_(parser_key, value, section, metadata=False, search=False, settings=False):
+    # FIXME same issue as read, clunky interface, rework
     try:
-        conf.write_parser_value_with_key_(parser_key, value, section, search)
+        if metadata:
+            conf.write_parser_value_with_key_(parser_key, value, section, metadata=True)
+        if search:
+            conf.write_parser_value_with_key_(parser_key, value, section, search=True)
+        if settings:
+            conf.write_parser_value_with_key_(parser_key, value, section, settings=True)
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)

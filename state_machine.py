@@ -1,14 +1,16 @@
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
-from qbit_bot_helper import enough_results_in_
-from qbit_bot_helper import get_all_sections_from_parser_
-from qbit_bot_helper import hash_metadata
-from qbit_bot_helper import m_key, s_key, u_key
-from qbit_bot_helper import m_parser, s_parser, u_parser
-from qbit_bot_helper import reduce_search_expectations_for_
-from qbit_bot_helper import set_search_rank_using_
+from state_machine_interface import enough_results_in_
+from state_machine_interface import get_all_sections_from_parser_
+from state_machine_interface import hash_metadata
+from state_machine_interface import m_key, s_key, u_key
+from state_machine_interface import m_parser, s_parser, u_parser
+from state_machine_interface import read_parser_value_with_
+from state_machine_interface import reduce_search_expectations_for_
+from state_machine_interface import set_search_rank_using_
+from state_machine_interface import write_config_to_disk
+from state_machine_interface import write_parser_value_with_key_
 from qbit_interface.api_comm import QbitApiCaller
-from user_configuration.settings_io import QbitConfig
 from time import sleep
 
 
@@ -67,7 +69,7 @@ class QbitStateManager:
                 ml.log_event(f'monitoring search header \'{self.active_section}\'')
                 search_state = self.get_search_state()
                 self.manage_state_updates(search_state)
-            conf.write_config_to_disk()
+            write_config_to_disk()
         except Exception as e_err:
             ml.log_event(e_err, level=ml.ERROR)
 
@@ -86,7 +88,7 @@ class QbitStateManager:
             else:
                 search_id = ''
             search_priority = u_parser_at_default[u_key.USER_PRIORITY]  # TODO allow for other priorities?
-            search_rank = int(conf.read_parser_value_with_(s_key.RANK, self.active_section, search=True))
+            search_rank = int(read_parser_value_with_(s_key.RANK, self.active_section, search=True))
             if search_queued and not self.search_queue_full() and search_rank < 3:  # TODO un-hardcode this
                 self.start_search()
             elif search_running:
@@ -105,8 +107,8 @@ class QbitStateManager:
                 else:
                     self.update_search_states(s_key.QUEUED)  # unexpected state, re-queue
             elif search_stopped:
-                filename_regex = conf.read_parser_value_with_(key=s_key.REGEX_FILTER_FOR_FILENAME,
-                                                              section=self.active_section, search=True)
+                filename_regex = read_parser_value_with_(key=s_key.REGEX_FILTER_FOR_FILENAME,
+                                                         section=self.active_section, search=True)
                 results = self.api.get_search_results(search_id=search_id, use_filename_regex_filter=True,
                                                       filename_regex=filename_regex, metadata_filename_key=m_key.NAME)
                 if results is None or self.active_section not in self.active_search_ids:
@@ -131,8 +133,8 @@ class QbitStateManager:
                 searches_concluded = dict()
                 active_is_concluded = s_parser_at_active.getboolean(s_key.CONCLUDED)
                 if active_is_concluded:
-                    conf.write_parser_value_with_key_(parser_key=s_key.CONCLUDED, value='yes',
-                                                      section=self.active_section, search=True)
+                    write_parser_value_with_key_(parser_key=s_key.CONCLUDED, value='yes',
+                                                 section=self.active_section, search=True)
                 for section in s_parser.sections():
                     searches_concluded[section] = s_parser_at_active.getboolean(s_key.CONCLUDED)
                 if all(searches_concluded.values()):
@@ -172,8 +174,8 @@ class QbitStateManager:
                                 h_attr, d_attr = \
                                     hash_metadata(attribute, offset=unicode_offset), \
                                     hash_metadata(detail, offset=unicode_offset)
-                                conf.write_parser_value_with_key_(parser_key=h_attr, value=d_attr,
-                                                                  section=metadata_section, metadata=True)
+                                write_parser_value_with_key_(parser_key=h_attr, value=d_attr,
+                                                             section=metadata_section, metadata=True)
                                 self.pause_on_event(u_key.WAIT_FOR_USER)
                             if results_added_count > expected_results_count:
                                 return
@@ -252,9 +254,9 @@ class QbitStateManager:
 
     def start_search(self):
         try:
-            search_term = conf.read_parser_value_with_(key=s_key.TERM,
-                                                       section=self.active_section,
-                                                       search=True)
+            search_term = read_parser_value_with_(key=s_key.TERM,
+                                                  section=self.active_section,
+                                                  search=True)
             # search_term = s_parser[self.active_section][s_key.TOPIC]  # TODO delete?
             search_properties = self.api.create_search_job(search_term, 'all', 'all')
             search_job, search_status, search_state, search_id, search_count = search_properties
@@ -264,10 +266,8 @@ class QbitStateManager:
             if s_key.RUNNING in search_state:  # for search sorting
                 key = s_key.TIME_LAST_SEARCHED
                 tls = dt.now()
-                conf.write_parser_value_with_key_(parser_key=key,
-                                                  value=tls,
-                                                  section=self.active_section,
-                                                  search=True)
+                write_parser_value_with_key_(parser_key=key, value=tls,
+                                             section=self.active_section, search=True)
                 ml.log_event(f'search started for \'{self.active_section}\' with search id \'{search_id}\'',
                              event_completed=True, announce=True)
                 self.active_search_ids[self.active_section] = search_id
@@ -300,6 +300,7 @@ class QbitStateManager:
                 parser_at_active[s_key.RUNNING] = s_key.YES
                 parser_at_active[s_key.STOPPED] = s_key.NO
                 parser_at_active[s_key.CONCLUDED] = s_key.NO
+                # FIXME this could increment multiple times if the main_loop is too fast
                 self.increment_search_attempt_count()
                 ml.log_event(f'search for \'{self.active_section}\' is running.. please stand by..')
             elif api_state_key == s_key.STOPPED:
