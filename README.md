@@ -19,8 +19,8 @@ the state machine
     ..and acquire..  
     ..the latest linux images via bittorrent using qbittorrent's web api  
   
-### state_machine_helper.py  
-helper functions for state machine & api comm  
+### state_machine_interface.py  
+interface from state machine to parsers and vice versa
   
   
 # configuration  

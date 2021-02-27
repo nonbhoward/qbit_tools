@@ -21,7 +21,7 @@
     main_loop.py is the entire application abstracted to a few commands
     README.md is self-explanatory
     state_machine.py is the search state machine
-    state_machine_helper.py is # TODO what is my succinct purpose?
+    state_machine_interface.py handles translation between parsers and state machine
     TODO.txt is my project notes and a good place to start when looking for work
 
 [STATE MACHINE NOTES]

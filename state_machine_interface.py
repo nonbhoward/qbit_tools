@@ -76,6 +76,15 @@ def hash_metadata(x, undo=False, offset=0):
         ml.log_event(e_err, level=ml.ERROR)
 
 
+def read_parser_value_with_(key, section, search):
+    # TODO this interface is lazy, above is a bool, and what is below? this is needlessly confusing
+    # FIXME address this after refactor
+    try:
+        conf.read_parser_value_with_(key, section, search)
+    except Exception as e_err:
+        ml.log_event(e_err, level=ml.ERROR)
+
+
 def reduce_search_expectations_for_(section: str, c_key, er_key):
     try:
         ml.log_event(f'reducing search expectations for \'{section}\'')
@@ -152,5 +161,20 @@ def set_search_rank_using_(key):
 def set_time_last_searched_for_active_header(self):
     try:
         pass  # TODO refactor into this function
+    except Exception as e_err:
+        ml.log_event(e_err, level=ml.ERROR)
+
+
+def write_config_to_disk():
+    try:
+        conf.write_config_to_disk()
+    except Exception as e_err:
+        ml.log_event(e_err, level=ml.ERROR)
+
+
+def write_parser_value_with_key_(parser_key, value, section, search):
+    # FIXME same issue as read, lazy interface
+    try:
+        conf.write_parser_value_with_key_(parser_key, value, section, search)
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
