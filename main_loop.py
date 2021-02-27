@@ -1,13 +1,13 @@
 from datetime import datetime
-from minimalog.minimal_log import MinimalLog
 from os import getcwd as cwd, listdir as ls
 from os.path import exists
 from pathlib import Path
-from qbit_bot_states import QbitStateManager
+from qbit_bot_states import *
 from subprocess import Popen
 from subprocess import run as launch
 from sys import platform
 ml = MinimalLog()
+u_key = conf.get_keyring_for_(settings=True)
 
 
 def main_loop():
@@ -17,7 +17,7 @@ def main_loop():
         ml.log_event(event=f'new loop starting at {datetime.now()}', announce=True)
         qsm.initiate_and_monitor_searches()
         qsm.increment_loop_count()
-        qsm.pause_on_event(qsm.cfg.settings.WAIT_FOR_MAIN_LOOP)
+        qsm.pause_on_event(u_key.WAIT_FOR_MAIN_LOOP)
 
 
 def application_is_running(app_path: Path) -> bool:
