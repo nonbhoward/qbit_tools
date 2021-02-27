@@ -1,5 +1,6 @@
 from minimalog.minimal_log import MinimalLog
 from re import findall
+from qbit_bot_states import *
 ml = MinimalLog(__name__)
 
 
@@ -60,6 +61,19 @@ def hash_metadata(x, undo=False, offset=0):
         _hash = ''.join([chr(ord(e) + int(offset)) * _undo for e in str(x) if x])
         ml.log_event(f'hashed from {x} to {_hash}')
         return _hash
+    except Exception as e_err:
+        ml.log_event(e_err, level=ml.ERROR)
+
+
+def reduce_search_expectations_for_(section: str):
+    try:
+        ml.log_event(f'reducing search expectations for \'{section}\'')
+        c_key, er_key = s_key.CONCLUDED, s_key.EXPECTED_SEARCH_RESULT_COUNT
+        er_val = int(s_parser[section][er_key])
+        if not er_val:
+            ml.log_event(f'concluding search for \'{section}\'', level=ml.WARNING)
+            s_parser[section][c_key] = s_key.YES
+        er_val -= 1
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
