@@ -1,14 +1,15 @@
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
 from qbit_bot_helper import enough_results_in_
+from qbit_bot_helper import get_all_sections_from_parser_
 from qbit_bot_helper import hash_metadata
+from qbit_bot_helper import m_key, s_key, u_key
+from qbit_bot_helper import m_parser, s_parser, u_parser
 from qbit_bot_helper import reduce_search_expectations_for_
+from qbit_bot_helper import set_search_rank_using_
 from qbit_interface.api_comm import QbitApiCaller
 from user_configuration.settings_io import QbitConfig
 from time import sleep
-conf = QbitConfig()
-m_key, s_key, u_key = conf.get_keyrings()
-m_parser, s_parser, u_parser = conf.get_parsers()
 
 
 class QbitStateManager:
@@ -58,8 +59,8 @@ class QbitStateManager:
 
     def initiate_and_monitor_searches(self):
         try:
-            search_sections = conf.get_all_sections_from_parser_(search=True)
-            conf.set_search_rank_using_(s_key.TIME_LAST_SEARCHED)
+            search_sections = get_all_sections_from_parser_(search=True)
+            set_search_rank_using_(s_key.TIME_LAST_SEARCHED)
             self.pause_on_event(u_key.WAIT_FOR_USER)
             for search_section in search_sections:
                 self.active_section = search_section
@@ -121,7 +122,8 @@ class QbitStateManager:
                 ml.log_event(f'add results by {search_priority}')
                 ml.log_event(f'get most popular \'{expected_results_count}\' count results')
                 if not enough_results_in_(results, expected_results_count):
-                    reduce_search_expectations_for_(self.active_section)
+                    c_key, er_key = s_key.CONCLUDED, s_key.EXPECTED_SEARCH_RESULT_COUNT
+                    reduce_search_expectations_for_(self.active_section, c_key, er_key)
                     expected_results_count = results_count
                 # TODO remove hardcoded nbSeeders
                 sorted_results = sorted(results, key=lambda k: k['nbSeeders'], reverse=True)

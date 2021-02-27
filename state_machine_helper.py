@@ -1,7 +1,10 @@
 from minimalog.minimal_log import MinimalLog
+from user_configuration.settings_io import QbitConfig
 from re import findall
-from qbit_bot_states import *
 ml = MinimalLog(__name__)
+conf = QbitConfig()
+m_key, s_key, u_key = conf.get_keyrings()
+m_parser, s_parser, u_parser = conf.get_parsers()
 
 
 def all_searches_concluded(self) -> bool:
@@ -39,6 +42,14 @@ def fetch_metadata_from_(m_parser) -> dict:
         ml.log_event(e_err, level=ml.ERROR)
 
 
+def get_all_sections_from_parser_(metadata=False, search=False, settings=False):
+    try:
+        return conf.get_all_sections_from_parser_(search=True)
+        pass
+    except Exception as e_err:
+        ml.log_event(e_err, level=ml.ERROR)
+
+
 def get_most_popular_results(self, regex_filtered_results: list) -> list:
     try:
         pass  # TODO delete this function?
@@ -65,10 +76,9 @@ def hash_metadata(x, undo=False, offset=0):
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def reduce_search_expectations_for_(section: str):
+def reduce_search_expectations_for_(section: str, c_key, er_key):
     try:
         ml.log_event(f'reducing search expectations for \'{section}\'')
-        c_key, er_key = s_key.CONCLUDED, s_key.EXPECTED_SEARCH_RESULT_COUNT
         er_val = int(s_parser[section][er_key])
         if not er_val:
             ml.log_event(f'concluding search for \'{section}\'', level=ml.WARNING)
@@ -128,6 +138,13 @@ def search_has_yielded_required_results(self) -> bool:
             return True
         ml.log_event(f'search \'{self.active_section}\' will be allowed to continue', event_completed=True)
         return False
+    except Exception as e_err:
+        ml.log_event(e_err, level=ml.ERROR)
+
+
+def set_search_rank_using_(key):
+    try:
+        conf.set_search_rank_using_(key)
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 

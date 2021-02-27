@@ -2,7 +2,16 @@
 ### main_loop.py  
 main program loop, abstracted program behavior  
   
-### qbit_bot_states.py  
+### api_comm.py  
+the interface to the api  
+  
+### settings_wrapper.py  
+module contains classes to parse configuration files  
+  
+### settings_io.py  
+interact (read/write) with settings on disk  
+  
+### state_machine.py  
 the state machine  
   automatically..  
     ..conduct searches..  
@@ -10,17 +19,8 @@ the state machine
     ..and acquire..  
     ..the latest linux images via bittorrent using qbittorrent's web api  
   
-### api_comm.py  
-the interface to the api  
-  
-### qbit_bot_helper.py  
+### state_machine_helper.py  
 helper functions for state machine & api comm  
-  
-### settings_wrapper.py  
-module contains classes to parse configuration files  
-  
-### settings_io.py  
-interact (read/write) with settings on disk  
   
   
 # configuration  
