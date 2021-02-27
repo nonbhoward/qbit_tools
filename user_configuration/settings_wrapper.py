@@ -225,7 +225,6 @@ class Paths:  # Configuration.Paths
         """
         try:
             ml.log_event('get data path', event_completed=True)
-            # user_config_directory_name = configuration.hardcoded.directory_names.user_config_path_name
             user_config_directory_name = \
                 configuration.hardcoded.directory_names.config_parser_path_names.user_config_path_name
             return Path(path.project, user_config_directory_name)
@@ -280,7 +279,7 @@ def _parser_has_sections(rawconfigparser: RawConfigParser) -> bool:
         if _parser_has_defaults(rawconfigparser):
             return True
         section_count = len(rawconfigparser.sections())
-        ml.log_event('configparser {} has {} sections'.format(rawconfigparser, section_count))
+        ml.log_event(f'configparser {rawconfigparser} has {section_count} sections')
         if section_count < 1:
             if _parser_able_to_read_write_(rawconfigparser):
                 return True
@@ -294,7 +293,7 @@ def _parser_able_to_read_write_(rawconfigparser: RawConfigParser) -> bool:
     try:
         parser_modified_test_sections = _parser_modify_test_sections(rawconfigparser)
         if parser_modified_test_sections:
-            ml.log_event('parser {} is able tod modify sections, parser is valid'.format(rawconfigparser))
+            ml.log_event(f'parser {rawconfigparser} is able tod modify sections, parser is valid')
             return True
         return False
     except Exception as e_err:
