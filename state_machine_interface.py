@@ -1,3 +1,4 @@
+from qbit_interface.api_comm import QbitApiCaller
 from minimalog.minimal_log import MinimalLog
 from user_configuration.settings_io import QbitConfig
 from re import findall
@@ -5,12 +6,14 @@ ml = MinimalLog(__name__)
 conf = QbitConfig()
 m_key, s_key, u_key = conf.get_keyrings()
 m_parser, s_parser, u_parser = conf.get_parsers()
+api = QbitApiCaller()
 
 
-def all_searches_concluded(self) -> bool:
+def all_searches_concluded() -> bool:
     # TODO would be nice to exit if all jobs exceed set limits, not currently in-use
     try:
         pass  # TODO write this function
+        return False
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -28,13 +31,13 @@ def enough_results_in_(filtered_results, expected_result_count):
         ml.log_event(e_err, level=ml.ERROR)
 
 
-def fetch_metadata_from_(m_parser) -> dict:
+def fetch_metadata_from_(parser) -> dict:
     ml.log_event('fetching results from disk', event_completed=False)
     try:
         result_data = dict()
-        for section in m_parser.sections():
+        for section in parser.sections():
             result_data[hash_metadata(section, True)] = dict()
-            for key, detail in m_parser[section].items():
+            for key, detail in parser[section].items():
                 result_data[hash_metadata(section, True)][key] = hash_metadata(detail, True)
         ml.log_event('fetching results from disk', event_completed=True)
         return result_data
@@ -44,8 +47,12 @@ def fetch_metadata_from_(m_parser) -> dict:
 
 def get_all_sections_from_parser_(metadata=False, search=False, settings=False):
     try:
-        return conf.get_all_sections_from_parser_(search=True)
-        pass
+        if metadata:
+            return conf.get_all_sections_from_parser_(metadata=True)
+        if search:
+            return conf.get_all_sections_from_parser_(search=True)
+        if settings:
+            return conf.get_all_sections_from_parser_(settings=True)
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -53,6 +60,18 @@ def get_all_sections_from_parser_(metadata=False, search=False, settings=False):
 def get_most_popular_results(self, regex_filtered_results: list) -> list:
     try:
         pass  # TODO delete this function?
+        return list()
+    except Exception as e_err:
+        ml.log_event(e_err, level=ml.ERROR)
+
+
+def get_search_results_for_(active_kv: tuple) -> list:
+    try:
+        section, search_id, key = active_kv[0], active_kv[1], s_key.REGEX_FILTER_FOR_FILENAME
+        filename_regex = read_parser_value_with_(key=key, section=section, search=True)
+        results = api.get_search_results(search_id=search_id, use_filename_regex_filter=True,
+                                         filename_regex=filename_regex, metadata_filename_key=m_key.NAME)
+        return results
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
@@ -116,13 +135,15 @@ def regex_matches(filename_regex, filename) -> bool:
 
 def result_has_enough_seeds(self, result) -> bool:
     try:
+        ml.log_event(f'TODO result_has_enough_seeds()')
         pass  # TODO refactor into this function
+        return True
     except Exception as e_err:
         ml.log_event(e_err, level=ml.ERROR)
 
 
 def search_has_yielded_required_results(self) -> bool:
-    # TODO recator into this function
+    # TODO refactor into this function
     ml.log_event('check if search can be concluded', event_completed=False)
     try:
         search_parser_keys = self.get_keyring_for_search_detail_parser()
