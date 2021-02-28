@@ -1,18 +1,17 @@
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
-from state_machine_interface import enough_results_in_
+from state_machine_interface import add_results_from_
+from state_machine_interface import empty_
 from state_machine_interface import get_all_sections_from_parser_
 from state_machine_interface import get_search_results_for_
-from state_machine_interface import hash_metadata
 from state_machine_interface import m_key, s_key, u_key
 from state_machine_interface import m_parser, s_parser, u_parser
+from state_machine_interface import pause_on_event
 from state_machine_interface import read_parser_value_with_
-from state_machine_interface import reduce_search_expectations_for_
 from state_machine_interface import set_search_rank_using_
 from state_machine_interface import write_config_to_disk
 from state_machine_interface import write_parser_value_with_key_
 from qbit_interface.api_comm import QbitApiCaller
-from time import sleep
 
 u_parser_at_default = u_parser[u_key.DEFAULT]
 unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
@@ -26,7 +25,7 @@ class QbitStateManager:
         self.active_search_ids = dict()
         self.active_section = ''
         ml.log_event(f'initialize \'{self.__class__}\'', event_completed=True, announce=True)
-        self.pause_on_event(u_key.WAIT_FOR_USER)
+        pause_on_event(u_key.WAIT_FOR_USER)
 
     def get_search_state(self) -> tuple:
         try:
@@ -44,7 +43,7 @@ class QbitStateManager:
                          f'\n\tconcluded: {search_concluded}', announce=True)
             return search_queued, search_running, search_stopped, search_concluded
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def increment_loop_count(self):
         ml.log_event(f'current connection to client was started at \'{self.api.connection_time_start}\'')
@@ -61,13 +60,13 @@ class QbitStateManager:
             ml.log_event(f'search try counter at {search_attempt_count}, incrementing..')
             parser_at_active[s_key.SEARCH_ATTEMPT_COUNT] = str(search_attempt_count + 1)
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def initiate_and_monitor_searches(self):
         try:
             search_sections = get_all_sections_from_parser_(search=True)
             set_search_rank_using_(s_key.TIME_LAST_SEARCHED)
-            self.pause_on_event(u_key.WAIT_FOR_USER)
+            pause_on_event(u_key.WAIT_FOR_USER)
             for search_section in search_sections:
                 self.active_section = search_section
                 ml.log_event(f'monitoring search header \'{self.active_section}\'')
@@ -75,7 +74,7 @@ class QbitStateManager:
                 self.manage_state_updates(search_state)
             write_config_to_disk()
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def manage_state_updates(self, section_search_state):
         try:
@@ -109,10 +108,10 @@ class QbitStateManager:
                 else:
                     self.update_search_states(s_key.QUEUED)  # unexpected state, re-queue
             elif search_stopped:
-                results = None
+                results, active_kv = None, None
                 if self.active_section in self.active_search_ids.keys():
                     active_kv = (self.active_section, self.active_search_ids[self.active_section])
-                    results = get_search_results_for_(active_kv=active_kv)
+                    results = get_search_results_for_(active_kv=active_kv, api=self.api)
                 if results is None or self.active_section not in self.active_search_ids:
                     ml.log_event(f'^^ ???what the fuck is this call occurring <100us prior??? ^^')
                     # FIXME there is an undiscovered bug less than 100us before this log event call
@@ -120,108 +119,18 @@ class QbitStateManager:
                     self.update_search_states(s_key.QUEUED)
                     return
                 assert self.active_section in self.active_search_ids, 'active section not in active search ids!'
-                self.set_search_id_as_(search_id, active=False)  # TODO should this be moved earlier or later?
-                results_count = len(results)
-                # TODO results_key.supply could be sort by any key
-                ml.log_event(f'add results by {search_priority}')
-                ml.log_event(f'get most popular \'{expected_results_count}\' count results')
-                if not enough_results_in_(results, expected_results_count):
-                    c_key, er_key = s_key.CONCLUDED, s_key.EXPECTED_SEARCH_RESULT_COUNT
-                    reduce_search_expectations_for_(self.active_section, c_key, er_key)
-                    expected_results_count = results_count
-                # TODO remove hardcoded nbSeeders
-                sorted_results = sorted(results, key=lambda k: k['nbSeeders'], reverse=True)
-                self.update_search_states(s_key.QUEUED)  # wanted to add result but id bad, re-queue search
-                searches_concluded = dict()
-                active_is_concluded = s_parser_at_active.getboolean(s_key.CONCLUDED)
-                if active_is_concluded:
-                    write_parser_value_with_key_(parser_key=s_key.CONCLUDED, value='yes',
-                                                 section=self.active_section, search=True)
-                for section in s_parser.sections():
-                    searches_concluded[section] = s_parser_at_active.getboolean(s_key.CONCLUDED)
-                if all(searches_concluded.values()):
-                    ml.log_event('all search tasks concluded, exiting program')
-                    exit()
-                ml.log_event(f'results sorted by popularity for {self.active_section}')
-                minimum_seeds = int(s_parser_at_active[s_key.MIN_SEED])
-                for result in sorted_results:
-                    results_added_count = int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT])
-                    if results_added_count > expected_results_count:
-                        # TODO this would be a successful conclusion
-                        return  # enough results have been added for this header, stop
-                    result_seeds = result[m_key.SUPPLY]
-                    enough_seeds = True if result_seeds > minimum_seeds else False
-                    if enough_seeds:
-                        count_before = self.api.count_all_local_results()
-                        ml.log_event(f'local machine has {count_before} stored results before add attempt..')
-                        # FIXME NEXT, move api call to api_comm.py
-                        self.api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=True)
-                        self.pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
-                        results_added = self.api.count_all_local_results() - count_before
-                        # TODO why does client fail to add so often? outside project scope?
-                        if results_added > 0:  # successful add
-                            results_added_count += 1
-                            s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = str(results_added_count)
-                            ml.log_event(f'save metadata result to file: {result[m_key.NAME]}')
-                            metadata_section = hash_metadata(result[m_key.NAME], offset=unicode_offset)
-                            if m_parser.has_section(metadata_section):
-                                ml.log_event(f'metadata parser already has section \'{metadata_section}\'',
-                                             level=ml.WARNING)
-                                # FIXME this could be a bug if two files had the same name.. do i care? at this time, no
-                                continue
-                            ml.log_event(f'qbit client has added result \'{result[m_key.NAME]}\' for '
-                                         f'header \'{self.active_section}\'', announce=True)
-                            m_parser.add_section(metadata_section)
-                            for attribute, detail in result.items():
-                                h_attr, d_attr = \
-                                    hash_metadata(attribute, offset=unicode_offset), \
-                                    hash_metadata(detail, offset=unicode_offset)
-                                write_parser_value_with_key_(parser_key=h_attr, value=d_attr,
-                                                             section=metadata_section, metadata=True)
-                                self.pause_on_event(u_key.WAIT_FOR_USER)
-                            if results_added_count > expected_results_count:
-                                return
-                            s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = \
-                                str(int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT]))
-                        ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
-                else:
-                    ml.log_event(f're-queueing search for {self.active_section}..')
-                    self.update_search_states(s_key.QUEUED)  # no results found, re-queue
+                self.set_search_id_as_(search_id, active=False)
+                # FIXME sort args for this
+                add_results_from_(results, active_kv, self.api)
             elif search_concluded:
                 pass
             else:
                 ml.log_event(f'header \'{self.active_section}\' is restricted from starting by search '
                              f'rank and/or search queue, this is by design', level=ml.WARNING)
                 self.update_search_states(s_key.QUEUED)
-            self.pause_on_event(u_key.WAIT_FOR_SEARCH_STATUS_CHECK)
+            pause_on_event(u_key.WAIT_FOR_SEARCH_STATUS_CHECK)
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-    @staticmethod
-    def pause_on_event( pause_type):
-        try:
-            timestamp = dt.now()
-            parser_at_default = u_parser[u_key.DEFAULT]
-            if pause_type == u_key.WAIT_FOR_MAIN_LOOP:
-                delay = int(parser_at_default[u_key.WAIT_FOR_MAIN_LOOP])
-                ml.log_event(f'{timestamp} waiting {delay} seconds for main loop repeat..')
-                sleep(delay)
-            elif pause_type == u_key.WAIT_FOR_SEARCH_STATUS_CHECK:
-                delay = int(parser_at_default[u_key.WAIT_FOR_SEARCH_STATUS_CHECK])
-                ml.log_event(f'{timestamp} waiting {delay} seconds for search state check..')
-                sleep(delay)
-            elif pause_type == u_key.WAIT_FOR_SEARCH_RESULT_ADD:
-                delay = int(parser_at_default[u_key.WAIT_FOR_SEARCH_RESULT_ADD])
-                ml.log_event(f'{timestamp} waiting {delay} seconds for add attempt..')
-                sleep(delay)
-            elif pause_type == u_key.WAIT_FOR_USER:
-                delay = int(parser_at_default[u_key.WAIT_FOR_USER])
-                ml.log_event(f'{timestamp} waiting {delay} seconds to let user follow log..')
-                sleep(delay)
-            else:
-                raise Exception(f'unknown pause type \'{pause_type}\'')
-        except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def search_queue_full(self) -> bool:
         ml.log_event('check search queue..')
@@ -239,7 +148,7 @@ class QbitStateManager:
                 ml.log_event(f'\tsearch header : \'{active_search_header_name}\'')
             return True
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def set_search_id_as_(self, search_id: str, active=False):
         try:
@@ -252,7 +161,7 @@ class QbitStateManager:
             ml.log_event(f'creating dict entry for \'{search_id}\' at \'{self.active_section}\'')
             self.active_search_ids[self.active_section] = search_id
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def start_search(self):
         try:
@@ -281,7 +190,7 @@ class QbitStateManager:
                 ml.log_event(f'search_state is not \'{s_key.RUNNING}\' or \'{s_key.STOPPED}\', there was a '
                              f'problem starting the search!', level=ml.ERROR)
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def update_search_states(self, api_state_key):
         ml.log_event('updating the search state machine..')
@@ -323,16 +232,7 @@ class QbitStateManager:
                 pass
             parser_at_active[s_key.TIME_LAST_WRITTEN] = str(dt.now())
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
-
-
-def empty_(test_string) -> bool:
-    try:
-        if test_string == '':
-            return True
-        return False
-    except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 if __name__ == '__main__':
