@@ -2,7 +2,6 @@ from datetime import datetime
 from minimalog.minimal_log import MinimalLog
 from state_machine_interface import *
 from qbittorrentapi.search import SearchStatusesList
-from user_configuration.settings_io import QbitConfig  # TODO use this or delete it
 from user_configuration.WEB_API_CREDENTIALS import *
 import qbittorrentapi
 ml = MinimalLog(__name__)
@@ -30,7 +29,7 @@ class QbitApiCaller:
                 return True
             return False
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def count_all_local_results(self) -> int:
         try:
@@ -40,7 +39,7 @@ class QbitApiCaller:
             ml.log_event(f'counted {local_result_count} existing local results')
             return local_result_count
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def create_search_job(self, pattern, plugins, category) -> tuple:
         try:
@@ -53,7 +52,7 @@ class QbitApiCaller:
             ml.log_event(f'qbit client created search job for \'{pattern}\'')
             return job, status, state, sid, count
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def dump_surface_client(self):
         try:
@@ -77,7 +76,7 @@ class QbitApiCaller:
             for surface_key, surface_attr in dump.items():
                 ml.log_event(f'\'{surface_key}\' : \'{surface_attr}\'')
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def get_search_results(self, search_id, filename_regex,
                            metadata_filename_key, use_filename_regex_filter=False) -> list:
@@ -97,7 +96,7 @@ class QbitApiCaller:
                 results = filtered_results
             return results
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def get_search_status(self, search_id) -> str:
         try:
@@ -112,7 +111,7 @@ class QbitApiCaller:
             assert search_status is not None, 'bad search status attribute, fix it or handle it'
             return search_status
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 if __name__ == '__main__':
