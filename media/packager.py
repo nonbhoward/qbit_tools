@@ -13,7 +13,7 @@ class MediaBox:
         try:
             pass
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 if __name__ == '__main__':
