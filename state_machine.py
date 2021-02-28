@@ -2,6 +2,7 @@ from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
 from state_machine_interface import enough_results_in_
 from state_machine_interface import get_all_sections_from_parser_
+from state_machine_interface import get_search_results_for_
 from state_machine_interface import hash_metadata
 from state_machine_interface import m_key, s_key, u_key
 from state_machine_interface import m_parser, s_parser, u_parser
@@ -12,6 +13,9 @@ from state_machine_interface import write_config_to_disk
 from state_machine_interface import write_parser_value_with_key_
 from qbit_interface.api_comm import QbitApiCaller
 from time import sleep
+
+u_parser_at_default = u_parser[u_key.DEFAULT]
+unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
 
 
 class QbitStateManager:
@@ -79,10 +83,8 @@ class QbitStateManager:
             search_queued, search_running, search_stopped, search_concluded = section_search_state
             # shared  parser variables
             s_parser_at_active = s_parser[self.active_section]
-            u_parser_at_default = u_parser[u_key.DEFAULT]
             # shared variables
             expected_results_count = int(s_parser_at_active[s_key.EXPECTED_SEARCH_RESULT_COUNT])
-            unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
             if self.active_section in self.active_search_ids:
                 search_id = self.active_search_ids[self.active_section]
             else:
@@ -107,10 +109,10 @@ class QbitStateManager:
                 else:
                     self.update_search_states(s_key.QUEUED)  # unexpected state, re-queue
             elif search_stopped:
-                filename_regex = read_parser_value_with_(key=s_key.REGEX_FILTER_FOR_FILENAME,
-                                                         section=self.active_section, search=True)
-                results = self.api.get_search_results(search_id=search_id, use_filename_regex_filter=True,
-                                                      filename_regex=filename_regex, metadata_filename_key=m_key.NAME)
+                results = None
+                if self.active_section in self.active_search_ids.keys():
+                    active_kv = (self.active_section, self.active_search_ids[self.active_section])
+                    results = get_search_results_for_(active_kv=active_kv)
                 if results is None or self.active_section not in self.active_search_ids:
                     ml.log_event(f'^^ ???what the fuck is this call occurring <100us prior??? ^^')
                     # FIXME there is an undiscovered bug less than 100us before this log event call
