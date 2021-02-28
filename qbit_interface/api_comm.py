@@ -1,4 +1,5 @@
 from datetime import datetime
+from minimalog.minimal_log import MinimalLog
 from state_machine_interface import *
 from qbittorrentapi.search import SearchStatusesList
 from user_configuration.settings_io import QbitConfig  # TODO use this or delete it
@@ -81,6 +82,7 @@ class QbitApiCaller:
     def get_search_results(self, search_id, filename_regex,
                            metadata_filename_key, use_filename_regex_filter=False) -> list:
         try:
+            ml.log_event(f'getting search results for search id \'{search_id}\'')
             results = self.qbit_client.search_results(search_id)
             assert results is not None, 'bad results, fix it or handle it'
             results = results['results']  # TODO do this? or no?
