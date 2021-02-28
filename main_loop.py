@@ -5,6 +5,7 @@ from os.path import exists
 from pathlib import Path
 from state_machine import QbitStateManager
 from state_machine_interface import conf
+from state_machine_interface import pause_on_event
 from subprocess import Popen
 from subprocess import run as launch
 from sys import platform
@@ -19,7 +20,7 @@ def main_loop():
         ml.log_event(event=f'new loop starting at {datetime.now()}', announce=True)
         qsm.initiate_and_monitor_searches()
         qsm.increment_loop_count()
-        qsm.pause_on_event(u_key.WAIT_FOR_MAIN_LOOP)
+        pause_on_event(u_key.WAIT_FOR_MAIN_LOOP)
 
 
 def application_is_running(app_path: Path) -> bool:
@@ -34,7 +35,7 @@ def application_is_running(app_path: Path) -> bool:
             return True
         return False
     except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def start_application_and_return_state_machine():
@@ -53,7 +54,7 @@ def start_application_and_return_state_machine():
         launch(app)
         return QbitStateManager()
     except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def supported_os() -> bool:
@@ -67,7 +68,7 @@ def supported_os() -> bool:
             return True
         return False
     except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 main_loop()
