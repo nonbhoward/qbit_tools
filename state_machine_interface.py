@@ -14,7 +14,7 @@ def add_results_from_(results, active_kv, api):
     try:
         active_section = active_kv[0]
         s_parser_at_active = s_parser[active_section]
-        expected_results_count = s_parser_at_active[s_key.EXPECTED_SEARCH_RESULT_COUNT]
+        expected_results_count = int(s_parser_at_active[s_key.EXPECTED_SEARCH_RESULT_COUNT])
         search_priority = u_parser[u_key.DEFAULT][u_key.USER_PRIORITY]
         unicode_offset = u_parser[u_key.DEFAULT][u_key.UNI_SHIFT]
         results_count = len(results)
@@ -49,7 +49,6 @@ def add_results_from_(results, active_kv, api):
             if enough_seeds:
                 count_before = api.count_all_local_results()
                 ml.log_event(f'local machine has {count_before} stored results before add attempt..')
-                # FIXME NEXT, move api call to api_comm.py
                 api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=True)
                 pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
                 results_added = api.count_all_local_results() - count_before
@@ -78,7 +77,7 @@ def add_results_from_(results, active_kv, api):
                         return
                     s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = \
                         str(int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT]))
-                ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
+            ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
