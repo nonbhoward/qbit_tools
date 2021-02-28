@@ -19,7 +19,7 @@ class QbitConfig:
                 return parsers.user_settings_parser.sections()
             pass
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def get_keyring_for_(metadata=False, search=False, settings=False):
@@ -33,7 +33,7 @@ class QbitConfig:
                 return keyrings.user_config_parser_keyring
             pass
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @classmethod
     def get_keyrings(cls) -> tuple:
@@ -43,7 +43,7 @@ class QbitConfig:
             uk = cls.get_keyring_for_(settings=True)
             return mk, sk, uk
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def get_parser_as_sortable_(metadata=False, search=False, settings=False) -> dict:
@@ -63,7 +63,7 @@ class QbitConfig:
                     parser_dict[section][section_key] = parser[section][section_key]
             return parser_dict
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def get_parser_at_section(section, metadata=False, search=True, settings=False) -> SectionProxy:
@@ -85,7 +85,7 @@ class QbitConfig:
                 parser_at_section = ucp[section]
                 return parser_at_section
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def get_parser_for_(metadata=False, search=False, settings=False):
@@ -98,7 +98,7 @@ class QbitConfig:
             if settings:
                 return parsers.user_settings_parser
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @classmethod
     def get_parsers(cls) -> tuple:
@@ -108,7 +108,7 @@ class QbitConfig:
             up = cls.get_parser_for_(settings=True)
             return mp, sp, up
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def read_parser_value_with_(key, section='DEFAULT',
@@ -132,7 +132,7 @@ class QbitConfig:
             value = parser[key]
             return value
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def reset_search_ids():
@@ -143,7 +143,7 @@ class QbitConfig:
                 ml.log_event(f'reset search id for section \'{section}\'')
                 parser[section][keys.ID] = str(0)
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def set_search_rank_using_(self, sort_key):
         """
@@ -164,7 +164,7 @@ class QbitConfig:
                 parser[header][search.RANK] = str(search_rank)
                 ml.log_event(f'search rank \'{search_rank}\' assigned to header \'{header}\'')
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def write_config_to_disk():
@@ -177,7 +177,7 @@ class QbitConfig:
                     ml.log_event(f'parser update for {parser}')
                     ml.log_event(f'successfully written parser to disk at \'{parser_path}\'')
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def write_parser_value_with_key_(parser_key, value='', section='DEFAULT',
@@ -195,4 +195,4 @@ class QbitConfig:
                 parser = parsers.user_config_parser
             parser[parser_key] = str(value)
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)

@@ -125,7 +125,7 @@ class ParserPaths:  # Configuration.Parser.ParserPaths
         try:
             print('todo? : ParserPaths().get_parser_paths_from_()')
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 class Parsers:  # Configuration.Parser.Parsers
@@ -149,7 +149,7 @@ class Parsers:  # Configuration.Parser.Parsers
                 parsers[parser_path] = rcp
             return parsers
         except Exception as e_err:
-            ml.log_event(e_err, ml.ERROR)
+            ml.log_event(e_err.args[0], ml.ERROR)
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### TIER 1 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
@@ -185,7 +185,7 @@ class Paths:  # Configuration.Paths
             ml.log_event(f'get metadata path for {meta_directory_name}')
             return Path(path.project, meta_directory_name)
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def _get_search_path_from(path, configuration) -> Path:
         """
@@ -211,7 +211,7 @@ class Paths:  # Configuration.Paths
             parser_paths = [metadata_parser_path, search_details_path, user_config_path]
             return * parser_paths,
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def _get_user_config_path_from_(path, configuration) -> Path:
         """
@@ -240,7 +240,7 @@ class ProjectFiles:  # Configuration.ProjectFiles
                     all_files.append(Path(root, file))
             return all_files
         except Exception as e_err:
-            ml.log_event(e_err, level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 ##### ##### ##### ##### ##### ##### ##### ###### TIER 0 CLASS ###### ##### ##### ##### ##### ##### ##### ######
@@ -265,7 +265,7 @@ def get_user_configuration(parse_all_project_files=False) -> ConfigurationManage
         configuration = ConfigurationManager(parse_all_project_files)
         return configuration
     except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def _parser_has_sections(rawconfigparser: RawConfigParser) -> bool:
@@ -280,7 +280,7 @@ def _parser_has_sections(rawconfigparser: RawConfigParser) -> bool:
             return False
         return True
     except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def _parser_able_to_read_write_(rawconfigparser: RawConfigParser) -> bool:
@@ -291,7 +291,7 @@ def _parser_able_to_read_write_(rawconfigparser: RawConfigParser) -> bool:
             return True
         return False
     except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def _parser_has_defaults(rawconfigparser: RawConfigParser) -> bool:
@@ -300,7 +300,7 @@ def _parser_has_defaults(rawconfigparser: RawConfigParser) -> bool:
             return True
         return False
     except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def _parser_modify_test_sections(rawconfigparser: RawConfigParser) -> bool:
@@ -318,7 +318,7 @@ def _parser_modify_test_sections(rawconfigparser: RawConfigParser) -> bool:
                 return True
         return False
     except Exception as e_err:
-        ml.log_event(e_err, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 if __name__ == '__main__':
