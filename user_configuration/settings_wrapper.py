@@ -44,12 +44,11 @@ class MetadataParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
 class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
     # keys for reading & writing search details
     def __init__(self):
-        self.ADD_MODE = 'add_mode'  # FIXME add feature
+        self.ADD_PAUSED = 'add_paused'
         self.AVG_SEED_COUNT = 'average_seed_count'
         self.DEFAULT = 'DEFAULT'
         self.EMPTY = ''
         self.ID = 'search_id'
-        self.MAX_FILE_SIZE = 'max_file_size'  # TODO add
         self.MAX_SEARCH_ATTEMPT_COUNT = 'maximum_search_attempt_count'
         self.MIN_SEED = 'minimum_seed_count'
         self.RANK = 'search_rank'
