@@ -131,22 +131,26 @@ def filter_(results: list, section: str, seeds=True, size=False, sort=True):
         ml.log_event(f'add results by {search_priority}')
         minimum_seeds = int(s_parser[section][s_key.MIN_SEED])
         min_size = int(s_parser[section][s_key.SIZE_MIN_BYTES])
+        min_size_MiB = min_size / 1000000
         max_size = int(s_parser[section][s_key.SIZE_MAX_BYTES])
+        max_size_MiB = max_size / 1000000
         results_filtered = list()
         for result in results:
             if seeds:
                 result_seeds = int(result[m_key.SUPPLY])
                 enough_seeds = True if result_seeds > minimum_seeds else False
                 if not enough_seeds:
-                    ml.log_event(f'result with \'{result_seeds}\' seeds, \'{result[m_key.NAME]}\' does not meet '
-                                 f'seed requirement, \'{minimum_seeds}\' seeds required', level=ml.WARNING)
+                    ml.log_event(f'required seeds \'{minimum_seeds}\' not met by result with '
+                                 f'\'{result_seeds}\' seeds, result : \'{result[m_key.NAME]}\'',
+                                 level=ml.WARNING)
                     continue
             if size:
                 result_size = int(result[m_key.SIZE])
+                result_size_MiB = result_size / 1000000
                 good_size = True if max_size > result_size > min_size else False
                 if not good_size:
-                    ml.log_event(f'result \'{result[m_key.NAME]}\' of size \'{result_size}\' does not match size '
-                                 f'requirements, min size \'{min_size}\', max size \'{max_size}\'',
+                    ml.log_event(f'size requirement \'{min_size_MiB}\'MiB to \'{max_size_MiB}\'MiB not met by'
+                                 f'result with size \'{result_size_MiB}\'MiB, result: \'{result[m_key.NAME]}\'',
                                  level=ml.WARNING)
                     continue
             ml.log_event(f'result \'{result[m_key.NAME]}\' meets all requirements')
