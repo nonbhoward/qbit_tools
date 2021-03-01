@@ -113,14 +113,11 @@ class QbitStateManager:
                     active_kv = (self.active_section, self.active_search_ids[self.active_section])
                     results = get_search_results_for_(active_kv=active_kv, api=self.api)
                 if results is None or self.active_section not in self.active_search_ids:
-                    # FIXME there is an undiscovered bug less than 100us before this log event call
                     ml.log_event(f'search \'{self.active_section}\' is stale, re-queued', level=ml.WARNING)
-                    self.update_search_states(s_key.QUEUED)
-                    return
-                assert self.active_section in self.active_search_ids, 'active section not in active search ids!'
-                self.set_search_id_as_(search_id, active=False)
-                # FIXME sort args for this
-                add_results_from_(results, active_kv, self.api)
+                else:
+                    add_results_from_(results, active_kv, self.api)
+                    self.set_search_id_as_(search_id, active=False)
+                self.update_search_states(s_key.QUEUED)
             elif search_concluded:
                 pass
             else:
@@ -167,7 +164,6 @@ class QbitStateManager:
             search_term = read_parser_value_with_(key=s_key.TERM,
                                                   section=self.active_section,
                                                   search=True)
-            # search_term = s_parser[self.active_section][s_key.TOPIC]  # TODO delete?
             search_properties = self.api.create_search_job(search_term, 'all', 'all')
             search_job, search_status, search_state, search_id, search_count = search_properties
             if search_id is None or empty_(search_id):
@@ -210,7 +206,7 @@ class QbitStateManager:
                 parser_at_active[s_key.RUNNING] = s_key.YES
                 parser_at_active[s_key.STOPPED] = s_key.NO
                 parser_at_active[s_key.CONCLUDED] = s_key.NO
-                # FIXME this could increment multiple times if the main_loop is too fast
+                # FIXME this could increment multiple times if the main_loop is too fast?
                 self.increment_search_attempt_count()
                 ml.log_event(f'search for \'{self.active_section}\' is running.. please stand by..')
             elif api_state_key == s_key.STOPPED:
