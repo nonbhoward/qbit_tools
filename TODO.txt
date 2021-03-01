@@ -1,12 +1,11 @@
 # TODO top bugs, sorted by priority
-   -1. search_attempt_count is incrementing too often
+   -2. after processing results, searches are not re-queued
     0. results added count reports nonsense numbers
     1. search rank soft-lock
-    4. add_result adds to expected_add_count - 1 instead of expected_add_count
+    m. add_result adds to expected_add_count - 1 instead of expected_add_count
 
 ..focusing on program function  # TODO document current efforts
     1. implement add_mode, rename to add_state?
-    2. implement size filters
     3. maximize results by framing section header terms as permutations bookended AND delimited by permissive regex aka .*
     4. implement avg seed count
 
@@ -15,8 +14,10 @@
         poorly worded but it's enough breadcrumbs to remember to re-visit this
     1. delete unused functions
 
-COMPLETED
+TESTING
    -1. after 10 failed attempts, search processing stops
+   -1. search_attempt_count is incrementing too often
+	fix in place, resolved?
     0. search queueing and search rank is fucked
     0. after adding a single result, the processing code crashes
         bug fix in place, testing, suspect it was the rogue return
@@ -29,4 +30,7 @@ COMPLETED
         bug fix may be in place, same as for 0, testing
     5. interpolation issue with configparser
 	bug fix in place, testing
+
+RESOLVED
+    2. implement size filters
 
