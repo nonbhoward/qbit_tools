@@ -77,7 +77,8 @@ def add_results_from_(results, active_kv, api):
                         return
                     s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = \
                         str(int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT]))
-            ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
+                ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
+            ml.log_event(f'result with too few seeds \'{result[m_key.NAME]}\'', level=ml.WARNING)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
