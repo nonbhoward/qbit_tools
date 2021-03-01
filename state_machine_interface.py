@@ -9,78 +9,59 @@ m_key, s_key, u_key = conf.get_keyrings()
 m_parser, s_parser, u_parser = conf.get_parsers()
 
 
-def add_results_from_(results, active_kv, api):
+def add_is_successful_for_(result, api, section, paused=True) -> bool:
+    try:
+        count_before_add_attempt = api.count_all_local_results()
+        result_url = result[m_key.URL]
+        ml.log_event(f'local machine has {count_before_add_attempt} stored results before add attempt..')
+        paused = True  # TODO remove this after implementing setting
+        if paused:
+            # TODO why does client fail to add so often? outside project scope?
+            api.qbit_client.torrents_add(urls=result_url, is_paused=True)
+        else:
+            # FIXME this never runs, intentional, fix later
+            api.qbit_client.torrents_add(urls=result_url, is_paused=False)
+        pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
+        results_added_count = api.count_all_local_results() - count_before_add_attempt
+        if results_added_count:
+            s_parser[section][s_key.RESULTS_ADDED_COUNT] = \
+                str(int(s_parser[section][s_key.RESULTS_ADDED_COUNT]))
+            return True
+        return False
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def add_results_from_(results, active_kv, api, paused=True):
     # TODO this should be broken up
     try:
         active_section = active_kv[0]
         s_parser_at_active = s_parser[active_section]
-        expected_results_count = int(s_parser_at_active[s_key.EXPECTED_SEARCH_RESULT_COUNT])
-        search_priority = u_parser[u_key.DEFAULT][u_key.USER_PRIORITY]
+        results_required_count = int(s_parser_at_active[s_key.RESULTS_REQUIRED_COUNT])
         unicode_offset = u_parser[u_key.DEFAULT][u_key.UNI_SHIFT]
-        results_count = len(results)
-        # TODO results_key.supply could be sort by any key
-        ml.log_event(f'add results by {search_priority}')
-        ml.log_event(f'get most popular \'{expected_results_count}\' count results')
-        if not enough_results_in_(results, expected_results_count):
-            c_key, er_key = s_key.CONCLUDED, s_key.EXPECTED_SEARCH_RESULT_COUNT
-            reduce_search_expectations_for_(active_section, c_key, er_key)
-            expected_results_count = results_count
-        # TODO remove hardcoded nbSeeders
-        sorted_results = sorted(results, key=lambda k: k['nbSeeders'], reverse=True)
-        searches_concluded = dict()
-        active_is_concluded = s_parser_at_active.getboolean(s_key.CONCLUDED)
-        if active_is_concluded:
-            write_parser_value_with_key_(parser_key=s_key.CONCLUDED, value='yes',
-                                         section=active_section, search=True)
-        for section in s_parser.sections():
-            searches_concluded[section] = s_parser_at_active.getboolean(s_key.CONCLUDED)
-        if all(searches_concluded.values()):
-            ml.log_event('all search tasks concluded, exiting program')
-            exit()
-        ml.log_event(f'results sorted by popularity for {active_section}')
-        minimum_seeds = int(s_parser_at_active[s_key.MIN_SEED])
-        for result in sorted_results:
+        results = filter_(results, active_section, size=True)
+        if not enough_found_in_(results, active_section):
+            reduce_search_expectations_for_(active_section)
+            results_required_count = len(results)
+        ml.log_event(f'add most popular \'{results_required_count}\' count results')
+        for result in results:
             results_added_count = int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT])
-            if results_added_count > expected_results_count:
+            if results_added_count > results_required_count:
                 ml.log_event(f'the search for \'{active_section}\' can be concluded', announce=True)
                 s_parser_at_active[s_key.CONCLUDED] = s_key.YES
                 return  # enough results have been added for this header, stop
-            result_seeds = result[m_key.SUPPLY]
-            enough_seeds = True if result_seeds > minimum_seeds else False
-            if enough_seeds:
-                count_before = api.count_all_local_results()
-                ml.log_event(f'local machine has {count_before} stored results before add attempt..')
-                api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=True)
-                pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
-                results_added = api.count_all_local_results() - count_before
-                # TODO why does client fail to add so often? outside project scope?
-                if results_added > 0:  # successful add
-                    results_added_count += 1
-                    s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = str(results_added_count)
-                    ml.log_event(f'save metadata result to file: {result[m_key.NAME]}')
-                    metadata_section = hash_metadata(result[m_key.NAME], offset=unicode_offset)
-                    if m_parser.has_section(metadata_section):
-                        ml.log_event(f'metadata parser already has section \'{metadata_section}\'',
-                                     level=ml.WARNING)
-                        # FIXME this could be a bug if two files had the same name.. do i care? at this time, no
-                        continue
-                    ml.log_event(f'qbit client has added result \'{result[m_key.NAME]}\' for '
-                                 f'header \'{active_section}\'', announce=True)
-                    m_parser.add_section(metadata_section)
-                    for attribute, detail in result.items():
-                        h_attr, d_attr = \
-                            hash_metadata(attribute, offset=unicode_offset), \
-                            hash_metadata(detail, offset=unicode_offset)
-                        write_parser_value_with_key_(parser_key=h_attr, value=d_attr,
-                                                     section=metadata_section, metadata=True)
-                        pause_on_event(u_key.WAIT_FOR_USER)
-                    if results_added_count > expected_results_count:
-                        return
-                    s_parser_at_active[s_key.RESULTS_ADDED_COUNT] = \
-                        str(int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT]))
-                ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
-                continue
-            ml.log_event(f'result with too few seeds \'{result[m_key.NAME]}\'', level=ml.WARNING)
+            if add_is_successful_for_(result, api, active_section, paused):
+                ml.log_event(f'add is successful for \'{result[m_key.NAME]}\'')
+                increment_result_added_count_for_(active_section)
+                ml.log_event(f'save metadata result to parser \'{result[m_key.NAME]}\'')
+                write_metadata_to_parser_for_(result, active_section, unicode_offset)
+                if enough_results_added_for_(active_section):
+                    ml.log_event(f'enough results added for \'{active_section}\'')
+                    return
+                return
+            ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
+            continue
+        ml.log_event(f'result with too few seeds \'{result[m_key.NAME]}\'', level=ml.WARNING)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -103,10 +84,24 @@ def empty_(test_string) -> bool:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def enough_results_in_(filtered_results, expected_result_count):
+def enough_results_added_for_(section) -> bool:
     try:
-        filtered_results_count = len(filtered_results)
-        if filtered_results_count < expected_result_count:
+        results_added_count = int(s_parser[section][s_key.RESULTS_ADDED_COUNT])
+        results_required_count = int(s_parser[section][s_key.RESULTS_REQUIRED_COUNT])
+        if results_added_count > results_required_count:
+            return True
+        return False
+    except Exception as e_err:
+        print(e_err.args[0])
+
+
+def enough_found_in_(filtered_results, active_section):
+    try:
+        expected_results_count = int(s_parser[active_section][s_key.RESULTS_REQUIRED_COUNT])
+        filtered_results_count = 0
+        if filtered_results is not None:
+            filtered_results_count = len(filtered_results)
+        if filtered_results_count < expected_results_count:
             ml.log_event(f'not enough results were found! \'{filtered_results_count}\' '
                          f'results, consider adjusting search parameters', level=ml.WARNING)
             return False
@@ -126,6 +121,46 @@ def fetch_metadata_from_(parser) -> dict:
                 result_data[hash_metadata(section, True)][key] = hash_metadata(detail, True)
         ml.log_event('fetching results from disk', event_completed=True)
         return result_data
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def filter_(results: list, section: str, seeds=True, size=False, sort=True):
+    try:
+        search_priority = u_parser[u_key.DEFAULT][u_key.USER_PRIORITY]
+        ml.log_event(f'add results by {search_priority}')
+        minimum_seeds = int(s_parser[section][s_key.MIN_SEED])
+        min_size = int(s_parser[section][s_key.SIZE_MIN_BYTES])
+        max_size = int(s_parser[section][s_key.SIZE_MAX_BYTES])
+        results_filtered = list()
+        for result in results:
+            if seeds:
+                result_seeds = int(result[m_key.SUPPLY])
+                enough_seeds = True if result_seeds > minimum_seeds else False
+                if not enough_seeds:
+                    ml.log_event(f'result with \'{result_seeds}\' seeds, \'{result[m_key.NAME]}\' does not meet '
+                                 f'seed requirement, \'{minimum_seeds}\' seeds required', level=ml.WARNING)
+                    continue
+            if size:
+                result_size = int(result[m_key.SIZE])
+                good_size = True if max_size > result_size > min_size else False
+                if not good_size:
+                    ml.log_event(f'result \'{result[m_key.NAME]}\' of size \'{result_size}\' does not match size '
+                                 f'requirements, min size \'{min_size}\', max size \'{max_size}\'',
+                                 level=ml.WARNING)
+                    continue
+            ml.log_event(f'result \'{result[m_key.NAME]}\' meets all requirements')
+            results_filtered.append(result)
+        if sort:
+            ml.log_event(f'results sorted for {section} # TODO dynamic sort values')
+            results = sort_(results_filtered)
+        searches_concluded = dict()
+        for section in s_parser.sections():
+            searches_concluded[section] = s_parser[section].getboolean(s_key.CONCLUDED)
+        if all(searches_concluded.values()):
+            ml.log_event('all search tasks concluded, exiting program')
+            exit()
+        return results
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -179,6 +214,14 @@ def hash_metadata(x, undo=False, offset=0):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+def increment_result_added_count_for_(section):
+    try:
+        s_parser[section][s_key.RESULTS_ADDED_COUNT] = \
+            str(int(s_parser[section][s_key.RESULTS_ADDED_COUNT]) + 1)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
 def pause_on_event(pause_type):
     try:
         timestamp = dt.now()
@@ -219,10 +262,11 @@ def read_parser_value_with_(key, section, search=False, metadata=False, settings
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def reduce_search_expectations_for_(section: str, c_key, er_key):
+def reduce_search_expectations_for_(section: str):
     try:
+        c_key, re_key = s_key.CONCLUDED, s_key.RESULTS_REQUIRED_COUNT
         ml.log_event(f'reducing search expectations for \'{section}\'')
-        er_val = int(s_parser[section][er_key])
+        er_val = int(s_parser[section][re_key])
         if not er_val:
             ml.log_event(f'concluding search for \'{section}\'', level=ml.WARNING)
             s_parser[section][c_key] = s_key.YES
@@ -301,9 +345,40 @@ def set_time_last_searched_for_active_header(self):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+def sort_(results):
+    try:
+        # TODO remove hardcoded nbSeeders
+        results_sorted = sorted(results, key=lambda k: k['nbSeeders'], reverse=True)
+        return results_sorted
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
 def write_config_to_disk():
     try:
         conf.write_config_to_disk()
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def write_metadata_to_parser_for_(result, section, offset):
+    try:
+        metadata_section = hash_metadata(result[m_key.NAME], offset=offset)
+        if m_parser.has_section(metadata_section):
+            # FIXME this could be a bug if two files had the same name.. do i care? at this time, no
+            ml.log_event(f'metadata parser already has section \'{metadata_section}\'',
+                         level=ml.WARNING)
+            return
+        ml.log_event(f'qbit client has added result \'{result[m_key.NAME]}\' for '
+                     f'header \'{section}\'', announce=True)
+        m_parser.add_section(metadata_section)
+        for attribute, detail in result.items():
+            h_attr, d_attr = \
+                hash_metadata(attribute, offset=offset), \
+                hash_metadata(detail, offset=offset)
+            write_parser_value_with_key_(parser_key=h_attr, value=d_attr,
+                                         section=metadata_section, metadata=True)
+            pause_on_event(u_key.WAIT_FOR_USER)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
