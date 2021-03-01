@@ -83,7 +83,7 @@ class QbitStateManager:
             # shared  parser variables
             s_parser_at_active = s_parser[self.active_section]
             # shared variables
-            expected_results_count = int(s_parser_at_active[s_key.EXPECTED_SEARCH_RESULT_COUNT])
+            expected_results_count = int(s_parser_at_active[s_key.RESULTS_REQUIRED_COUNT])
             if self.active_section in self.active_search_ids:
                 search_id = self.active_search_ids[self.active_section]
             else:
