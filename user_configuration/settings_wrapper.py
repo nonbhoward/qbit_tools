@@ -48,7 +48,6 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.AVG_SEED_COUNT = 'average_seed_count'
         self.DEFAULT = 'DEFAULT'
         self.EMPTY = ''
-        self.EXPECTED_SEARCH_RESULT_COUNT = 'expected_search_result_count'
         self.ID = 'search_id'
         self.MAX_FILE_SIZE = 'max_file_size'  # TODO add
         self.MAX_SEARCH_ATTEMPT_COUNT = 'maximum_search_attempt_count'
@@ -58,10 +57,11 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.RESET = 'reset'
         self.RESULTS_ADDED_COUNT = 'results_added_count'  # TODO can this trigger a conclude? untested
         self.RESULTS_COUNT = 'results_count'  # this relies on being in DEFAULTS or program errors?
-        self.RESULTS_PER_CYCLE = 'results_to_add_per_search'
         self.RESULTS_REQUIRED_COUNT = 'results_required_count'
         self.SEARCH_ATTEMPT_COUNT = 'search_attempt_count'
         self.SEARCH_STOPPED_REASON = 'search_stopped_reason'
+        self.SIZE_MAX_BYTES = 'maximum_file_size_bytes'
+        self.SIZE_MIN_BYTES = 'minimum_file_size_bytes'
         self.TERM = 'search_term'  # your search term
         self.TIME_LAST_READ = 'time_last_read'
         self.TIME_LAST_SEARCHED = 'time_last_searched'
