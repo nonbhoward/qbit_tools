@@ -61,7 +61,6 @@ def add_results_from_(results, active_kv, api, paused=True):
                 return
             ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
             continue
-        ml.log_event(f'result with too few seeds \'{result[m_key.NAME]}\'', level=ml.WARNING)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 

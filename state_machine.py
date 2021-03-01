@@ -113,7 +113,6 @@ class QbitStateManager:
                     active_kv = (self.active_section, self.active_search_ids[self.active_section])
                     results = get_search_results_for_(active_kv=active_kv, api=self.api)
                 if results is None or self.active_section not in self.active_search_ids:
-                    ml.log_event(f'^^ ???what the fuck is this call occurring <100us prior??? ^^')
                     # FIXME there is an undiscovered bug less than 100us before this log event call
                     ml.log_event(f'search \'{self.active_section}\' is stale, re-queued', level=ml.WARNING)
                     self.update_search_states(s_key.QUEUED)
