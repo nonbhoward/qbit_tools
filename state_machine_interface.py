@@ -9,23 +9,16 @@ m_key, s_key, u_key = conf.get_keyrings()
 m_parser, s_parser, u_parser = conf.get_parsers()
 
 
-def add_is_successful_for_(result, api, section, paused=True) -> bool:
+def add_is_successful_for_(result, api, section) -> bool:
     try:
         count_before_add_attempt = api.count_all_local_results()
-        result_url = result[m_key.URL]
         ml.log_event(f'local machine has {count_before_add_attempt} stored results before add attempt..')
-        paused = True  # TODO remove this after implementing setting
-        if paused:
-            # TODO why does client fail to add so often? outside project scope?
-            api.qbit_client.torrents_add(urls=result_url, is_paused=True)
-        else:
-            # FIXME this never runs, intentional, fix later
-            api.qbit_client.torrents_add(urls=result_url, is_paused=False)
+        # TODO why does client fail to add so often? outside project scope?
+        api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=get_add_mode_for_(section))
         pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
         results_added_count = api.count_all_local_results() - count_before_add_attempt
         if results_added_count:
-            s_parser[section][s_key.RESULTS_ADDED_COUNT] = \
-                str(int(s_parser[section][s_key.RESULTS_ADDED_COUNT]))
+            increment_result_added_count_for_(section)
             return True
         return False
     except Exception as e_err:
@@ -50,7 +43,7 @@ def add_results_from_(results, active_kv, api, paused=True):
                 ml.log_event(f'the search for \'{active_section}\' can be concluded', announce=True)
                 s_parser_at_active[s_key.CONCLUDED] = s_key.YES
                 return  # enough results have been added for this header, stop
-            if add_is_successful_for_(result, api, active_section, paused):
+            if add_is_successful_for_(result, api, active_section):
                 ml.log_event(f'add is successful for \'{result[m_key.NAME]}\'')
                 increment_result_added_count_for_(active_section)
                 ml.log_event(f'save metadata result to parser \'{result[m_key.NAME]}\'')
@@ -166,6 +159,16 @@ def filter_(results: list, section: str, seeds=True, size=False, sort=True):
         return results
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def get_add_mode_for_(section: str) -> bool:
+    try:
+        add_paused = s_parser[section].getboolean(s_key.ADD_PAUSED)
+        if add_paused:
+            return True
+        return False
+    except Exception as e_err:
+        ml.log_event(e_err.args[0])
 
 
 def get_all_sections_from_parser_(metadata=False, search=False, settings=False):
