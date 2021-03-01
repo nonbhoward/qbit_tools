@@ -42,7 +42,8 @@ def add_results_from_(results, active_kv, api):
         for result in sorted_results:
             results_added_count = int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT])
             if results_added_count > expected_results_count:
-                # TODO this would be a successful conclusion
+                ml.log_event(f'the search for \'{active_section}\' can be concluded', announce=True)
+                s_parser_at_active[s_key.CONCLUDED] = s_key.YES
                 return  # enough results have been added for this header, stop
             result_seeds = result[m_key.SUPPLY]
             enough_seeds = True if result_seeds > minimum_seeds else False
