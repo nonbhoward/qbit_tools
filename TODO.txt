@@ -4,6 +4,8 @@ TOP BUGS
     	2. add_result adds to expected_add_count - 1 instead of expected_add_count
 
 ..focusing on program function  # TODO document current efforts
+	1. could store & check against known "bad" results and prevent attempting to add them again, spamming the log
+	2. could check against added results and prevent attempting to add them again, spamming the log
     	3. maximize results by framing section header terms as permutations bookended AND delimited by permissive regex aka .*
     	4. implement avg seed count
 
