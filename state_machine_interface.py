@@ -135,6 +135,7 @@ def filter_(results: list, section: str, seeds=True, size=False, sort=True):
                     ml.log_event(f'required seeds \'{minimum_seeds}\' not met by result with '
                                  f'\'{result_seeds}\' seeds, result : \'{result[m_key.NAME]}\'',
                                  level=ml.WARNING)
+                    pause_on_event(u_key.WAIT_FOR_USER)
                     continue
             if size:
                 result_size = int(result[m_key.SIZE])
@@ -144,6 +145,7 @@ def filter_(results: list, section: str, seeds=True, size=False, sort=True):
                     ml.log_event(f'size requirement \'{min_size_MiB}\'MiB to \'{max_size_MiB}\'MiB not met by'
                                  f'result with size \'{result_size_MiB}\'MiB, result: \'{result[m_key.NAME]}\'',
                                  level=ml.WARNING)
+                    pause_on_event(u_key.WAIT_FOR_USER)
                     continue
             ml.log_event(f'result \'{result[m_key.NAME]}\' meets all requirements')
             results_filtered.append(result)
