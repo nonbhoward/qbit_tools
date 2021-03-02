@@ -1,6 +1,7 @@
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
 from state_machine_interface import add_results_from_
+from state_machine_interface import conclude_search_for_
 from state_machine_interface import empty_
 from state_machine_interface import get_all_sections_from_parser_
 from state_machine_interface import get_search_results_for_
@@ -8,6 +9,7 @@ from state_machine_interface import m_key, s_key, u_key
 from state_machine_interface import m_parser, s_parser, u_parser
 from state_machine_interface import pause_on_event
 from state_machine_interface import read_parser_value_with_
+from state_machine_interface import search_has_yielded_required_results
 from state_machine_interface import set_search_rank_using_
 from state_machine_interface import write_config_to_disk
 from state_machine_interface import write_parser_value_with_key_
@@ -117,6 +119,8 @@ class QbitStateManager:
                 else:
                     add_results_from_(results, active_kv, self.api)
                     self.set_search_id_as_(search_id, active=False)
+                    if search_has_yielded_required_results(self.active_section):
+                        conclude_search_for_(self.active_section)
                 self.update_search_states(s_key.QUEUED)
             elif search_concluded:
                 pass
