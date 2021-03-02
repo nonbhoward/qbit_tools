@@ -1,36 +1,37 @@
-# TODO top bugs, sorted by priority
-    0. results added count does it work?
-    1. search rank soft-lock
-    2. add_result adds to expected_add_count - 1 instead of expected_add_count
+TOP BUGS
+	sorted by priority
+    	1. search rank soft-lock
+    	2. add_result adds to expected_add_count - 1 instead of expected_add_count
 
 ..focusing on program function  # TODO document current efforts
-    3. maximize results by framing section header terms as permutations bookended AND delimited by permissive regex aka .*
-    4. implement avg seed count
+    	3. maximize results by framing section header terms as permutations bookended AND delimited by permissive regex aka .*
+    	4. implement avg seed count
 
 ..focusing on program organization  # TODO document current efforts
-    0. extend settings_wrapper with functions that return built classes based on args..
-        poorly worded but it's enough breadcrumbs to remember to re-visit this
-    1. delete unused functions
+    	0. extend settings_wrapper with functions that return built classes based on args..
+        	poorly worded but it's enough breadcrumbs to remember to re-visit this
+    	1. delete unused functions
 
-TESTING
-   -2. after processing results, searches are not re-queued
-   -1. after 10 failed attempts, search processing stops
-   -1. search_attempt_count is incrementing too often
-	fix in place, resolved?
-    0. search queueing and search rank is fucked
-    0. after adding a single result, the processing code crashes
-        bug fix in place, testing, suspect it was the rogue return
-    1. implement add_mode, rename to add_state? renamed to add_paused
-    1. prioritize searches based on when they were last-run
-    1. make sure getters handle all key/parser fetches
-    2. refactor parsers/keys as globally scoped? success
-        this was a large milestone
-    2. make sure setters handle all key/parser fetches
-    2. conclusion state never reached
-        bug fix may be in place, same as for 0, testing
-    5. interpolation issue with configparser
-	bug fix in place, testing
+BUGS IN TESTING
+       -1. search_attempt_count is incrementing too often
+		fix in place, resolved?
+    	1. implement add_mode, rename to add_state? renamed to add_paused
+    	2. refactor parsers/keys as globally scoped? success
+        	this was a large milestone
+    	2. conclusion state never reached
+        	bug fix may be in place, same as for 0, testing
+    	5. interpolation issue with configparser
+		bug fix in place, testing
 
-RESOLVED
-    2. implement size filters
+BUGS RESOLVED
+       -2. after processing results, searches are not re-queued
+       -1. after 10 failed attempts, search processing stops
+    	0. after adding a single result, the processing code crashes
+        	bug fix in place, testing, suspect it was the rogue return
+    	0. search queueing and search rank is fucked
+    	0. results added count does it work?
+    	1. prioritize searches based on when they were last-run
+    	1. make sure getters handle all key/parser fetches
+    	2. make sure setters handle all key/parser fetches
+    	2. implement size filters
 
