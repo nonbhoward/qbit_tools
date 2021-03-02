@@ -79,7 +79,7 @@ def enough_results_added_for_(section) -> bool:
     try:
         results_added_count = int(s_parser[section][s_key.RESULTS_ADDED_COUNT])
         results_required_count = int(s_parser[section][s_key.RESULTS_REQUIRED_COUNT])
-        if results_added_count > results_required_count:
+        if results_added_count > results_required_count - 1:
             return True
         return False
     except Exception as e_err:
