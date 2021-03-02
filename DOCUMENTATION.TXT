@@ -14,7 +14,7 @@
     user_configuration
         EDIT_SETTINGS_HERE.cfg is global settings, currently RO
         settings_io.py is parser interactions
-        settings_wrapper.py is a class hierarchy with the goal of eliminating strings
+        settings_wrapper.py is an experimental class hierarchy to the parser
     .gitignore is self-explanatory
     DOCUMENTATION.TXT is YOU ARE HERE
     LICENSE is self-explanatory
@@ -22,6 +22,7 @@
     README.md is self-explanatory
     state_machine.py is the search state machine
     state_machine_interface.py handles translation between parsers and state machine
+	..the interface also helps to keep the state machine simple and easy to debug
     TODO.txt is my project notes and a good place to start when looking for work
 
 [STATE MACHINE NOTES]
