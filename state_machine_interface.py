@@ -25,7 +25,7 @@ def add_is_successful_for_(result, api, section) -> bool:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def add_results_from_(results, active_kv, api, paused=True):
+def add_results_from_(results, active_kv, api):
     # TODO this should be broken up
     try:
         active_section = active_kv[0]
