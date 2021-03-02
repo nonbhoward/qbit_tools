@@ -69,14 +69,6 @@ def all_searches_concluded() -> bool:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def conclude_search_for_(section):
-    try:
-        ml.log_event(f'concluding search for \'{section}\'', announce=True)
-        s_parser[section][s_key.CONCLUDED] = s_key.YES
-    except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
-
-
 def empty_(test_string) -> bool:
     try:
         if test_string == '':
