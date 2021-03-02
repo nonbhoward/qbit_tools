@@ -121,6 +121,7 @@ class QbitStateManager:
                     self.set_search_id_as_(search_id, active=False)
                     if search_has_yielded_required_results(self.active_section):
                         conclude_search_for_(self.active_section)
+                        return
                 self.update_search_states(s_key.QUEUED)
             elif search_concluded:
                 pass
