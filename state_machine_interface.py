@@ -71,7 +71,7 @@ def all_searches_concluded() -> bool:
 
 def conclude_search_for_(section):
     try:
-        ml.log_event(f'concluding search for \'{section}\'', level=ml.WARNING)
+        ml.log_event(f'concluding search for \'{section}\'', announce=True)
         s_parser[section][s_key.CONCLUDED] = s_key.YES
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -323,12 +323,12 @@ def search_has_yielded_required_results(section) -> bool:
         max_search_attempt_count = int(s_parser_at_active[s_key.MAX_SEARCH_COUNT])
         results_added = int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT])
         results_required = int(s_parser_at_active[s_key.RESULTS_REQUIRED_COUNT])
-        if results_added > results_required:
+        if results_added >= results_required:
             ml.log_event(f'search \'{section}\' can be concluded, '
                          'requested result count has been added')
             search_set_end_reason(section, s_key.REQUIRED_RESULT_COUNT_FOUND)  # enough results, concluded
             return True
-        elif attempted_searches > max_search_attempt_count:
+        elif attempted_searches >= max_search_attempt_count:
             ml.log_event(f'search \'{section}\' can be concluded, too many '
                          f'search attempts w/o meeting requested result count')
             search_set_end_reason(section, s_key.TIMED_OUT)  # too many search attempts, conclude
