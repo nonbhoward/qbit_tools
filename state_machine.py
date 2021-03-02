@@ -1,7 +1,6 @@
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
 from state_machine_interface import add_results_from_
-from state_machine_interface import conclude_search_for_
 from state_machine_interface import empty_
 from state_machine_interface import get_all_sections_from_parser_
 from state_machine_interface import get_search_results_for_
