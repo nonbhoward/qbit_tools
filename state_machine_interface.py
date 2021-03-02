@@ -49,6 +49,9 @@ def add_results_from_(results, active_kv, api):
                 write_metadata_to_parser_for_(result, active_section, unicode_offset)
                 if enough_results_added_for_(active_section):
                     ml.log_event(f'enough results added for \'{active_section}\'')
+                    # FIXME delete this if the replacement functions work
+                    # ml.log_event(f'setting section \'{active_section}\' to CONCLUDED', announce=True)
+                    # s_parser[active_section][s_key.CONCLUDED] = s_key.YES
                     return  # desired result count added, stop adding
                 continue  # result added, go to next
             ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
@@ -62,6 +65,14 @@ def all_searches_concluded() -> bool:
     try:
         pass  # TODO write this function
         return False
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def conclude_search_for_(section):
+    try:
+        ml.log_event(f'concluding search for \'{section}\'', level=ml.WARNING)
+        s_parser[section][s_key.CONCLUDED] = s_key.YES
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -304,36 +315,24 @@ def result_has_enough_seeds(self, result) -> bool:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def search_has_yielded_required_results(self) -> bool:
+def search_has_yielded_required_results(section) -> bool:
     # TODO refactor into this function
-    ml.log_event('check if search can be concluded', event_completed=False)
     try:
-        search_parser_keys = self.get_keyring_for_search_detail_parser()
-        search_detail_parser_at_active_header = self.get_search_detail_parser_at_active_header()
-
-        attempted_searches = \
-            int(search_detail_parser_at_active_header[search_parser_keys.SEARCH_ATTEMPT_COUNT])
-
-        max_search_attempt_count = \
-            int(search_detail_parser_at_active_header[search_parser_keys.MAX_SEARCH_ATTEMPT_COUNT])
-
-        results_added = \
-            int(search_detail_parser_at_active_header[search_parser_keys.RESULTS_ADDED_COUNT])
-
-        results_required = \
-            int(search_detail_parser_at_active_header[search_parser_keys.RESULTS_REQUIRED_COUNT])
-
+        s_parser_at_active = s_parser[section]
+        attempted_searches = int(s_parser_at_active[s_key.SEARCH_ATTEMPT_COUNT])
+        max_search_attempt_count = int(s_parser_at_active[s_key.MAX_SEARCH_COUNT])
+        results_added = int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT])
+        results_required = int(s_parser_at_active[s_key.RESULTS_REQUIRED_COUNT])
         if results_added > results_required:
-            ml.log_event(f'search \'{self.active_section}\' can be concluded, '
-                         'requested result count has been added', event_completed=True)
-            self.search_set_end_reason(search_parser_keys.REQUIRED_RESULT_COUNT_FOUND)  # enough results, concluded
+            ml.log_event(f'search \'{section}\' can be concluded, '
+                         'requested result count has been added')
+            search_set_end_reason(section, s_key.REQUIRED_RESULT_COUNT_FOUND)  # enough results, concluded
             return True
         elif attempted_searches > max_search_attempt_count:
-            ml.log_event(f'search \'{self.active_section}\' can be concluded, too many search attempts '
-                         f'w/o meeting requested result count', event_completed=True)
-            self.search_set_end_reason(search_parser_keys.TIMED_OUT)  # too many search attempts, conclude
+            ml.log_event(f'search \'{section}\' can be concluded, too many '
+                         f'search attempts w/o meeting requested result count')
+            search_set_end_reason(section, s_key.TIMED_OUT)  # too many search attempts, conclude
             return True
-        ml.log_event(f'search \'{self.active_section}\' will be allowed to continue', event_completed=True)
         return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -342,6 +341,13 @@ def search_has_yielded_required_results(self) -> bool:
 def set_search_rank_using_(key):
     try:
         conf.set_search_rank_using_(key)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def search_set_end_reason(section, reason_key):
+    try:
+        s_parser[section][s_key.SEARCH_STOPPED_REASON] = reason_key
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
