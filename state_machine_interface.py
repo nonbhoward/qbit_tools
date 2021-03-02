@@ -289,6 +289,7 @@ def regex_matches(filename_regex, filename) -> bool:
         if regex_match:
             ml.log_event(f'pattern \'{filename_regex}\' matched against '
                          f'filename \'{filename}\'')
+            pause_on_event(u_key.WAIT_FOR_USER)
             return True
         return False
     except Exception as e_err:
