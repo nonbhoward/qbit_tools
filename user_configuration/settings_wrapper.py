@@ -49,7 +49,7 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.DEFAULT = 'DEFAULT'
         self.EMPTY = ''
         self.ID = 'search_id'
-        self.MAX_SEARCH_ATTEMPT_COUNT = 'maximum_search_attempt_count'
+        self.MAX_SEARCH_COUNT = 'maximum_search_attempt_count'
         self.MIN_SEED = 'minimum_seed_count'
         self.RANK = 'search_rank'
         self.REGEX_FILTER_FOR_FILENAME = 'regex_filter_for_filename'  # TODO allow a list of tilers?
