@@ -45,7 +45,6 @@ def add_results_from_(results, active_kv, api):
                 return  # enough results have been added for this header, stop
             if add_is_successful_for_(result, api, active_section):
                 ml.log_event(f'add is successful for \'{result[m_key.NAME]}\'')
-                increment_result_added_count_for_(active_section)
                 ml.log_event(f'save metadata result to parser \'{result[m_key.NAME]}\'')
                 write_metadata_to_parser_for_(result, active_section, unicode_offset)
                 if enough_results_added_for_(active_section):
