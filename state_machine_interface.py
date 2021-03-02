@@ -49,10 +49,10 @@ def add_results_from_(results, active_kv, api):
                 write_metadata_to_parser_for_(result, active_section, unicode_offset)
                 if enough_results_added_for_(active_section):
                     ml.log_event(f'enough results added for \'{active_section}\'')
-                    return
-                return
+                    return  # desired result count added, stop adding
+                continue  # result added, go to next
             ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
-            continue
+            continue  # FIXME delete this, no longer does anything
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
