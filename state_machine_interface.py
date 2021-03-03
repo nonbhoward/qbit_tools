@@ -5,7 +5,7 @@ from user_configuration.settings_io import QbitConfig as qconf
 from re import findall
 ml = MinimalLog(__name__)
 m_key, s_key, u_key = qconf.get_keyrings()
-m_parser, s_parser, u_parser = qconf.get_parsers()
+ma_parser, mf_parser, s_parser, u_parser = qconf.get_parsers()
 
 
 def add_is_successful_for_(result, api, section) -> bool:
@@ -16,16 +16,19 @@ def add_is_successful_for_(result, api, section) -> bool:
         api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=get_add_mode_for_(section))
         pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
         results_added_count = api.count_all_local_results() - count_before_add_attempt
+        success = False
         if results_added_count:
+            success = True
             increment_result_added_count_for_(section)
-            return True
+            ml.log_event(f'add is successful for \'{result[m_key.NAME]}\'')
+        store_metadata_of_(result, success)
         return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def add_results_from_(results, active_kv, api):
-    # TODO this should be broken up
+    # TODO this could be broken up?
     try:
         active_section = active_kv[0]
         s_parser_at_active = s_parser[active_section]
@@ -43,14 +46,9 @@ def add_results_from_(results, active_kv, api):
                 s_parser_at_active[s_key.CONCLUDED] = s_key.YES
                 return  # enough results have been added for this header, stop
             if add_is_successful_for_(result, api, active_section):
-                ml.log_event(f'add is successful for \'{result[m_key.NAME]}\'')
-                ml.log_event(f'save metadata result to parser \'{result[m_key.NAME]}\'')
-                write_metadata_to_parser_for_(result, active_section, unicode_offset)
+                create_metadata_section_for_(result, active_section, unicode_offset)
                 if enough_results_added_for_(active_section):
                     ml.log_event(f'enough results added for \'{active_section}\'')
-                    # FIXME delete this if the replacement functions work
-                    # ml.log_event(f'setting section \'{active_section}\' to CONCLUDED', announce=True)
-                    # s_parser[active_section][s_key.CONCLUDED] = s_key.YES
                     return  # desired result count added, stop adding
                 continue  # result added, go to next
             ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
@@ -75,6 +73,32 @@ def all_searches_concluded() -> bool:
             return True
         ml.log_event(f'all searches are not concluded, program continuing')
         return False
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def apply_filters_to_(result, filters):
+    try:
+        # TODO decide to abstract to this func or delete
+        pass
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def create_metadata_section_for_(result, section, offset):
+    try:
+        ml.log_event(f'save metadata result to parser \'{result[m_key.NAME]}\'')
+        metadata_section = hash_metadata(result[m_key.NAME], offset=offset)
+        if ma_parser.has_section(metadata_section):  # FIXME two files, same name?
+            ml.log_event(f'metadata parser already has section \'{metadata_section}\'', level=ml.WARNING)
+            return
+        ml.log_event(f'qbit client has added result \'{result[m_key.NAME]}\' for header \'{section}\'', announce=True)
+        ma_parser.add_section(metadata_section)
+        for attribute, detail in result.items():
+            h_attr, d_attr = get_hashed_(attribute, detail, offset)
+            write_parser_value_with_key_(parser_key=h_attr, value=d_attr,
+                                         section=metadata_section, metadata=True)
+            pause_on_event(u_key.WAIT_FOR_USER)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -151,11 +175,11 @@ def filter_(results: list, section: str, seeds=True, size=False, sort=True):
                     continue
             if size:
                 result_size = int(result[m_key.SIZE])
-                result_size_MiB = result_size / 1000000
-                good_size = True if max_size_bytes > result_size > min_size_bytes else False
-                if not good_size:
+                result_size_megabytes = result_size / 1000000
+                file_size_in_range = True if max_size_bytes > result_size > min_size_bytes else False
+                if not file_size_in_range:
                     ml.log_event(f'size requirement \'{min_size_megabytes}\'MiB to \'{max_size_megabytes}\'MiB not met by'
-                                 f'result with size \'{result_size_MiB}\'MiB, result: \'{result[m_key.NAME]}\'',
+                                 f'result with size \'{result_size_megabytes}\'MiB, result: \'{result[m_key.NAME]}\'',
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
                     continue
@@ -164,12 +188,6 @@ def filter_(results: list, section: str, seeds=True, size=False, sort=True):
         if sort:
             ml.log_event(f'results sorted for {section} # TODO dynamic sort values')
             results = sort_(results_filtered)
-        searches_concluded = dict()
-        for section in s_parser.sections():
-            searches_concluded[section] = s_parser[section].getboolean(s_key.CONCLUDED)
-        if all(searches_concluded.values()):
-            ml.log_event('all search tasks concluded, exiting program')
-            exit()
         return results
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -185,7 +203,7 @@ def get_add_mode_for_(section: str) -> bool:
         ml.log_event(e_err.args[0])
 
 
-def get_all_sections_from_parser_(metadata=False, search=False, settings=False):
+def get_all_sections_from_parser_(meta_add=False, meta_find=False, search=False, settings=False):
     try:
         if metadata:
             return qconf.get_all_sections_from_parser_(metadata=True)
@@ -197,20 +215,22 @@ def get_all_sections_from_parser_(metadata=False, search=False, settings=False):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def get_most_popular_results(self, regex_filtered_results: list) -> list:
+def get_hashed_(detail, attribute, offset):
     try:
-        pass  # TODO delete this function?
-        return list()
+        return hash_metadata(attribute, offset), hash_metadata(detail, offset)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def get_search_results_for_(active_kv: tuple, api) -> list:
     try:
-        section, search_id, key = active_kv[0], active_kv[1], s_key.REGEX_FILTER_FOR_FILENAME
-        filename_regex = read_parser_value_with_(key=key, section=section, search=True)
-        results = api.get_search_results(search_id=search_id, use_filename_regex_filter=True,
-                                         filename_regex=filename_regex, metadata_filename_key=m_key.NAME)
+        filename_regex = read_parser_value_with_(key=s_key.REGEX_FILTER_FOR_FILENAME,
+                                                 section=active_kv[0],
+                                                 search=True)
+        results = api.get_search_results(search_id=active_kv[1],
+                                         use_filename_regex_filter=True,
+                                         filename_regex=filename_regex,
+                                         metadata_filename_key=m_key.NAME)
         return results
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -346,6 +366,13 @@ def sort_(results):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+def store_metadata_of_(result, success):
+    try:
+        pass
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
 def write_config_to_disk():
     try:
         qconf.write_config_to_disk()
@@ -353,29 +380,7 @@ def write_config_to_disk():
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def write_metadata_to_parser_for_(result, section, offset):
-    try:
-        metadata_section = hash_metadata(result[m_key.NAME], offset=offset)
-        if m_parser.has_section(metadata_section):
-            # FIXME this could be a bug if two files had the same name.. do i care? at this time, no
-            ml.log_event(f'metadata parser already has section \'{metadata_section}\'',
-                         level=ml.WARNING)
-            return
-        ml.log_event(f'qbit client has added result \'{result[m_key.NAME]}\' for '
-                     f'header \'{section}\'', announce=True)
-        m_parser.add_section(metadata_section)
-        for attribute, detail in result.items():
-            h_attr, d_attr = \
-                hash_metadata(attribute, offset=offset), \
-                hash_metadata(detail, offset=offset)
-            write_parser_value_with_key_(parser_key=h_attr, value=d_attr,
-                                         section=metadata_section, metadata=True)
-            pause_on_event(u_key.WAIT_FOR_USER)
-    except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
-
-
-def write_parser_value_with_key_(parser_key, value, section, metadata=False, search=False, settings=False):
+def write_parser_value_with_key_(parser_key, value, section, meta_add=False, meta_find=False, search=False, settings=False):
     # FIXME same issue as read, clunky interface, rework
     try:
         if metadata:
