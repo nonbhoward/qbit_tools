@@ -84,6 +84,7 @@ class UserConfigParserKeys:  # Configuration.HardCoded.KeyRing.UserConfigKeys
     def __init__(self):
         # keys for reading & writing user configuration
         self.DEFAULT = 'DEFAULT'
+        self.RANK_PRIORITY = 'search_rank_required_to_start'
         self.UNI_MEMBER_COUNT = 'unicode_total_character_count'
         self.UNI_SHIFT = 'unicode_shift_offset_for_scrambling_metadata_parser'
         self.USER_PRIORITY = 'metadata_value_sort_priority'
