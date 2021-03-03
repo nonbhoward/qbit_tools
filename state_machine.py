@@ -6,7 +6,7 @@ from state_machine_interface import empty_
 from state_machine_interface import get_all_sections_from_parser_
 from state_machine_interface import get_search_results_for_
 from state_machine_interface import m_key, s_key, u_key
-from state_machine_interface import m_parser, s_parser, u_parser
+from state_machine_interface import ma_parser, s_parser, u_parser
 from state_machine_interface import pause_on_event
 from state_machine_interface import read_parser_value_with_
 from state_machine_interface import search_has_yielded_required_results
