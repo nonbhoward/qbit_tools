@@ -206,8 +206,10 @@ def get_add_mode_for_(section: str) -> bool:
 
 def get_all_sections_from_parser_(meta_add=False, meta_find=False, search=False, settings=False):
     try:
-        if metadata:
-            return qconf.get_all_sections_from_parser_(metadata=True)
+        if meta_add:
+            return qconf.get_all_sections_from_parser_(meta_add=True)
+        if meta_find:
+            return qconf.get_all_sections_from_parser_(meta_find=True)
         if search:
             return qconf.get_all_sections_from_parser_(search=True)
         if settings:
@@ -364,7 +366,7 @@ def search_has_yielded_required_results(section) -> bool:
 
 def set_search_rank_using_(key):
     try:
-        qconf.set_search_rank_using_(key)
+        qconf.set_search_rank_using_(sort_key=key)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -408,11 +410,14 @@ def write_config_to_disk():
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def write_parser_value_with_key_(parser_key, value, section, meta_add=False, meta_find=False, search=False, settings=False):
+def write_parser_value_with_key_(parser_key, value, section, meta_add=False,
+                                 meta_find=False, search=False, settings=False):
     # FIXME same issue as read, clunky interface, rework
     try:
-        if metadata:
-            qconf.write_parser_value_with_key_(parser_key, value, section, metadata=True)
+        if meta_add:
+            qconf.write_parser_value_with_key_(parser_key, value, section, meta_add=True)
+        if meta_find:
+            qconf.write_parser_value_with_key_(parser_key, value, section, meta_find=True)
         if search:
             qconf.write_parser_value_with_key_(parser_key, value, section, search=True)
         if settings:
