@@ -20,9 +20,8 @@ def add_is_successful_for_(result, api, section) -> bool:
         if results_added_count:
             success = True
             increment_result_added_count_for_(section)
-            ml.log_event(f'add is successful for \'{result[m_key.NAME]}\'')
         store_metadata_of_(result, success)
-        return False
+        return success
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -45,6 +44,8 @@ def add_results_from_(results, active_kv, api):
                 ml.log_event(f'the search for \'{active_section}\' can be concluded', announce=True)
                 s_parser_at_active[s_key.CONCLUDED] = s_key.YES
                 return  # enough results have been added for this header, stop
+            if previously_found_(result):
+                continue
             if add_is_successful_for_(result, api, active_section):
                 create_metadata_section_for_(result, active_section, unicode_offset)
                 if enough_results_added_for_(active_section):
@@ -264,6 +265,18 @@ def pause_on_event(pause_type):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+def previously_found_(result):
+    try:
+        result_name = result[m_key.NAME]
+        if result_name in mf_parser.sections():
+            ml.log_event(f'result \'{result_name}\' failed before, skipping..', level=ml.WARNING)
+            return True
+        ml.log_event(f'result \'{result_name}\' is new! attempting to add')
+        return False
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
 def read_parser_value_with_(key, section, search=False, metadata=False, settings=False):
     # TODO this interface is lazy, above is a bool, and what is below? this is needlessly confusing
     # FIXME address this after refactor
@@ -274,6 +287,19 @@ def read_parser_value_with_(key, section, search=False, metadata=False, settings
             return qconf.read_parser_value_with_(key, section, search=True)
         if settings:
             return qconf.read_parser_value_with_(key, section, settings=True)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def ready_to_start_(queued, state_machine):
+    try:
+        search_rank = int(s_parser[state_machine.active_section][s_key.RANK])
+        search_rank_required_to_start = int(u_parser[u_key.RANK_PRIORITY])
+        if queued and not \
+                state_machine.search_queue_full() and \
+                search_rank < search_rank_required_to_start:
+            return True
+        return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -368,7 +394,9 @@ def sort_(results):
 
 def store_metadata_of_(result, success):
     try:
-        pass
+        m_parser = ma_parser if success else mf_parser
+        m_parser.add_section(hash_metadata(result[m_key.NAME]))
+        ml.log_event(f'add is successful for \'{result[m_key.NAME]}\'')
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
