@@ -70,7 +70,7 @@ def all_searches_concluded() -> bool:
         for section in s_parser.sections():
             if s_parser[section].getboolean(s_key.CONCLUDED):
                 concluded.append(True)
-        if all(concluded):
+        if concluded and all(concluded):
             return True
         ml.log_event(f'all searches are not concluded, program continuing')
         return False
@@ -296,10 +296,10 @@ def read_parser_value_with_(key, section, search=False, metadata=False, settings
 def ready_to_start_(queued, state_machine):
     try:
         search_rank = int(s_parser[state_machine.active_section][s_key.RANK])
-        search_rank_required_to_start = int(u_parser[u_key.RANK_PRIORITY])
-        if queued and not \
-                state_machine.search_queue_full() and \
-                search_rank < search_rank_required_to_start:
+        search_rank_required_to_start = int(u_parser[u_key.DEFAULT][u_key.RANK_REQUIRED])
+        queue_has_room = not state_machine.search_queue_full()
+        search_rank_allowed = search_rank <= search_rank_required_to_start
+        if queued and queue_has_room and search_rank_allowed:
             return True
         return False
     except Exception as e_err:
