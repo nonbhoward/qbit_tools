@@ -9,10 +9,12 @@ keyrings = uconf.hardcoded.keys
 
 class QbitConfig:
     @staticmethod
-    def get_all_sections_from_parser_(metadata=False, search=False, settings=False) -> SectionProxy:
+    def get_all_sections_from_parser_(meta_add=False, meta_find=False, search=False, settings=False) -> SectionProxy:
         try:
-            if metadata:
+            if meta_add:
                 return parsers.metadata_added_parser.sections()
+            if meta_find:
+                return parsers.metadata_found_parser.sections()
             if search:
                 return parsers.search_parser.sections()
             if settings:
@@ -46,31 +48,9 @@ class QbitConfig:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
-    def get_parser_as_sortable_(metadata=False, search=False, settings=False) -> dict:
-        try:
-            parser = None
-            if metadata:
-                parser = parsers.metadata_added_parser
-            if search:
-                parser = parsers.search_parser
-            if settings:
-                parser = parsers.user_settings_parser
-            assert parser is not None, 'no parser chosen!'
-            parser_dict = dict()
-            for section in parser.sections():
-                parser_dict[section] = dict()
-                for section_key in parser[section]:
-                    parser_dict[section][section_key] = parser[section][section_key]
-            return parser_dict
-        except Exception as e_err:
-            ml.log_event(e_err.args[0], level=ml.ERROR)
-
-    @staticmethod
-    def get_parser_at_default(metadata=False, search=False, settings=False):
+    def get_parser_at_default(search=False, settings=False):
         try:
             parser, key = None, 'DEFAULT'
-            if metadata:
-                parser = parsers.metadata_added_parser
             if search:
                 parser = parsers.search_parser
             if settings:
@@ -102,11 +82,13 @@ class QbitConfig:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
-    def get_parser_for_(metadata=False, search=False, settings=False):
+    def get_parser_for_(meta_add=False, meta_find=False, search=False, settings=False):
         # TODO assign return type
         try:
-            if metadata:
-                return parsers.metadata_added_parser
+            if meta_add:
+                return parsers.metadata_added_parser, parsers.metadata_added_parser
+            if meta_find:
+                return parsers.metadata_added_parser, parsers.metadata_found_parser
             if search:
                 return parsers.search_parser
             if settings:
@@ -117,21 +99,41 @@ class QbitConfig:
     @classmethod
     def get_parsers(cls) -> tuple:
         try:
-            mp = cls.get_parser_for_(metadata=True)
+            ma = cls.get_parser_for_(meta_add=True)
+            mf = cls.get_parser_for_(meta_find=True)
             sp = cls.get_parser_for_(search=True)
             up = cls.get_parser_for_(settings=True)
-            return mp, sp, up
+            return ma, mf, sp, up
+        except Exception as e_err:
+            ml.log_event(e_err.args[0], level=ml.ERROR)
+
+    @staticmethod
+    def get_search_parser_as_sortable_() -> dict:
+        try:
+            parser = parsers.search_parser
+            assert parser is not None, 'no parser chosen!'
+            parser_dict = dict()
+            for section in parser.sections():
+                parser_dict[section] = dict()
+                for section_key in parser[section]:
+                    parser_dict[section][section_key] = parser[section][section_key]
+            return parser_dict
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def read_parser_value_with_(key, section='DEFAULT',
-                                metadata=False, search=False, settings=False) -> str:
+                                meta_add=False, meta_find=False,
+                                search=False, settings=False) -> str:
         try:
             parser = None
-            if metadata:
-                assert section in parsers.metadata_added_parser, 'metadata section not found'
+            if meta_add:
+                assert section in parsers.metadata_added_parser, 'meta_a section not found'
                 parser = parsers.metadata_added_parser[section]
+                assert key in parser, 'metadata key not found'
+            if meta_find:
+                assert section in parsers.metadata_found_parser, 'meta_f section not found'
+                parser = parsers.metadata_found_parser[section]
                 assert key in parser, 'metadata key not found'
             if search:
                 assert section in parsers.search_parser, 'search detail section not found'
@@ -170,7 +172,7 @@ class QbitConfig:
         try:
             parser = parsers.search_parser
             search = keyrings.search_parser_keyring
-            sdp_as_dict = self.get_parser_as_sortable_(search=True)
+            sdp_as_dict = self.get_search_parser_as_sortable_(search=True)
             sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key])
             number_of_sections = len(sdp_as_dict_sorted)
             for search_rank in range(number_of_sections):
@@ -195,12 +197,15 @@ class QbitConfig:
 
     @staticmethod
     def write_parser_value_with_key_(parser_key, value='', section='DEFAULT',
-                                     metadata=False, search=False, settings=False):
+                                     meta_add=False, meta_find=False, search=False, settings=False):
         try:
             parser = None
-            if metadata:
-                assert section in parsers.metadata_added_parser, 'metadata section not found'
+            if meta_add:
+                assert section in parsers.metadata_added_parser, 'meta_a section not found'
                 parser = parsers.metadata_added_parser[section]
+            if meta_find:
+                assert section in parsers.metadata_found_parser, 'meta_f section not found'
+                parser = parsers.metadata_found_parser[section]
             if search:
                 assert section in parsers.search_parser, 'search detail section not found'
                 parser = parsers.search_parser[section]
