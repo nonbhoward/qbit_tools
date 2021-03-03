@@ -33,7 +33,6 @@ class QbitConfig:
                 return keyrings.search_parser_keyring
             if settings:
                 return keyrings.user_config_parser_keyring
-            pass
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -172,7 +171,7 @@ class QbitConfig:
         try:
             parser = parsers.search_parser
             search = keyrings.search_parser_keyring
-            sdp_as_dict = self.get_search_parser_as_sortable_(search=True)
+            sdp_as_dict = self.get_search_parser_as_sortable_()
             sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key])
             number_of_sections = len(sdp_as_dict_sorted)
             for search_rank in range(number_of_sections):
