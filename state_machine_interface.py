@@ -234,26 +234,10 @@ def increment_result_added_count_for_(section):
 
 def pause_on_event(pause_type):
     try:
-        timestamp = dt.now()
         parser_at_default = u_parser[u_key.DEFAULT]
-        if pause_type == u_key.WAIT_FOR_MAIN_LOOP:
-            delay = int(parser_at_default[u_key.WAIT_FOR_MAIN_LOOP])
-            ml.log_event(f'{timestamp} waiting {delay} seconds for main loop repeat..')
-            sleep(delay)
-        elif pause_type == u_key.WAIT_FOR_SEARCH_STATUS_CHECK:
-            delay = int(parser_at_default[u_key.WAIT_FOR_SEARCH_STATUS_CHECK])
-            ml.log_event(f'{timestamp} waiting {delay} seconds for search state check..')
-            sleep(delay)
-        elif pause_type == u_key.WAIT_FOR_SEARCH_RESULT_ADD:
-            delay = int(parser_at_default[u_key.WAIT_FOR_SEARCH_RESULT_ADD])
-            ml.log_event(f'{timestamp} waiting {delay} seconds for add attempt..')
-            sleep(delay)
-        elif pause_type == u_key.WAIT_FOR_USER:
-            delay = int(parser_at_default[u_key.WAIT_FOR_USER])
-            ml.log_event(f'{timestamp} waiting {delay} seconds to let user follow log..')
-            sleep(delay)
-        else:
-            raise Exception(f'unknown pause type \'{pause_type}\'')
+        delay = int(parser_at_default[pause_type])
+        ml.log_event(f'{dt.now()} waiting {delay} seconds for event \'{str(pause_type)}\'')
+        sleep(delay)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
