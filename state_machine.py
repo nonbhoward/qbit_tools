@@ -1,6 +1,7 @@
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
 from state_machine_interface import add_results_from_
+from state_machine_interface import all_searches_concluded
 from state_machine_interface import empty_
 from state_machine_interface import get_all_sections_from_parser_
 from state_machine_interface import get_search_results_for_
@@ -91,6 +92,9 @@ class QbitStateManager:
                 search_id = ''
             search_priority = u_parser_at_default[u_key.USER_PRIORITY]  # TODO allow for other priorities?
             search_rank = int(read_parser_value_with_(s_key.RANK, self.active_section, search=True))
+            if all_searches_concluded():
+                ml.log_event(f'program completed, exiting', announce=True)
+                exit()
             if search_queued and not self.search_queue_full() and search_rank < 3:  # TODO un-hardcode this
                 self.start_search()
             elif search_running:

@@ -60,9 +60,20 @@ def add_results_from_(results, active_kv, api):
 
 
 def all_searches_concluded() -> bool:
-    # TODO would be nice to exit if all jobs exceed set limits, not currently in-use
+    """
+    1. iterate over every section in the search parser
+    2. fetch the value of CONCLUDED from each
+    3. if all True, then all searches are concluded
+    :return: bool, all searches concluded
+    """
     try:
-        pass  # TODO write this function
+        concluded = list()
+        for section in s_parser.section():
+            if section[s_key.CONCLUDED]:
+                concluded.append(True)
+        if all(concluded):
+            return True
+        ml.log_event(f'all searches are not concluded, program continuing')
         return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
