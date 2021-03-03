@@ -6,6 +6,7 @@
 
 # files to ignore
 # .gitignore
+*link*
 minimalog
 searches_reset.cfg
 *CRED*
