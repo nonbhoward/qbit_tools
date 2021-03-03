@@ -9,6 +9,7 @@ from state_machine_interface import m_key, s_key, u_key
 from state_machine_interface import ma_parser, s_parser, u_parser
 from state_machine_interface import pause_on_event
 from state_machine_interface import read_parser_value_with_
+from state_machine_interface import ready_to_start_
 from state_machine_interface import search_has_yielded_required_results
 from state_machine_interface import set_search_rank_using_
 from state_machine_interface import write_config_to_disk
@@ -90,7 +91,7 @@ class QbitStateManager:
             if all_searches_concluded():
                 ml.log_event(f'program completed, exiting', announce=True)
                 exit()
-            if search_queued and not self.search_queue_full() and search_rank < 3:  # TODO un-hardcode this
+            if ready_to_start_(search_queued, self):
                 self.start_search()
             elif search_running:
                 search_status = self.api.get_search_status(search_id)
