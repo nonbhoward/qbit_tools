@@ -1,11 +1,11 @@
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
 from time import sleep
-from user_configuration.settings_io import uconf
+from user_configuration.settings_io import QbitConfig as qconf
 from re import findall
 ml = MinimalLog(__name__)
-m_key, s_key, u_key = uconf.get_keyrings()
-m_parser, s_parser, u_parser = uconf.get_parsers()
+m_key, s_key, u_key = qconf.get_keyrings()
+m_parser, s_parser, u_parser = qconf.get_parsers()
 
 
 def add_is_successful_for_(result, api, section) -> bool:
@@ -68,8 +68,8 @@ def all_searches_concluded() -> bool:
     """
     try:
         concluded = list()
-        for section in s_parser.section():
-            if section[s_key.CONCLUDED]:
+        for section in s_parser.sections():
+            if s_parser[section].getboolean(s_key.CONCLUDED):
                 concluded.append(True)
         if all(concluded):
             return True
@@ -188,11 +188,11 @@ def get_add_mode_for_(section: str) -> bool:
 def get_all_sections_from_parser_(metadata=False, search=False, settings=False):
     try:
         if metadata:
-            return uconf.get_all_sections_from_parser_(metadata=True)
+            return qconf.get_all_sections_from_parser_(metadata=True)
         if search:
-            return uconf.get_all_sections_from_parser_(search=True)
+            return qconf.get_all_sections_from_parser_(search=True)
         if settings:
-            return uconf.get_all_sections_from_parser_(settings=True)
+            return qconf.get_all_sections_from_parser_(settings=True)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -249,11 +249,11 @@ def read_parser_value_with_(key, section, search=False, metadata=False, settings
     # FIXME address this after refactor
     try:
         if metadata:
-            return uconf.read_parser_value_with_(key, section, metadata=True)
+            return qconf.read_parser_value_with_(key, section, metadata=True)
         if search:
-            return uconf.read_parser_value_with_(key, section, search=True)
+            return qconf.read_parser_value_with_(key, section, search=True)
         if settings:
-            return uconf.read_parser_value_with_(key, section, settings=True)
+            return qconf.read_parser_value_with_(key, section, settings=True)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -318,7 +318,7 @@ def search_has_yielded_required_results(section) -> bool:
 
 def set_search_rank_using_(key):
     try:
-        uconf.set_search_rank_using_(key)
+        qconf.set_search_rank_using_(key)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -348,7 +348,7 @@ def sort_(results):
 
 def write_config_to_disk():
     try:
-        uconf.write_config_to_disk()
+        qconf.write_config_to_disk()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -379,10 +379,10 @@ def write_parser_value_with_key_(parser_key, value, section, metadata=False, sea
     # FIXME same issue as read, clunky interface, rework
     try:
         if metadata:
-            uconf.write_parser_value_with_key_(parser_key, value, section, metadata=True)
+            qconf.write_parser_value_with_key_(parser_key, value, section, metadata=True)
         if search:
-            uconf.write_parser_value_with_key_(parser_key, value, section, search=True)
+            qconf.write_parser_value_with_key_(parser_key, value, section, search=True)
         if settings:
-            uconf.write_parser_value_with_key_(parser_key, value, section, settings=True)
+            qconf.write_parser_value_with_key_(parser_key, value, section, settings=True)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)

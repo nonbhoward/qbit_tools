@@ -12,7 +12,7 @@ class QbitConfig:
     def get_all_sections_from_parser_(metadata=False, search=False, settings=False) -> SectionProxy:
         try:
             if metadata:
-                return parsers.metadata_parser.sections()
+                return parsers.metadata_added_parser.sections()
             if search:
                 return parsers.search_parser.sections()
             if settings:
@@ -50,7 +50,7 @@ class QbitConfig:
         try:
             parser = None
             if metadata:
-                parser = parsers.metadata_parser
+                parser = parsers.metadata_added_parser
             if search:
                 parser = parsers.search_parser
             if settings:
@@ -66,11 +66,25 @@ class QbitConfig:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
+    def get_parser_at_default(metadata=False, search=False, settings=False):
+        try:
+            parser, key = None, 'DEFAULT'
+            if metadata:
+                parser = parsers.metadata_added_parser
+            if search:
+                parser = parsers.search_parser
+            if settings:
+                parser = parsers.user_settings_parser
+            return parser[key]
+        except Exception as e_err:
+            ml.log_event(e_err.args[0], level=ml.ERROR)
+
+    @staticmethod
     def get_parser_at_section(section, metadata=False, search=True, settings=False) -> SectionProxy:
         try:
             assert isinstance(section, str), 'section is not a string'
             if metadata:
-                mp = parsers.metadata_parser
+                mp = parsers.metadata_added_parser
                 assert section in mp, 'section not found in parser'
                 parser_at_section = mp[section]
                 return parser_at_section
@@ -92,7 +106,7 @@ class QbitConfig:
         # TODO assign return type
         try:
             if metadata:
-                return parsers.metadata_parser
+                return parsers.metadata_added_parser
             if search:
                 return parsers.search_parser
             if settings:
@@ -116,8 +130,8 @@ class QbitConfig:
         try:
             parser = None
             if metadata:
-                assert section in parsers.metadata_parser, 'metadata section not found'
-                parser = parsers.metadata_parser[section]
+                assert section in parsers.metadata_added_parser, 'metadata section not found'
+                parser = parsers.metadata_added_parser[section]
                 assert key in parser, 'metadata key not found'
             if search:
                 assert section in parsers.search_parser, 'search detail section not found'
@@ -185,8 +199,8 @@ class QbitConfig:
         try:
             parser = None
             if metadata:
-                assert section in parsers.metadata_parser, 'metadata section not found'
-                parser = parsers.metadata_parser[section]
+                assert section in parsers.metadata_added_parser, 'metadata section not found'
+                parser = parsers.metadata_added_parser[section]
             if search:
                 assert section in parsers.search_parser, 'search detail section not found'
                 parser = parsers.search_parser[section]

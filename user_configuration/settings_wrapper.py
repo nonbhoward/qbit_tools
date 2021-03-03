@@ -17,7 +17,8 @@ class ConfigParserPathNames:  # Configuration.HardCoded.DirectoryNames.ConfigPar
 class ConfigParserFileNames:  # Configuration.HardCoded.FileNames.ConfigParserFileNames
     # project's configuration file names, cannot be changed without changing project structure
     def __init__(self):
-        self.metadata = 'metadata_history.cfg'
+        self.metadata_added = 'metadata_added.cfg'
+        self.metadata_found = 'metadata_found.cfg'
         self.search = 'search.cfg'
         self.user_settings = 'EDIT_SETTINGS_HERE.cfg'
 
@@ -132,9 +133,10 @@ class Parsers:  # Configuration.Parser.Parsers
         # TODO not scalable in the long term, will have to think about how to restructure this
         parser_paths = configuration.paths._get_parser_paths_from_(configuration)
         self.parsers_keyed_by_file_path = self.get_parsers_from_(parser_paths)
-        self.metadata_parser = self.parsers_keyed_by_file_path[parser_paths[0]]
-        self.search_parser = self.parsers_keyed_by_file_path[parser_paths[1]]
-        self.user_settings_parser = self.parsers_keyed_by_file_path[parser_paths[2]]
+        self.metadata_added_parser = self.parsers_keyed_by_file_path[parser_paths[0]]
+        self.metadata_found_parser = self.parsers_keyed_by_file_path[parser_paths[1]]
+        self.search_parser = self.parsers_keyed_by_file_path[parser_paths[2]]
+        self.user_settings_parser = self.parsers_keyed_by_file_path[parser_paths[3]]
 
     @staticmethod
     def get_parsers_from_(parser_paths) -> dict:
@@ -173,7 +175,9 @@ class Paths:  # Configuration.Paths
         self.meta = self._get_meta_path_from(configuration)
         self.search = self._get_search_path_from(configuration)
         self.user_config = self._get_user_config_path_from_(configuration)
-        self.metadata_parser, self.search_parser, self.user_config_parser = self._get_parser_paths_from_(configuration)
+        self.metadata_added_parser, self.metadata_found_parser, \
+            self.search_parser, self.user_config_parser = \
+            self._get_parser_paths_from_(configuration)
 
     def _get_meta_path_from(path, configuration) -> Path:
         """
@@ -200,14 +204,15 @@ class Paths:  # Configuration.Paths
     def _get_parser_paths_from_(path, configuration) -> tuple:
         # TODO this is basically hardcoded, do this better but lower priority than bugs
         try:
-            # results parser
-            metadata_parser_path = Path(path.meta, configuration.hardcoded.filenames.config_parser.metadata)
+            # result metadata parsers
+            meta_added_parser_path = Path(path.meta, configuration.hardcoded.filenames.config_parser.metadata_added)
+            meta_found_parser_path = Path(path.meta, configuration.hardcoded.filenames.config_parser.metadata_found)
             # search parser
             search_details_path = Path(path.search, configuration.hardcoded.filenames.config_parser.search)
             # user config parser
             user_config_path = Path(path.user_config, configuration.hardcoded.filenames.config_parser.user_settings)
             # build and return
-            parser_paths = [metadata_parser_path, search_details_path, user_config_path]
+            parser_paths = [meta_added_parser_path, meta_found_parser_path, search_details_path, user_config_path]
             return * parser_paths,
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)

@@ -4,13 +4,13 @@ from os import getcwd as cwd, listdir as ls
 from os.path import exists
 from pathlib import Path
 from state_machine import QbitStateManager
-from state_machine_interface import uconf
+from state_machine_interface import qconf
 from state_machine_interface import pause_on_event
 from subprocess import Popen
 from subprocess import run as launch
 from sys import platform
 ml = MinimalLog()
-u_key = uconf.get_keyring_for_(settings=True)
+u_key = qconf.get_keyring_for_(settings=True)
 
 
 def main_loop():
