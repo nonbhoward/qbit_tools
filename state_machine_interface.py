@@ -1,12 +1,11 @@
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
 from time import sleep
-from user_configuration.settings_io import QbitConfig
+from user_configuration.settings_io import uconf
 from re import findall
 ml = MinimalLog(__name__)
-conf = QbitConfig()
-m_key, s_key, u_key = conf.get_keyrings()
-m_parser, s_parser, u_parser = conf.get_parsers()
+m_key, s_key, u_key = uconf.get_keyrings()
+m_parser, s_parser, u_parser = uconf.get_parsers()
 
 
 def add_is_successful_for_(result, api, section) -> bool:
@@ -124,10 +123,10 @@ def filter_(results: list, section: str, seeds=True, size=False, sort=True):
         search_priority = u_parser[u_key.DEFAULT][u_key.USER_PRIORITY]
         ml.log_event(f'add results by {search_priority}')
         minimum_seeds = int(s_parser[section][s_key.MIN_SEED])
-        min_size = int(s_parser[section][s_key.SIZE_MIN_BYTES])
-        min_size_MiB = min_size / 1000000
-        max_size = int(s_parser[section][s_key.SIZE_MAX_BYTES])
-        max_size_MiB = max_size / 1000000
+        min_size_bytes = int(s_parser[section][s_key.SIZE_MIN_BYTES])
+        min_size_megabytes = min_size_bytes / 1000000
+        max_size_bytes = int(s_parser[section][s_key.SIZE_MAX_BYTES])
+        max_size_megabytes = max_size_bytes / 1000000
         results_filtered = list()
         for result in results:
             if seeds:
@@ -142,9 +141,9 @@ def filter_(results: list, section: str, seeds=True, size=False, sort=True):
             if size:
                 result_size = int(result[m_key.SIZE])
                 result_size_MiB = result_size / 1000000
-                good_size = True if max_size > result_size > min_size else False
+                good_size = True if max_size_bytes > result_size > min_size_bytes else False
                 if not good_size:
-                    ml.log_event(f'size requirement \'{min_size_MiB}\'MiB to \'{max_size_MiB}\'MiB not met by'
+                    ml.log_event(f'size requirement \'{min_size_megabytes}\'MiB to \'{max_size_megabytes}\'MiB not met by'
                                  f'result with size \'{result_size_MiB}\'MiB, result: \'{result[m_key.NAME]}\'',
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
@@ -178,11 +177,11 @@ def get_add_mode_for_(section: str) -> bool:
 def get_all_sections_from_parser_(metadata=False, search=False, settings=False):
     try:
         if metadata:
-            return conf.get_all_sections_from_parser_(metadata=True)
+            return uconf.get_all_sections_from_parser_(metadata=True)
         if search:
-            return conf.get_all_sections_from_parser_(search=True)
+            return uconf.get_all_sections_from_parser_(search=True)
         if settings:
-            return conf.get_all_sections_from_parser_(settings=True)
+            return uconf.get_all_sections_from_parser_(settings=True)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -202,14 +201,6 @@ def get_search_results_for_(active_kv: tuple, api) -> list:
         results = api.get_search_results(search_id=search_id, use_filename_regex_filter=True,
                                          filename_regex=filename_regex, metadata_filename_key=m_key.NAME)
         return results
-    except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
-
-
-def filter_results_using_(filename_regex, results) -> list:
-    try:
-        return list()
-        pass  # TODO delete this function?
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -247,11 +238,11 @@ def read_parser_value_with_(key, section, search=False, metadata=False, settings
     # FIXME address this after refactor
     try:
         if metadata:
-            return conf.read_parser_value_with_(key, section, metadata=True)
+            return uconf.read_parser_value_with_(key, section, metadata=True)
         if search:
-            return conf.read_parser_value_with_(key, section, search=True)
+            return uconf.read_parser_value_with_(key, section, search=True)
         if settings:
-            return conf.read_parser_value_with_(key, section, settings=True)
+            return uconf.read_parser_value_with_(key, section, settings=True)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -316,7 +307,7 @@ def search_has_yielded_required_results(section) -> bool:
 
 def set_search_rank_using_(key):
     try:
-        conf.set_search_rank_using_(key)
+        uconf.set_search_rank_using_(key)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -346,7 +337,7 @@ def sort_(results):
 
 def write_config_to_disk():
     try:
-        conf.write_config_to_disk()
+        uconf.write_config_to_disk()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -377,10 +368,10 @@ def write_parser_value_with_key_(parser_key, value, section, metadata=False, sea
     # FIXME same issue as read, clunky interface, rework
     try:
         if metadata:
-            conf.write_parser_value_with_key_(parser_key, value, section, metadata=True)
+            uconf.write_parser_value_with_key_(parser_key, value, section, metadata=True)
         if search:
-            conf.write_parser_value_with_key_(parser_key, value, section, search=True)
+            uconf.write_parser_value_with_key_(parser_key, value, section, search=True)
         if settings:
-            conf.write_parser_value_with_key_(parser_key, value, section, settings=True)
+            uconf.write_parser_value_with_key_(parser_key, value, section, settings=True)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
