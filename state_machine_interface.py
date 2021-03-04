@@ -364,16 +364,29 @@ def search_has_yielded_required_results(section) -> bool:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def set_search_rank_using_(key):
+def search_set_end_reason(section, reason_key):
     try:
-        qconf.set_search_rank_using_(sort_key=key)
+        s_parser[section][s_key.SEARCH_STOPPED_REASON] = reason_key
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def search_set_end_reason(section, reason_key):
+def set_search_rank_using_(sort_key):
+    """
+    1. sort the key:value pair of the dict into a tuple of 2 (key, value), sorted by sort_key's value
+    2. assign a search rank to each search header based on previous sort
+    3. write the search rank to the search detail parser
+    :param sort_key:
+    :return:
+    """
     try:
-        s_parser[section][s_key.SEARCH_STOPPED_REASON] = reason_key
+        sdp_as_dict = qconf.get_search_parser_as_sortable()
+        sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key])
+        number_of_sections = len(sdp_as_dict_sorted)
+        for search_rank in range(number_of_sections):
+            header = sdp_as_dict_sorted[search_rank][0]
+            s_parser[header][s_key.RANK] = str(search_rank)
+            ml.log_event(f'search rank \'{search_rank}\' assigned to header \'{header}\'')
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 

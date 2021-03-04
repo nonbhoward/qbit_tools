@@ -107,7 +107,7 @@ class QbitConfig:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
-    def get_search_parser_as_sortable_() -> dict:
+    def get_search_parser_as_sortable() -> dict:
         try:
             parser = parsers.search_parser
             assert parser is not None, 'no parser chosen!'
@@ -157,27 +157,6 @@ class QbitConfig:
             for section in parser.sections():
                 ml.log_event(f'reset search id for section \'{section}\'')
                 parser[section][keys.ID] = str(0)
-        except Exception as e_err:
-            ml.log_event(e_err.args[0], level=ml.ERROR)
-
-    def set_search_rank_using_(self, sort_key):
-        """
-        1. sort the key:value pair of the dict into a tuple of 2 (key, value), sorted by sort_key's value
-        2. assign a search rank to each search header based on previous sort
-        3. write the search rank to the search detail parser
-        :param sort_key:
-        :return:
-        """
-        try:
-            parser = parsers.search_parser
-            search = keyrings.search_parser_keyring
-            sdp_as_dict = self.get_search_parser_as_sortable_()
-            sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key])
-            number_of_sections = len(sdp_as_dict_sorted)
-            for search_rank in range(number_of_sections):
-                header = sdp_as_dict_sorted[search_rank][0]
-                parser[header][search.RANK] = str(search_rank)
-                ml.log_event(f'search rank \'{search_rank}\' assigned to header \'{header}\'')
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
