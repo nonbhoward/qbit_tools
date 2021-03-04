@@ -267,6 +267,15 @@ def pause_on_event(pause_type):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+def print_search_ids_from_(active_search_ids):
+    try:
+        ml.log_event('active search headers are..')
+        for active_search_header_name in active_search_ids.keys():
+            ml.log_event(f'\tsearch header : \'{active_search_header_name}\'')
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
 def previously_found_(result):
     try:
         result_name = result[m_key.NAME]
@@ -384,6 +393,7 @@ def set_search_rank_using_(sort_key):
         sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key])
         number_of_sections = len(sdp_as_dict_sorted)
         for search_rank in range(number_of_sections):
+            # TODO this is a bit lazy, could use some refining
             header = sdp_as_dict_sorted[search_rank][0]
             s_parser[header][s_key.RANK] = str(search_rank)
             ml.log_event(f'search rank \'{search_rank}\' assigned to header \'{header}\'')

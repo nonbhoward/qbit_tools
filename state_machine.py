@@ -8,6 +8,7 @@ from state_machine_interface import get_search_results_for_
 from state_machine_interface import m_key, s_key, u_key
 from state_machine_interface import ma_parser, s_parser, u_parser
 from state_machine_interface import pause_on_event
+from state_machine_interface import print_search_ids_from_
 from state_machine_interface import read_parser_value_with_
 from state_machine_interface import ready_to_start_
 from state_machine_interface import search_has_yielded_required_results
@@ -87,7 +88,6 @@ class QbitStateManager:
                 search_id = self.active_search_ids[self.active_section]
             else:
                 search_id = ''
-            search_rank = int(read_parser_value_with_(s_key.RANK, self.active_section, search=True))
             if all_searches_concluded():
                 ml.log_event(f'program completed, exiting', announce=True)
                 exit()
@@ -138,14 +138,9 @@ class QbitStateManager:
             active_search_count = len(self.active_search_ids.keys())
             if active_search_count < 5:
                 ml.log_event('search queue is NOT full..')
-                ml.log_event('active search headers are..')
-                for active_search_header_name in self.active_search_ids.keys():
-                    ml.log_event(f'\tsearch header : \'{active_search_header_name}\'')
+                print_search_ids_from_(self.active_search_ids)
                 return False
             ml.log_event(f'search queue is FULL, cannot add header \'{self.active_section}\'', announce=True)
-            ml.log_event('active search headers are..')
-            for active_search_header_name in self.active_search_ids.keys():
-                ml.log_event(f'\tsearch header : \'{active_search_header_name}\'')
             return True
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
