@@ -98,7 +98,7 @@ def create_metadata_section_for_(result, section, offset):
         for attribute, detail in result.items():
             h_attr, d_attr = get_hashed_(attribute, detail, offset)
             write_parser_value_with_key_(parser_key=h_attr, value=d_attr,
-                                         section=metadata_section, metadata=True)
+                                         section=metadata_section, meta_add=True)
             pause_on_event(u_key.WAIT_FOR_USER)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -276,11 +276,12 @@ def print_search_ids_from_(active_search_ids):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def previously_found_(result):
+def previously_found_(result, verbose_log=False):
     try:
         result_name = result[m_key.NAME]
         if result_name in mf_parser.sections():
-            ml.log_event(f'result \'{result_name}\' failed before, skipping..', level=ml.WARNING)
+            if verbose_log:
+                ml.log_event(f'result \'{result_name}\' found before, skipping..', level=ml.WARNING)
             return True
         ml.log_event(f'result \'{result_name}\' is new! attempting to add')
         return False
