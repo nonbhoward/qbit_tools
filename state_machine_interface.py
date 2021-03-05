@@ -294,12 +294,13 @@ def print_search_ids_from_(active_search_ids):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def previously_found_(result):
+def previously_found_(result, verbose_log=False):
     try:
         result_name = result[m_key.NAME]
         added_or_found = [*ma_parser.sections(), *mf_parser.sections()]
         if result_name in added_or_found:
-            ml.log_event(f'skipping previously found result \'{result_name}\'')
+            if verbose_log:
+                ml.log_event(f'skipping previously found result \'{result_name}\'')
             return True
         ml.log_event(f'skipping previously added result \'{result_name}\'')
         return False
