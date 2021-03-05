@@ -1,5 +1,6 @@
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
+from user_configuration.settings_io import is_search_key_provided_for_
 from time import sleep
 from user_configuration.settings_io import QbitConfig as qconf
 from re import findall
@@ -33,10 +34,11 @@ def add_results_from_(results, active_kv, api):
         active_section = active_kv[0]
         s_parser_at_active = s_parser[active_section]
         results_required_count = int(s_parser_at_active[s_key.RESULTS_REQUIRED_COUNT])
-        results = filter_(results, active_section, size=True)
+        results = filter_(results, active_section)
         if not enough_found_in_(results, active_section):
             reduce_search_expectations_for_(active_section)
-            results_required_count = len(results)
+            # FIXME priority, things crashing out of nowhere
+            results_required_count = len(results) if results is not None else 0
         ml.log_event(f'add most popular \'{results_required_count}\' count results')
         for result in results:
             results_added_count = int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT])
@@ -154,7 +156,7 @@ def fetch_metadata_from_(parser) -> dict:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def filter_(results: list, section: str, found=True, seeds=True, size=False, sort=True, regex=True):
+def filter_(results: list, section: str, found=True, sort=True):
     try:
         search_priority = u_parser[u_key.DEFAULT][u_key.USER_PRIORITY]
         ml.log_event(f'add results by {search_priority}')
@@ -165,10 +167,13 @@ def filter_(results: list, section: str, found=True, seeds=True, size=False, sor
         max_size_megabytes = int(max_size_bytes / 1000000)
         filename_regex = s_parser[section][s_key.REGEX_FILENAME]
         results_filtered = list()
+        seeds_provided = is_search_key_provided_for_(section, seed=True)
+        size_provided = is_search_key_provided_for_(section, size=True)
+        regex_provided = is_search_key_provided_for_(section, regex=True)
         for result in results:
             if found and previously_found_(result):
                 continue
-            if seeds:
+            if seeds_provided:
                 result_seeds = int(result[m_key.SUPPLY])
                 enough_seeds = True if result_seeds > minimum_seeds else False
                 if not enough_seeds:
@@ -177,7 +182,7 @@ def filter_(results: list, section: str, found=True, seeds=True, size=False, sor
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
                     continue
-            if size:
+            if size_provided:
                 result_size = int(result[m_key.SIZE])
                 result_size_megabytes = result_size / 1000000
                 file_size_in_range = True if max_size_bytes > result_size > min_size_bytes else False
@@ -187,7 +192,7 @@ def filter_(results: list, section: str, found=True, seeds=True, size=False, sor
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
                     continue
-            if regex:
+            if regex_provided:
                 ml.log_event(f'filtering results using filename regex \'{filename_regex}\'')
                 filename = result[m_key.NAME]
                 if not regex_matches(filename_regex, filename):
