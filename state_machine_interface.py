@@ -350,6 +350,7 @@ def reduce_search_expectations_for_(section: str):
             ml.log_event(f'concluding search for \'{section}\'', level=ml.WARNING)
             s_parser[section][c_key] = s_key.YES
         er_val -= 1
+        write_parser_value_with_key_(re_key, er_val, section, search=True)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
