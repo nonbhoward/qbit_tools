@@ -196,7 +196,7 @@ class QbitStateManager:
                 parser_at_active[s_key.RUNNING] = s_key.YES
                 parser_at_active[s_key.STOPPED] = s_key.NO
                 parser_at_active[s_key.CONCLUDED] = s_key.NO
-                # FIXME this could increment multiple times if the main_loop is too fast?
+                # FIXME p1, this could increment multiple times if the main_loop is too fast?
                 self.increment_search_attempt_count()
                 ml.log_event(f'search for \'{self.active_section}\' is running.. please stand by..')
             elif api_state_key == s_key.STOPPED:
