@@ -33,7 +33,6 @@ def add_results_from_(results, active_kv, api):
         active_section = active_kv[0]
         s_parser_at_active = s_parser[active_section]
         results_required_count = int(s_parser_at_active[s_key.RESULTS_REQUIRED_COUNT])
-        unicode_offset = str(u_parser[u_key.DEFAULT][u_key.UNI_SHIFT])
         results = filter_(results, active_section, size=True)
         if not enough_found_in_(results, active_section):
             reduce_search_expectations_for_(active_section)
