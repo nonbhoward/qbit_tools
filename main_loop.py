@@ -25,8 +25,7 @@ def main_loop():
 
 def application_is_running(app_path: Path) -> bool:
     try:
-        return True
-        # FIXME
+        return True  # FIXME p3
         Popen('ps aux')  # TODO get the cmd w args working before list comp
         data = [(int(p), c) for p, c in [x.rstrip(']n').split(' ', 1) for x in Popen('ps h -eo pid:1,command')]]
         ps_path = '/proc'
