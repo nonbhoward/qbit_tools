@@ -4,9 +4,10 @@ from state_machine_interface import add_results_from_
 from state_machine_interface import all_searches_concluded
 from state_machine_interface import empty_
 from state_machine_interface import get_all_sections_from_parser_
+from state_machine_interface import get_search_id_from_
 from state_machine_interface import get_search_results_for_
-from state_machine_interface import m_key, s_key, u_key
-from state_machine_interface import ma_parser, s_parser, u_parser
+from state_machine_interface import s_key, u_key
+from state_machine_interface import s_parser, u_parser
 from state_machine_interface import pause_on_event
 from state_machine_interface import print_search_ids_from_
 from state_machine_interface import read_parser_value_with_
@@ -84,10 +85,7 @@ class QbitStateManager:
         try:
             ml.log_event('begin to manage state updates..')
             search_queued, search_running, search_stopped, search_concluded = section_search_state
-            if self.active_section in self.active_search_ids:
-                search_id = self.active_search_ids[self.active_section]
-            else:
-                search_id = ''
+            search_id = get_search_id_from_(self)
             if all_searches_concluded():
                 ml.log_event(f'program completed, exiting', announce=True)
                 exit()
@@ -99,9 +97,7 @@ class QbitStateManager:
                     ml.log_event(f'bad search id \'{search_id}\', ignored and re-queued', level=ml.WARNING)
                     self.update_search_states(s_key.QUEUED)  # search should be running, but status is None.. requeue
                     return
-                ml.log_event(f'ongoing searches are..')
-                for section_header, search_id in self.active_search_ids.items():
-                    ml.log_event(f'\t header \'{section_header}\' with id \'{search_id}\'')
+                print_search_ids_from_(self.active_search_ids)
                 if s_key.RUNNING in search_status:
                     pass  # search ongoing, do nothing
                 elif s_key.STOPPED in search_status:
@@ -160,9 +156,7 @@ class QbitStateManager:
 
     def start_search(self):
         try:
-            search_term = read_parser_value_with_(key=s_key.TERM,
-                                                  section=self.active_section,
-                                                  search=True)
+            search_term = read_parser_value_with_(key=s_key.TERM, section=self.active_section, search=True)
             search_properties = self.api.create_search_job(search_term, 'all', 'all')
             search_job, search_status, search_state, search_id, search_count = search_properties
             if search_id is None or empty_(search_id):
