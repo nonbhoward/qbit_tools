@@ -187,3 +187,20 @@ class QbitConfig:
             parser[parser_key] = str(value)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def is_search_key_provided_for_(section, regex=False, seed=False, size=False) -> bool:
+    try:
+        sp = uconf.parser.parsers.search_parser[section]
+        key = keyrings.search_parser_keyring
+        if regex:
+            has_regex = True if key.REGEX_FILENAME in sp else False
+            return has_regex
+        if seed:
+            has_seed = True if key.MIN_SEED in sp else False
+            return has_seed
+        if size:
+            has_size = True if key.SIZE_MIN_BYTES in sp or key.SIZE_MAX_BYTES in sp else False
+            return has_size
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
