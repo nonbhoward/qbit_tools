@@ -85,9 +85,9 @@ class QbitConfig:
         # TODO assign return type
         try:
             if meta_add:
-                return parsers.metadata_added_parser, parsers.metadata_added_parser
+                return parsers.metadata_added_parser
             if meta_find:
-                return parsers.metadata_added_parser, parsers.metadata_found_parser
+                return parsers.metadata_added_parser
             if search:
                 return parsers.search_parser
             if settings:
@@ -174,20 +174,14 @@ class QbitConfig:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
-    def write_parser_value_with_key_(parser_key, value='', section='DEFAULT',
-                                     meta_add=False, meta_find=False, search=False, settings=False):
+    def write_parser_section_with_key_(parser_key, value='', section='DEFAULT',
+                                       mp=None, search=False, settings=False):
         try:
-            parser = None
-            if meta_add:
-                assert section in parsers.metadata_added_parser, 'meta_a section not found'
-                parser = parsers.metadata_added_parser[section]
-            if meta_find:
-                assert section in parsers.metadata_found_parser, 'meta_f section not found'
-                parser = parsers.metadata_found_parser[section]
+            parser = mp[section] if mp else None
             if search:
                 assert section in parsers.search_parser, 'search detail section not found'
                 parser = parsers.search_parser[section]
-            if settings:
+            elif settings:
                 assert section in parsers.user_config_parser, 'user config section not found'
                 parser = parsers.user_config_parser
             parser[parser_key] = str(value)
