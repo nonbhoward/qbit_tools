@@ -166,7 +166,7 @@ def filter_(results: list, section: str, found=True, seeds=True, size=False, sor
         filename_regex = s_parser[section][s_key.REGEX_FILENAME]
         results_filtered = list()
         for result in results:
-            if previously_found_(result):
+            if found and previously_found_(result):
                 continue
             if seeds:
                 result_seeds = int(result[m_key.SUPPLY])
