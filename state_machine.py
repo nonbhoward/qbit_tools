@@ -54,9 +54,6 @@ class QbitStateManager:
         ml.log_event(f'current connection to client was started at \'{self.api.connection_time_start}\'')
         self.main_loop_count += 1
         ml.log_event(f'main loop has ended, {self.main_loop_count} total loops..')
-        for _ in range(3):
-            ml.log_event('REMEMBER, when debugging, start by comparing parser '
-                         'keys with settings io string values', level=ml.WARNING)
 
     def increment_search_attempt_count(self):
         try:
