@@ -13,6 +13,7 @@ def add_is_successful_for_(result, api, section) -> bool:
         count_before_add_attempt = api.count_all_local_results()
         ml.log_event(f'local machine has {count_before_add_attempt} stored results before add attempt..')
         # TODO why does client fail to add so often? outside project scope?
+
         api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=get_add_mode_for_(section))
         pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
         results_added_count = api.count_all_local_results() - count_before_add_attempt
@@ -32,7 +33,7 @@ def add_results_from_(results, active_kv, api):
         active_section = active_kv[0]
         s_parser_at_active = s_parser[active_section]
         results_required_count = int(s_parser_at_active[s_key.RESULTS_REQUIRED_COUNT])
-        unicode_offset = u_parser[u_key.DEFAULT][u_key.UNI_SHIFT]
+        unicode_offset = str(u_parser[u_key.DEFAULT][u_key.UNI_SHIFT])
         results = filter_(results, active_section, size=True)
         if not enough_found_in_(results, active_section):
             reduce_search_expectations_for_(active_section)
@@ -44,16 +45,22 @@ def add_results_from_(results, active_kv, api):
                 ml.log_event(f'the search for \'{active_section}\' can be concluded', announce=True)
                 s_parser_at_active[s_key.CONCLUDED] = s_key.YES
                 return  # enough results have been added for this header, stop
-            if previously_found_(result):
-                continue
             if add_is_successful_for_(result, api, active_section):
-                create_metadata_section_for_(result, active_section, unicode_offset)
+                create_metadata_section_for_(result, active_section)
                 if enough_results_added_for_(active_section):
                     ml.log_event(f'enough results added for \'{active_section}\'')
                     return  # desired result count added, stop adding
                 continue  # result added, go to next
             ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
             continue  # FIXME delete this, no longer does anything
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def add_to_found_metadata_as_(result, added=False):
+    try:
+        mp = ma_parser if added else mf_parser
+        create_metadata_section_for_(mp, result)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -68,8 +75,8 @@ def all_searches_concluded() -> bool:
     try:
         concluded = list()
         for section in s_parser.sections():
-            if s_parser[section].getboolean(s_key.CONCLUDED):
-                concluded.append(True)
+            val = True if s_parser[section].getboolean(s_key.CONCLUDED) else False
+            concluded.append(val)
         if concluded and all(concluded):
             return True
         ml.log_event(f'all searches are not concluded, program continuing')
@@ -78,27 +85,21 @@ def all_searches_concluded() -> bool:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def apply_filters_to_(result, filters):
+def create_metadata_section_for_(mp, result):
     try:
-        # TODO decide to abstract to this func or delete
-        pass
-    except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
-
-
-def create_metadata_section_for_(result, section, offset):
-    try:
+        offset = int(u_parser[u_key.DEFAULT][u_key.UNI_SHIFT])
         ml.log_event(f'save metadata result to parser \'{result[m_key.NAME]}\'')
-        metadata_section = hash_metadata(result[m_key.NAME], offset=offset)
-        if ma_parser.has_section(metadata_section):  # FIXME two files, same name?
-            ml.log_event(f'metadata parser already has section \'{metadata_section}\'', level=ml.WARNING)
+        m_section = hash_metadata(result[m_key.NAME], offset=offset)
+        if mp.has_section(m_section):  # FIXME two files, same name?
+            ml.log_event(f'metadata parser already has section \'{m_section}\'', level=ml.WARNING)
             return
-        ml.log_event(f'qbit client has added result \'{result[m_key.NAME]}\' for header \'{section}\'', announce=True)
-        ma_parser.add_section(metadata_section)
+        mp.add_section(m_section)
+        ml.log_event(f'section has been added to metadata result \'{result[m_key.NAME]}\' for header \'{m_section}\'', announce=True)
         for attribute, detail in result.items():
             h_attr, d_attr = get_hashed_(attribute, detail, offset)
+            # FIXME this will break due to bad parser arg
             write_parser_value_with_key_(parser_key=h_attr, value=d_attr,
-                                         section=metadata_section, metadata=True)
+                                         section=m_section, mp=mp)
             pause_on_event(u_key.WAIT_FOR_USER)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -117,7 +118,7 @@ def enough_results_added_for_(section) -> bool:
     try:
         results_added_count = int(s_parser[section][s_key.RESULTS_ADDED_COUNT])
         results_required_count = int(s_parser[section][s_key.RESULTS_REQUIRED_COUNT])
-        if results_added_count > results_required_count - 1:
+        if results_added_count >= results_required_count:  # TODO check that indexing is perfect
             return True
         return False
     except Exception as e_err:
@@ -154,17 +155,20 @@ def fetch_metadata_from_(parser) -> dict:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def filter_(results: list, section: str, seeds=True, size=False, sort=True):
+def filter_(results: list, section: str, found=True, seeds=True, size=False, sort=True, regex=True):
     try:
         search_priority = u_parser[u_key.DEFAULT][u_key.USER_PRIORITY]
         ml.log_event(f'add results by {search_priority}')
         minimum_seeds = int(s_parser[section][s_key.MIN_SEED])
         min_size_bytes = int(s_parser[section][s_key.SIZE_MIN_BYTES])
-        min_size_megabytes = min_size_bytes / 1000000
+        min_size_megabytes = int(min_size_bytes / 1000000)
         max_size_bytes = int(s_parser[section][s_key.SIZE_MAX_BYTES])
-        max_size_megabytes = max_size_bytes / 1000000
+        max_size_megabytes = int(max_size_bytes / 1000000)
+        filename_regex = s_parser[section][s_key.REGEX_FILENAME]
         results_filtered = list()
         for result in results:
+            if previously_found_(result):
+                continue
             if seeds:
                 result_seeds = int(result[m_key.SUPPLY])
                 enough_seeds = True if result_seeds > minimum_seeds else False
@@ -184,8 +188,15 @@ def filter_(results: list, section: str, seeds=True, size=False, sort=True):
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
                     continue
+            if regex:
+                ml.log_event(f'filtering results using filename regex \'{filename_regex}\'')
+                filename = result[m_key.NAME]
+                if not regex_matches(filename_regex, filename):
+                    ml.log_event(f'regex \'{filename_regex}\' does not match for \'{filename}\'', level=ml.WARNING)
+                    continue
             ml.log_event(f'result \'{result[m_key.NAME]}\' meets all requirements')
             results_filtered.append(result)
+            add_to_found_metadata_as_(result, added=True)
         if sort:
             ml.log_event(f'results sorted for {section} # TODO dynamic sort values')
             results = sort_(results_filtered)
@@ -225,15 +236,22 @@ def get_hashed_(detail, attribute, offset):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+def get_search_id_from_(state_machine) -> str:
+    try:
+        search_id = ''
+        if state_machine.active_section in state_machine.active_search_ids:
+            search_id = state_machine.active_search_ids[state_machine.active_section]
+            ml.log_event(f'search id \'{search_id}\' successfully fetched')
+        return search_id
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
 def get_search_results_for_(active_kv: tuple, api) -> list:
     try:
-        filename_regex = read_parser_value_with_(key=s_key.REGEX_FILTER_FOR_FILENAME,
-                                                 section=active_kv[0],
-                                                 search=True)
-        results = api.get_search_results(search_id=active_kv[1],
-                                         use_filename_regex_filter=True,
-                                         filename_regex=filename_regex,
-                                         metadata_filename_key=m_key.NAME)
+        results = api.get_result_object_from_(search_id=active_kv[1])
+        assert results is not None, 'bad results, fix it or handle it'
+        results = results['results']  # TODO do this? or no?
         return results
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -279,21 +297,24 @@ def print_search_ids_from_(active_search_ids):
 def previously_found_(result):
     try:
         result_name = result[m_key.NAME]
-        if result_name in mf_parser.sections():
-            ml.log_event(f'result \'{result_name}\' failed before, skipping..', level=ml.WARNING)
+        added_or_found = [*ma_parser.sections(), *mf_parser.sections()]
+        if result_name in added_or_found:
+            ml.log_event(f'skipping previously found result \'{result_name}\'')
             return True
-        ml.log_event(f'result \'{result_name}\' is new! attempting to add')
+        ml.log_event(f'skipping previously added result \'{result_name}\'')
         return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def read_parser_value_with_(key, section, search=False, metadata=False, settings=False):
+def read_parser_value_with_(key, section, meta_add=False, meta_find=False, search=False, settings=False):
     # TODO this interface is lazy, above is a bool, and what is below? this is needlessly confusing
     # FIXME address this after refactor
     try:
-        if metadata:
-            return qconf.read_parser_value_with_(key, section, metadata=True)
+        if meta_add:
+            return qconf.read_parser_value_with_(key, section, meta_add=True)
+        if meta_find:
+            return qconf.read_parser_value_with_(key, section, meta_find=True)
         if search:
             return qconf.read_parser_value_with_(key, section, search=True)
         if settings:
@@ -332,8 +353,7 @@ def regex_matches(filename_regex, filename) -> bool:
     try:
         regex_match = findall(filename_regex, filename)
         if regex_match:
-            ml.log_event(f'pattern \'{filename_regex}\' matched against '
-                         f'filename \'{filename}\'')
+            ml.log_event(f'pattern \'{filename_regex}\' matched against filename \'{filename}\'')
             pause_on_event(u_key.WAIT_FOR_USER)
             return True
         return False
@@ -433,17 +453,16 @@ def write_config_to_disk():
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def write_parser_value_with_key_(parser_key, value, section, meta_add=False,
-                                 meta_find=False, search=False, settings=False):
-    # FIXME same issue as read, clunky interface, rework
-    try:
-        if meta_add:
-            qconf.write_parser_value_with_key_(parser_key, value, section, meta_add=True)
-        if meta_find:
-            qconf.write_parser_value_with_key_(parser_key, value, section, meta_find=True)
-        if search:
-            qconf.write_parser_value_with_key_(parser_key, value, section, search=True)
-        if settings:
-            qconf.write_parser_value_with_key_(parser_key, value, section, settings=True)
+def write_parser_value_with_key_(parser_key, value, section, mp=None, search=False, settings=False):
+    try:  # FIXME clunky interface, refactor
+        if mp:
+            qconf.write_parser_section_with_key_(parser_key, value, section, mp)
+        elif search:
+            qconf.write_parser_section_with_key_(parser_key, value, section, search=True)
+        elif settings:
+            qconf.write_parser_section_with_key_(parser_key, value, section, settings=True)
+        else:
+            ml.log_event(f'bad parser', level=ml.ERROR)
+            exit()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
