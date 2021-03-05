@@ -37,7 +37,7 @@ def add_results_from_(results, active_kv, api):
         results = filter_(results, active_section)
         if not enough_found_in_(results, active_section):
             reduce_search_expectations_for_(active_section)
-            # FIXME priority, things crashing out of nowhere
+            # FIXME p0, things crashing out of nowhere
             results_required_count = len(results) if results is not None else 0
         ml.log_event(f'add most popular \'{results_required_count}\' count results')
         for result in results:
@@ -53,7 +53,7 @@ def add_results_from_(results, active_kv, api):
                     return  # desired result count added, stop adding
                 continue  # result added, go to next
             ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
-            continue  # FIXME delete this, no longer does anything
+            continue  # FIXME p2, delete this, no longer does anything
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -91,14 +91,14 @@ def create_metadata_section_for_(mp, result):
         offset = int(u_parser[u_key.DEFAULT][u_key.UNI_SHIFT])
         ml.log_event(f'save metadata result to parser \'{result[m_key.NAME]}\'')
         m_section = hash_metadata(result[m_key.NAME], offset=offset)
-        if mp.has_section(m_section):  # FIXME two files, same name?
+        if mp.has_section(m_section):  # FIXME p3, two files, same name?
             ml.log_event(f'metadata parser already has section \'{m_section}\'', level=ml.WARNING)
             return
         mp.add_section(m_section)
         ml.log_event(f'section has been added to metadata result \'{result[m_key.NAME]}\' for header \'{m_section}\'', announce=True)
         for attribute, detail in result.items():
             h_attr, d_attr = get_hashed_(attribute, detail, offset)
-            # FIXME this will break due to bad parser arg
+            # FIXME p3, this will break due to bad parser arg
             write_parser_value_with_key_(parser_key=h_attr, value=d_attr,
                                          section=m_section, mp=mp)
             pause_on_event(u_key.WAIT_FOR_USER)
@@ -290,7 +290,7 @@ def pause_on_event(pause_type):
 
 
 def print_search_ids_from_(active_search_ids):
-    try:
+    try:  # FIXME p3, this is hit too frequently
         ml.log_event('active search headers are..')
         for active_search_header_name in active_search_ids.keys():
             ml.log_event(f'\tsearch header : \'{active_search_header_name}\'')
@@ -314,7 +314,7 @@ def previously_found_(result, verbose_log=False):
 
 def read_parser_value_with_(key, section, meta_add=False, meta_find=False, search=False, settings=False):
     # TODO this interface is lazy, above is a bool, and what is below? this is needlessly confusing
-    # FIXME address this after refactor
+    # FIXME p2, address TODO
     try:
         if meta_add:
             return qconf.read_parser_value_with_(key, section, meta_add=True)
@@ -460,7 +460,7 @@ def write_config_to_disk():
 
 
 def write_parser_value_with_key_(parser_key, value, section, mp=None, search=False, settings=False):
-    try:  # FIXME clunky interface, refactor
+    try:  # FIXME p2, clunky interface, refactor
         if mp:
             qconf.write_parser_section_with_key_(parser_key, value, section, mp)
         elif search:
