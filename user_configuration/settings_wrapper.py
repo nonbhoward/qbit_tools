@@ -53,7 +53,7 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.MAX_SEARCH_COUNT = 'maximum_search_attempt_count'
         self.MIN_SEED = 'minimum_seed_count'
         self.RANK = 'search_rank'
-        self.REGEX_FILTER_FOR_FILENAME = 'regex_filter_for_filename'  # TODO allow a list of tilers?
+        self.REGEX_FILENAME = 'regex_filter_for_filename'  # TODO allow a list of tilers?
         self.RESET = 'reset'
         self.RESULTS_ADDED_COUNT = 'results_added_count'  # TODO can this trigger a conclude? untested
         self.RESULTS_COUNT = 'results_count'  # this relies on being in DEFAULTS or program errors?
