@@ -13,18 +13,14 @@ interact (read/write) with settings on disk
   
 ### state_machine.py  
 the state machine  
-  automatically..  
-    ..conduct searches..  
-    ..filter results..  
-    ..and acquire..  
-    ..the latest linux images via bittorrent using qbittorrent's web api  
+  automatically conduct & monitor searches based on user parameters  
   
 ### state_machine_interface.py  
 interface from state machine to parsers and vice versa
   
   
 # configuration  
-### metadata_history.cfg  
+### metadata_added.cfg & metadata_failed.cfg  
 search results information  
   
 ### search.cfg  
