@@ -12,8 +12,7 @@ module contains classes to parse configuration files
 interact (read/write) with settings on disk  
   
 ### state_machine.py  
-the state machine  
-  automatically conduct & monitor searches based on user parameters  
+automatically conduct & monitor searches based on user parameters  
   
 ### state_machine_interface.py  
 interface from state machine to parsers and vice versa
