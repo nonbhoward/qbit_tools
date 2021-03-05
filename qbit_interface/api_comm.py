@@ -1,6 +1,6 @@
 from datetime import datetime
 from minimalog.minimal_log import MinimalLog
-from state_machine_interface import *
+from state_machine_interface import regex_matches
 from qbittorrentapi.search import SearchStatusesList
 from user_configuration.WEB_API_CREDENTIALS import *
 import qbittorrentapi
@@ -75,6 +75,14 @@ class QbitApiCaller:
             }
             for surface_key, surface_attr in dump.items():
                 ml.log_event(f'\'{surface_key}\' : \'{surface_attr}\'')
+        except Exception as e_err:
+            ml.log_event(e_err.args[0], level=ml.ERROR)
+
+    def get_result_object_from_(self, search_id) -> list:
+        try:
+            ml.log_event(f'getting search results for search id \'{search_id}\'')
+            results = self.qbit_client.search_results(search_id)
+            return results
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
