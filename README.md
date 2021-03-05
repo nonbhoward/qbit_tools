@@ -15,7 +15,7 @@ interact (read/write) with settings on disk
 automatically conduct & monitor searches based on user parameters  
   
 ### state_machine_interface.py  
-interface from state machine to parsers and vice versa
+offloaded code from the state machine  
   
   
 # configuration  
