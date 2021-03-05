@@ -7,9 +7,8 @@
 # files to ignore
 # .gitignore
 *link*
-minimalog
-searches_reset.cfg
-*CRED*
+*log*
+*RED*
 
 
 # folders to ignore
