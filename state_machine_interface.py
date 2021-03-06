@@ -97,9 +97,9 @@ def create_metadata_section_for_(mp, result):
         mp.add_section(m_section)
         ml.log_event(f'section has been added to metadata result \'{result[m_key.NAME]}\' for header \'{m_section}\'', announce=True)
         for attribute, detail in result.items():
-            h_attr, d_attr = get_hashed_(attribute, detail, offset)
+            h_attr, h_dtl = get_hashed_(attribute, detail, offset)
             # FIXME p3, this will break due to bad parser arg
-            write_parser_value_with_(h_attr, d_attr, m_section, mp)
+            write_parser_value_with_(h_attr, h_dtl, m_section, mp)
             pause_on_event(u_key.WAIT_FOR_USER)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -250,7 +250,7 @@ def get_all_sections_from_parser_(meta_add=False, meta_find=False, search=False,
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def get_hashed_(detail, attribute, offset):
+def get_hashed_(attribute, detail, offset):
     try:
         return hash_metadata(attribute, offset), hash_metadata(detail, offset)
     except Exception as e_err:
