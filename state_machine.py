@@ -15,7 +15,7 @@ from state_machine_interface import ready_to_start_
 from state_machine_interface import search_has_yielded_required_results
 from state_machine_interface import set_search_rank_using_
 from state_machine_interface import write_config_to_disk
-from state_machine_interface import write_parser_value_with_key_
+from state_machine_interface import write_parser_value_with_
 from qbit_interface.api_comm import QbitApiCaller
 
 u_parser_at_default = u_parser[u_key.DEFAULT]
@@ -153,17 +153,14 @@ class QbitStateManager:
 
     def start_search(self):
         try:
-            search_term = read_parser_value_with_(key=s_key.TERM, section=self.active_section, search=True)
+            search_term = read_parser_value_with_(key=s_key.TERM, section=self.active_section)
             search_properties = self.api.create_search_job(search_term, 'all', 'all')
             search_job, search_status, search_state, search_id, search_count = search_properties
             if search_id is None or empty_(search_id):
                 ml.log_event(f'invalid API return \'{search_id}\'', level=ml.ERROR)
                 raise Exception('search id from API is invalid')
             if s_key.RUNNING in search_state:  # for search sorting
-                key = s_key.TIME_LAST_SEARCHED
-                tls = dt.now()
-                write_parser_value_with_key_(parser_key=key, value=tls,
-                                             section=self.active_section, search=True)
+                write_parser_value_with_(s_key.TIME_LAST_SEARCHED, dt.now(), self.active_section)
                 ml.log_event(f'search started for \'{self.active_section}\' with search id \'{search_id}\'',
                              event_completed=True, announce=True)
                 self.active_search_ids[self.active_section] = search_id
