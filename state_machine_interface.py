@@ -176,6 +176,7 @@ def filter_(results: list, section: str, found=True, sort=True):
                                  f'\'{result_seeds}\' seeds, result : \'{result[m_key.NAME]}\'',
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
+                    add_to_found_metadata_as_(result)
                     continue
             if filter_provided_for_(megabytes_min) or filter_provided_for_(megabytes_max):
                 bytes_result = int(result[m_key.SIZE])
@@ -191,12 +192,14 @@ def filter_(results: list, section: str, found=True, sort=True):
                                  f'result with size \'{megabytes_result}\'MiB, result: \'{result[m_key.NAME]}\'',
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
+                    add_to_found_metadata_as_(result)
                     continue
             if filter_provided_for_(filename_regex):
                 ml.log_event(f'filtering results using filename regex \'{filename_regex}\'')
                 filename = result[m_key.NAME]
                 if not regex_matches(filename_regex, filename):
                     ml.log_event(f'regex \'{filename_regex}\' does not match for \'{filename}\'', level=ml.WARNING)
+                    add_to_found_metadata_as_(result)
                     continue
             ml.log_event(f'result \'{result[m_key.NAME]}\' meets all requirements')
             results_filtered.append(result)
