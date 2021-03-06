@@ -191,12 +191,15 @@ class QbitConfig:
     def write_parser_section_with_key_(parser_key, value='', section='DEFAULT',
                                        mp=None, search=True, settings=False):
         try:
-            p_section = mp[section] if mp else None
-            if settings:
-                assert section in parsers.user_config_parser, ml.log_event('user config section not found')
-                p_section = parsers.user_config_parser
+            p_section = None
+            if mp:
+                assert section in mp, ml.log_event(f'metadata parser section is being created \'{section}\'')
+                p_section = mp[section]
+            elif settings:
+                assert section in parsers.user_config_parser, ml.log_event(f'user config section is being created \'{section}\'')
+                p_section = parsers.user_config_parser[section]
             elif search:  # MUST be last as search defaults true
-                assert section in parsers.search_parser, ml.log_event('search detail section not found')
+                assert section in parsers.search_parser, ml.log_event(f'search section is being created \'{section}\'')
                 p_section = parsers.search_parser[section]
             p_section[parser_key] = str(value)
         except Exception as e_err:
