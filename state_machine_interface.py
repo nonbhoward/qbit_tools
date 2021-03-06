@@ -47,6 +47,7 @@ def add_results_from_(results, active_kv, api):
                 return  # enough results have been added for this header, stop
             if add_is_successful_for_(result, api, active_section):
                 create_metadata_section_for_(result, active_section)
+                add_to_found_metadata_as_(result, added=True)
                 if enough_results_added_for_(active_section):
                     ml.log_event(f'enough results added for \'{active_section}\'')
                     return  # desired result count added, stop adding
@@ -155,9 +156,15 @@ def fetch_metadata_from_(parser) -> dict:
 
 
 def filter_(results: list, section: str, found=True, sort=True):
+    """
+    1. get search priority
+    :param results: results returned from the api
+    :param section: the active section of the search parser
+    :param found: bool, True = don't parse previously failed results
+    :param sort: bool, True = sort by key determined elsewhere
+    :return:
+    """
     try:
-        search_priority = u_parser[u_key.DEFAULT][u_key.USER_PRIORITY]  # FIXME convert to function call
-        ml.log_event(f'add results by {search_priority}')
         seeds_min = int(qconf.read_parser_value_with_(s_key.MIN_SEED, section))
         bytes_min = int(qconf.read_parser_value_with_(s_key.SIZE_MIN_BYTES))
         bytes_max = int(qconf.read_parser_value_with_(s_key.SIZE_MAX_BYTES))
