@@ -1,6 +1,5 @@
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
-from user_configuration.settings_io import is_search_key_provided_for_
 from time import sleep
 from user_configuration.settings_io import QbitConfig as qconf
 from re import findall
@@ -99,8 +98,7 @@ def create_metadata_section_for_(mp, result):
         for attribute, detail in result.items():
             h_attr, d_attr = get_hashed_(attribute, detail, offset)
             # FIXME p3, this will break due to bad parser arg
-            write_parser_value_with_key_(parser_key=h_attr, value=d_attr,
-                                         section=m_section, mp=mp)
+            write_parser_value_with_(h_attr, d_attr, m_section, mp)
             pause_on_event(u_key.WAIT_FOR_USER)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -158,41 +156,43 @@ def fetch_metadata_from_(parser) -> dict:
 
 def filter_(results: list, section: str, found=True, sort=True):
     try:
-        search_priority = u_parser[u_key.DEFAULT][u_key.USER_PRIORITY]
+        search_priority = u_parser[u_key.DEFAULT][u_key.USER_PRIORITY]  # FIXME convert to function call
         ml.log_event(f'add results by {search_priority}')
-        minimum_seeds = int(s_parser[section][s_key.MIN_SEED])
-        min_size_bytes = int(s_parser[section][s_key.SIZE_MIN_BYTES])
-        min_size_megabytes = int(min_size_bytes / 1000000)
-        max_size_bytes = int(s_parser[section][s_key.SIZE_MAX_BYTES])
-        max_size_megabytes = int(max_size_bytes / 1000000)
-        filename_regex = s_parser[section][s_key.REGEX_FILENAME]
+        seeds_min = int(qconf.read_parser_value_with_(s_key.MIN_SEED, section))
+        bytes_min = int(qconf.read_parser_value_with_(s_key.SIZE_MIN_BYTES))
+        bytes_max = int(qconf.read_parser_value_with_(s_key.SIZE_MAX_BYTES))
+        megabytes_min = mega(bytes_min)
+        megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
+        filename_regex = qconf.read_parser_value_with_(s_key.REGEX_FILENAME, section)
         results_filtered = list()
-        seeds_provided = is_search_key_provided_for_(section, seed=True)
-        size_provided = is_search_key_provided_for_(section, size=True)
-        regex_provided = is_search_key_provided_for_(section, regex=True)
         for result in results:
             if found and previously_found_(result):
                 continue
-            if seeds_provided:
+            if filter_provided_for_(seeds_min):
                 result_seeds = int(result[m_key.SUPPLY])
-                enough_seeds = True if result_seeds > minimum_seeds else False
+                enough_seeds = True if result_seeds > seeds_min else False
                 if not enough_seeds:
-                    ml.log_event(f'required seeds \'{minimum_seeds}\' not met by result with '
+                    ml.log_event(f'required seeds \'{seeds_min}\' not met by result with '
                                  f'\'{result_seeds}\' seeds, result : \'{result[m_key.NAME]}\'',
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
                     continue
-            if size_provided:
-                result_size = int(result[m_key.SIZE])
-                result_size_megabytes = result_size / 1000000
-                file_size_in_range = True if max_size_bytes > result_size > min_size_bytes else False
+            if filter_provided_for_(megabytes_min) or filter_provided_for_(megabytes_max):
+                bytes_result = int(result[m_key.SIZE])
+                megabytes_result = mega(bytes_result)
+                if filter_provided_for_(megabytes_min) and filter_provided_for_(megabytes_max):
+                    file_size_in_range = True if bytes_max > bytes_result > bytes_min else False
+                elif not filter_provided_for_(megabytes_min) and filter_provided_for_(megabytes_max):
+                    file_size_in_range = True if bytes_max > bytes_result else False
+                else:
+                    file_size_in_range = True if bytes_result > bytes_min else False
                 if not file_size_in_range:
-                    ml.log_event(f'size requirement \'{min_size_megabytes}\'MiB to \'{max_size_megabytes}\'MiB not met by'
-                                 f'result with size \'{result_size_megabytes}\'MiB, result: \'{result[m_key.NAME]}\'',
+                    ml.log_event(f'size requirement \'{megabytes_min}\'MiB to \'{megabytes_max}\'MiB not met by'
+                                 f'result with size \'{megabytes_result}\'MiB, result: \'{result[m_key.NAME]}\'',
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
                     continue
-            if regex_provided:
+            if filter_provided_for_(filename_regex):
                 ml.log_event(f'filtering results using filename regex \'{filename_regex}\'')
                 filename = result[m_key.NAME]
                 if not regex_matches(filename_regex, filename):
@@ -205,6 +205,13 @@ def filter_(results: list, section: str, found=True, sort=True):
             ml.log_event(f'results sorted for {section} # TODO dynamic sort values')
             results = sort_(results_filtered)
         return results
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def filter_provided_for_(parser_val) -> bool:
+    try:
+        return False if parser_val == -1 or parser_val == 0 else True
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -279,6 +286,14 @@ def increment_result_added_count_for_(section):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+def mega(bytes_: int) -> int:
+    try:
+        megabytes_ = int(bytes_ / 1000000)
+        return megabytes_
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
 def pause_on_event(pause_type):
     try:
         parser_at_default = u_parser[u_key.DEFAULT]
@@ -304,26 +319,26 @@ def previously_found_(result, verbose_log=False):
         added_or_found = [*ma_parser.sections(), *mf_parser.sections()]
         if result_name in added_or_found:
             if verbose_log:
-                ml.log_event(f'skipping previously found result \'{result_name}\'')
+                ml.log_event(f'old result found, skipping \'{result_name}\'')
             return True
-        ml.log_event(f'skipping previously added result \'{result_name}\'')
+        ml.log_event(f'new result found \'{result_name}\'')
         return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def read_parser_value_with_(key, section, meta_add=False, meta_find=False, search=False, settings=False):
+def read_parser_value_with_(key, section, meta_add=False, meta_find=False, search=True, settings=False):
     # TODO this interface is lazy, above is a bool, and what is below? this is needlessly confusing
     # FIXME p2, address TODO
     try:
         if meta_add:
-            return qconf.read_parser_value_with_(key, section, meta_add=True)
-        if meta_find:
-            return qconf.read_parser_value_with_(key, section, meta_find=True)
-        if search:
-            return qconf.read_parser_value_with_(key, section, search=True)
-        if settings:
-            return qconf.read_parser_value_with_(key, section, settings=True)
+            return qconf.read_parser_value_with_(key, section, meta_add=meta_add)
+        elif meta_find:
+            return qconf.read_parser_value_with_(key, section, meta_find=meta_find)
+        elif settings:
+            return qconf.read_parser_value_with_(key, section, settings=settings)
+        elif search:  # MUST be last since defaults true
+            return qconf.read_parser_value_with_(key, section)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -350,7 +365,7 @@ def reduce_search_expectations_for_(section: str):
             ml.log_event(f'concluding search for \'{section}\'', level=ml.WARNING)
             s_parser[section][c_key] = s_key.YES
         er_val -= 1
-        write_parser_value_with_key_(re_key, er_val, section, search=True)
+        write_parser_value_with_(re_key, er_val, section)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -444,7 +459,7 @@ def sort_(results):
 
 
 def store_metadata_of_(result, success):
-    try:
+    try:  # TODO, how is this used, refresh?
         m_parser = ma_parser if success else mf_parser
         m_parser.add_section(hash_metadata(result[m_key.NAME]))
         ml.log_event(f'add is successful for \'{result[m_key.NAME]}\'')
@@ -459,16 +474,13 @@ def write_config_to_disk():
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def write_parser_value_with_key_(parser_key, value, section, mp=None, search=False, settings=False):
+def write_parser_value_with_(parser_key, value, section, mp=None, search=True, settings=False):
     try:  # FIXME p2, clunky interface, refactor
         if mp:
             qconf.write_parser_section_with_key_(parser_key, value, section, mp)
-        elif search:
-            qconf.write_parser_section_with_key_(parser_key, value, section, search=True)
         elif settings:
-            qconf.write_parser_section_with_key_(parser_key, value, section, settings=True)
-        else:
-            ml.log_event(f'bad parser', level=ml.ERROR)
-            exit()
+            qconf.write_parser_section_with_key_(parser_key, value, section, settings=settings)
+        elif search:  # MUST be last since search defaults true
+            qconf.write_parser_section_with_key_(parser_key, value, section)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
