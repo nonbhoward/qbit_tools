@@ -137,28 +137,28 @@ class QbitConfig:
 
     @staticmethod
     def read_parser_value_with_(key, section='DEFAULT', meta_add=False,
-                                meta_find=False, search=False, settings=False) -> str:
+                                meta_find=False, search=True, settings=False) -> str:
         try:
-            parser = None
+            no_key, p_section = False, None
             if meta_add:
-                assert section in parsers.metadata_added_parser, ml.log_event('meta_a section not found')
-                parser = parsers.metadata_added_parser[section]
-                assert key in parser, ml.log_event('metadata key not found')
-            if meta_find:
-                assert section in parsers.metadata_found_parser, 'meta_f section not found'
-                parser = parsers.metadata_found_parser[section]
-                assert key in parser, ml.log_event('metadata key not found')
-            if search:
-                assert section in parsers.search_parser, 'search detail section not found'
-                parser = parsers.search_parser[section]
-                if key == keyrings.search_parser_keyring.TERM and key not in parser:
+                assert section in parsers.metadata_added_parser, ml.log_event(f'meta_a section \'{section}\' not found')
+                p_section = parsers.metadata_added_parser[section]
+                assert key in p_section, ml.log_event(ml.log_event(f'metadata key \'{key}\' not found'))
+            elif meta_find:
+                assert section in parsers.metadata_found_parser, ml.log_event(f'meta_f section \'{section}\' not found')
+                p_section = parsers.metadata_found_parser[section]
+                assert key in p_section, ml.log_event(f'metadata key \'{key}\' not found')
+            elif settings:
+                if section != keyrings.user_config_parser_keyring.DEFAULT:
+                    assert section in parsers.user_config_parser, ml.log_event(f'user config section \'{section}\' not found')
+                p_section = parsers.user_config_parser[section]
+                assert key in p_section, ml.log_event(f'user config key \'{key}\' not found')
+            elif search:  # MUST be last since defaults true
+                assert section in parsers.search_parser, ml.log_event(f'search detail section \'{section}\' not found')
+                p_section = parsers.search_parser[section]
+                if key == keyrings.search_parser_keyring.TERM and key not in p_section:
                     return section
-                assert key in parser, ml.log_event('search detail key not found')
-            if settings:
-                assert section in parsers.user_config_parser, 'user config section not found'
-                parser = parsers.user_config_parser[section]
-                assert key in parser, ml.log_event('user config key not found')
-            value = parser[key]
+            value = p_section[key]
             return value
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -189,15 +189,15 @@ class QbitConfig:
 
     @staticmethod
     def write_parser_section_with_key_(parser_key, value='', section='DEFAULT',
-                                       mp=None, search=False, settings=False):
+                                       mp=None, search=True, settings=False):
         try:
             p_section = mp[section] if mp else None
-            if search:
-                assert section in parsers.search_parser, ml.log_event('search detail section not found')
-                p_section = parsers.search_parser[section]
-            elif settings:
+            if settings:
                 assert section in parsers.user_config_parser, ml.log_event('user config section not found')
                 p_section = parsers.user_config_parser
+            elif search:  # MUST be last as search defaults true
+                assert section in parsers.search_parser, ml.log_event('search detail section not found')
+                p_section = parsers.search_parser[section]
             p_section[parser_key] = str(value)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
