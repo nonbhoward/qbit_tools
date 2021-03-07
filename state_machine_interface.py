@@ -114,17 +114,6 @@ def empty_(test_string) -> bool:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def enough_results_added_for_(section) -> bool:
-    try:
-        results_added_count = int(s_parser[section][s_key.RESULTS_ADDED_COUNT])
-        results_required_count = int(s_parser[section][s_key.RESULTS_REQUIRED_COUNT])
-        if results_added_count >= results_required_count:  # TODO check that indexing is perfect
-            return True
-        return False
-    except Exception as e_err:
-        print(e_err.args[0])
-
-
 def enough_found_in_(filtered_results, active_section):
     try:
         expected_results_count = int(s_parser[active_section][s_key.RESULTS_REQUIRED_COUNT])
@@ -139,6 +128,17 @@ def enough_found_in_(filtered_results, active_section):
         return True
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def enough_results_added_for_(section) -> bool:
+    try:
+        results_added_count = int(s_parser[section][s_key.RESULTS_ADDED_COUNT])
+        results_required_count = int(s_parser[section][s_key.RESULTS_REQUIRED_COUNT])
+        if results_added_count >= results_required_count:  # TODO check that indexing is perfect
+            return True
+        return False
+    except Exception as e_err:
+        print(e_err.args[0])
 
 
 def fetch_metadata_from_(parser) -> dict:
@@ -282,7 +282,7 @@ def hash_metadata(x, undo=False, offset=0):
     try:
         _undo = -1 if undo else 1
         _hash = ''.join([chr(ord(e) + int(offset)) * _undo for e in str(x) if x])
-        ml.log_event(f'hashed from {x} to {_hash}')
+        ml.log_event(f'hashed from.. \n\t\t\'{x}\' \n\t\tto \n\t\t\'{_hash}\'')
         return _hash
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -314,15 +314,6 @@ def pause_on_event(pause_type):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def print_search_ids_from_(active_search_ids):
-    try:  # FIXME p3, this is hit too frequently
-        ml.log_event('active search headers are..')
-        for active_search_header_name in active_search_ids.keys():
-            ml.log_event(f'\tsearch header : \'{active_search_header_name}\'')
-    except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
-
-
 def previously_found_(result, verbose_log=False):
     try:
         result_name = result[m_key.NAME]
@@ -333,6 +324,15 @@ def previously_found_(result, verbose_log=False):
             return True
         ml.log_event(f'new result found \'{result_name}\'')
         return False
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def print_search_ids_from_(active_search_ids):
+    try:  # FIXME p3, this is hit too frequently
+        ml.log_event('active search headers are..')
+        for active_search_header_name in active_search_ids.keys():
+            ml.log_event(f'\tsearch header : \'{active_search_header_name}\'')
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
