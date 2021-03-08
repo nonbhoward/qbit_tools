@@ -88,10 +88,13 @@ def all_searches_concluded() -> bool:
 
 
 def check_if_no_data_in_(value: str) -> str:
+    """
+    1. if value is empty string, return NO DATA for parser write
+    :param value: test value to be checked for empty string
+    :return: 'NO DATA' if empty string
+    """
     try:
-        if value == '':
-            value = 'NO DATA'
-        return value
+        return 'NO DATA' if value == '' else value
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -106,7 +109,8 @@ def create_metadata_section_for_(mp, result):
             return
         mp.add_section(m_section)
         ml.log_event(f'section has been added to metadata result \'{result[m_key.NAME]}\' for header \'{m_section}\'', announce=True)
-        for attribute, detail in result.items():
+        for metadata_kv in result.items():
+            attribute, detail = validate_metadata_type_for_(metadata_kv)
             h_attr, h_dtl = get_hashed_(attribute, detail, offset)
             # FIXME p3, this will break due to bad parser arg.. revisiting, resolved?
             write_parser_value_with_(h_attr, h_dtl, m_section, mp)
@@ -487,7 +491,7 @@ def store_metadata_of_(result, success):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def validate_metadata_type_for_(metadata_kv: tuple) -> str:
+def validate_metadata_type_for_(metadata_kv: tuple) -> tuple:
     """
     1. unpack key/value, check if value's type is expected
     2. if not expected, raise error
@@ -495,7 +499,7 @@ def validate_metadata_type_for_(metadata_kv: tuple) -> str:
     :param metadata_kv: metadata value to be written to disk
     :return: value ready to write to metadata parser
     """
-    parser_key, value = metadata_kv
+    parser_key, value = metadata_kv  # FIXME reminder, WAS a bug, be sure it doesn't happen again
     try:
         expected_types = [int, str]
         value_type = type(value)
@@ -510,7 +514,7 @@ def validate_metadata_type_for_(metadata_kv: tuple) -> str:
                 ml.log_event(f'unable to convert int to string', level=ml.ERROR)
                 ml.log_event(e_err.args[0], level=ml.ERROR)
         value = check_if_no_data_in_(value)
-        return value
+        return parser_key, value
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -525,8 +529,6 @@ def write_config_to_disk():
 def write_parser_value_with_(parser_key, value, section, mp=None, search=True, settings=False):
     try:  # FIXME p2, clunky interface, refactor
         if mp:
-            metadata_kv = parser_key, value
-            value = validate_metadata_type_for_(metadata_kv)
             qconf.write_parser_section_with_key_(parser_key, value, section, mp)
         elif settings:
             qconf.write_parser_section_with_key_(parser_key, value, section, settings=settings)
