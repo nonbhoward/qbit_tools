@@ -209,7 +209,7 @@ def filter_(results: list, section: str, found=True, sort=True):
                 else:
                     file_size_in_range = True if bytes_result > bytes_min else False
                 if not file_size_in_range:
-                    ml.log_event(f'size requirement \'{megabytes_min}\'MiB to \'{megabytes_max}\'MiB not met by'
+                    ml.log_event(f'size requirement \'{megabytes_min}\'MiB to \'{megabytes_max}\'MiB not met by '
                                  f'result with size \'{megabytes_result}\'MiB, result: \'{result[m_key.NAME]}\'',
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
