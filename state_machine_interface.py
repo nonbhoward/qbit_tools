@@ -108,9 +108,8 @@ def create_metadata_section_for_(mp, result):
         ml.log_event(f'section has been added to metadata result \'{result[m_key.NAME]}\' for header \'{m_section}\'', announce=True)
         for attribute, detail in result.items():
             h_attr, h_dtl = get_hashed_(attribute, detail, offset)
-            hashed_kv = h_attr, h_dtl
             # FIXME p3, this will break due to bad parser arg.. revisiting, resolved?
-            write_parser_value_with_(hashed_kv, m_section, mp)
+            write_parser_value_with_(h_attr, h_dtl, m_section, mp)
             pause_on_event(u_key.WAIT_FOR_USER)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -522,9 +521,8 @@ def write_config_to_disk():
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def write_parser_value_with_(hashed_kv, section, mp=None, search=True, settings=False):
+def write_parser_value_with_(parser_key, value, section, mp=None, search=True, settings=False):
     try:  # FIXME p2, clunky interface, refactor
-        parser_key, value = hashed_kv
         if mp:
             value = validate_metadata_type_for_(value)
             qconf.write_parser_section_with_key_(parser_key, value, section, mp)
