@@ -24,7 +24,7 @@ def add_is_successful_for_(result, api, section) -> bool:
         store_metadata_of_(result, success)
         return success
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def add_results_from_(results, active_kv, api):
@@ -55,7 +55,7 @@ def add_results_from_(results, active_kv, api):
             ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
             continue  # FIXME p2, delete this, no longer does anything
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def add_to_found_metadata_as_(result, added=False):
@@ -64,7 +64,7 @@ def add_to_found_metadata_as_(result, added=False):
         # FIXME return to this and fix mp not writing
         create_metadata_section_for_(mp, result)
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def all_searches_concluded() -> bool:
@@ -84,6 +84,18 @@ def all_searches_concluded() -> bool:
         ml.log_event(f'all searches are not concluded, program continuing')
         return False
     except Exception as e_err:
+        ml.log_event(e_err.message, level=ml.ERROR)
+
+
+def build_metadata_section_from_(result):
+    try:
+        name, url = result[m_key.NAME], result[m_key.URL]
+        if url == '':
+            raise ValueError(f'empty url!')
+        r_name, delim, r_url = hash_metadata(name), ' @ ', hash_metadata(url)
+        hashed_name = r_name + delim + r_url
+        return hashed_name
+    except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -96,7 +108,7 @@ def check_if_no_data_in_(value: str) -> str:
     try:
         return 'NO DATA' if value == '' else value
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def create_metadata_section_for_(mp, result):
@@ -116,7 +128,7 @@ def create_metadata_section_for_(mp, result):
             write_parser_value_with_(h_attr, h_dtl, m_section, mp)
             pause_on_event(u_key.WAIT_FOR_USER)
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def empty_(test_string) -> bool:
@@ -125,7 +137,7 @@ def empty_(test_string) -> bool:
             return True
         return False
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def enough_found_in_(filtered_results, active_section):
@@ -141,7 +153,7 @@ def enough_found_in_(filtered_results, active_section):
         ml.log_event(f'search yielded adequate results, \'{filtered_results_count}\' results found')
         return True
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def enough_results_added_for_(section) -> bool:
@@ -152,7 +164,7 @@ def enough_results_added_for_(section) -> bool:
             return True
         return False
     except Exception as e_err:
-        print(e_err.args[0])
+        print(e_err.message)
 
 
 def fetch_metadata_from_(parser) -> dict:
@@ -166,7 +178,7 @@ def fetch_metadata_from_(parser) -> dict:
         ml.log_event('fetching results from disk', event_completed=True)
         return result_data
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def filter_(results: list, section: str, found=True, sort=True):
@@ -230,14 +242,14 @@ def filter_(results: list, section: str, found=True, sort=True):
             results = sort_(results_filtered)
         return results
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def filter_provided_for_(parser_val) -> bool:
     try:
         return False if parser_val == -1 or parser_val == 0 else True
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def get_add_mode_for_(section: str) -> bool:
@@ -247,7 +259,7 @@ def get_add_mode_for_(section: str) -> bool:
             return True
         return False
     except Exception as e_err:
-        ml.log_event(e_err.args[0])
+        ml.log_event(e_err.message)
 
 
 def get_all_sections_from_parser_(meta_add=False, meta_find=False, search=False, settings=False):
@@ -261,14 +273,14 @@ def get_all_sections_from_parser_(meta_add=False, meta_find=False, search=False,
         if settings:
             return qconf.get_all_sections_from_parser_(settings=True)
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def get_hashed_(attribute, detail, offset):
     try:
         return hash_metadata(attribute, offset), hash_metadata(detail, offset)
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def get_search_id_from_(state_machine) -> str:
@@ -279,7 +291,7 @@ def get_search_id_from_(state_machine) -> str:
             ml.log_event(f'search id \'{search_id}\' successfully fetched')
         return search_id
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def get_search_results_for_(active_kv: tuple, api) -> list:
@@ -289,7 +301,7 @@ def get_search_results_for_(active_kv: tuple, api) -> list:
         results = results['results']  # TODO do this? or no?
         return results
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def hash_metadata(x, undo=False, offset=0):
@@ -299,7 +311,7 @@ def hash_metadata(x, undo=False, offset=0):
         ml.log_event(f'hashed from.. \n\t\t\'{x}\' to.. \n\t\t\'{_hash}\'')
         return _hash
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def increment_result_added_count_for_(section):
@@ -307,13 +319,24 @@ def increment_result_added_count_for_(section):
         s_parser[section][s_key.RESULTS_ADDED_COUNT] = \
             str(int(s_parser[section][s_key.RESULTS_ADDED_COUNT]) + 1)
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def mega(bytes_: int) -> int:
     try:
         megabytes_ = int(bytes_ / 1000000)
         return megabytes_
+    except Exception as e_err:
+        ml.log_event(e_err.message, level=ml.ERROR)
+
+
+def meta_parser_add_section_to_(mp, hashed_section_name):
+    try:
+        if hashed_section_name in mp.sections():
+            ml.log_event(f'section name already exists for \'{hashed_section_name}\'', level=ml.WARNING)
+            return
+        ml.log_event(f'adding section name for \'{hashed_section_name}\'')
+        mp.add_section(hashed_section_name)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -325,7 +348,7 @@ def pause_on_event(pause_type):
         ml.log_event(f'{dt.now()} waiting {delay} seconds for event \'{str(pause_type)}\'')
         sleep(delay)
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def previously_found_(result, verbose_log=False):
@@ -339,7 +362,7 @@ def previously_found_(result, verbose_log=False):
         ml.log_event(f'new result found \'{result_name}\'')
         return False
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def print_search_ids_from_(active_search_ids):
@@ -348,7 +371,7 @@ def print_search_ids_from_(active_search_ids):
         for active_search_header_name in active_search_ids.keys():
             ml.log_event(f'\tsearch header : \'{active_search_header_name}\'')
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def read_parser_value_with_(key, section, meta_add=False, meta_find=False, search=True, settings=False):
@@ -364,7 +387,7 @@ def read_parser_value_with_(key, section, meta_add=False, meta_find=False, searc
         elif search:  # MUST be last since defaults true
             return qconf.read_parser_value_with_(key, section)
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def ready_to_start_(queued, state_machine):
@@ -377,7 +400,7 @@ def ready_to_start_(queued, state_machine):
             return True
         return False
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def reduce_search_expectations_for_(section: str):
@@ -391,7 +414,7 @@ def reduce_search_expectations_for_(section: str):
         er_val -= 1
         write_parser_value_with_(re_key, er_val, section)
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def regex_matches(filename_regex, filename) -> bool:
@@ -403,7 +426,7 @@ def regex_matches(filename_regex, filename) -> bool:
             return True
         return False
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def result_has_enough_seeds(self, result) -> bool:
@@ -412,7 +435,7 @@ def result_has_enough_seeds(self, result) -> bool:
         pass  # TODO refactor into this function
         return True
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def search_has_yielded_required_results(section) -> bool:
@@ -435,14 +458,14 @@ def search_has_yielded_required_results(section) -> bool:
             return True
         return False
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def search_set_end_reason(section, reason_key):
     try:
         s_parser[section][s_key.SEARCH_STOPPED_REASON] = reason_key
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def set_search_rank_using_(sort_key):
@@ -463,14 +486,14 @@ def set_search_rank_using_(sort_key):
             s_parser[header][s_key.RANK] = str(search_rank)
             ml.log_event(f'search rank \'{search_rank}\' assigned to header \'{header}\'')
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def set_time_last_searched_for_active_header(self):
     try:
         pass  # TODO refactor into this function
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def sort_(results):
@@ -479,16 +502,17 @@ def sort_(results):
         results_sorted = sorted(results, key=lambda k: k['nbSeeders'], reverse=True)
         return results_sorted
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def store_metadata_of_(result, success):
     try:  # TODO, how is this used, refresh?
-        m_parser = ma_parser if success else mf_parser
-        m_parser.add_section(hash_metadata(result[m_key.NAME]))
+        mp = ma_parser if success else mf_parser
+        hashed_name = build_metadata_section_from_(result)
+        meta_parser_add_section_to_(mp, hashed_name)
         ml.log_event(f'add is successful for \'{result[m_key.NAME]}\'')
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def validate_metadata_type_for_(metadata_kv: tuple) -> tuple:
@@ -512,18 +536,18 @@ def validate_metadata_type_for_(metadata_kv: tuple) -> tuple:
                 value = str(value)
             except Exception as e_err:
                 ml.log_event(f'unable to convert int to string', level=ml.ERROR)
-                ml.log_event(e_err.args[0], level=ml.ERROR)
+                ml.log_event(e_err.message, level=ml.ERROR)
         value = check_if_no_data_in_(value)
         return parser_key, value
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def write_config_to_disk():
     try:
         qconf.write_config_to_disk()
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
 
 
 def write_parser_value_with_(parser_key, value, section, mp=None, search=True, settings=False):
@@ -535,4 +559,4 @@ def write_parser_value_with_(parser_key, value, section, mp=None, search=True, s
         elif search:  # MUST be last since search defaults true
             qconf.write_parser_section_with_key_(parser_key, value, section)
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(e_err.message, level=ml.ERROR)
