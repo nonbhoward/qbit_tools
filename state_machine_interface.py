@@ -61,6 +61,7 @@ def add_results_from_(results, active_kv, api):
 def add_to_found_metadata_as_(result, added=False):
     try:
         mp = ma_parser if added else mf_parser
+        # FIXME return to this and fix mp not writing
         create_metadata_section_for_(mp, result)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -86,6 +87,15 @@ def all_searches_concluded() -> bool:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+def check_if_no_data_in_(value: str) -> str:
+    try:
+        if value == '':
+            value = 'NO DATA'
+        return value
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
 def create_metadata_section_for_(mp, result):
     try:
         offset = int(u_parser[u_key.DEFAULT][u_key.UNI_SHIFT])
@@ -98,8 +108,9 @@ def create_metadata_section_for_(mp, result):
         ml.log_event(f'section has been added to metadata result \'{result[m_key.NAME]}\' for header \'{m_section}\'', announce=True)
         for attribute, detail in result.items():
             h_attr, h_dtl = get_hashed_(attribute, detail, offset)
-            # FIXME p3, this will break due to bad parser arg
-            write_parser_value_with_(h_attr, h_dtl, m_section, mp)
+            hashed_kv = h_attr, h_dtl
+            # FIXME p3, this will break due to bad parser arg.. revisiting, resolved?
+            write_parser_value_with_(hashed_kv, m_section, mp)
             pause_on_event(u_key.WAIT_FOR_USER)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -477,6 +488,33 @@ def store_metadata_of_(result, success):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+def validate_metadata_type_for_(value) -> str:
+    """
+    1. check if value's type is expected
+    2. if not expected, raise error
+    3. if expected, handle and return
+    :param value: metadata value to be written to disk
+    :return: value ready to write to metadata parser
+    """
+    try:
+        expected_types = [int, str]
+        value_type = type(value)
+        if value_type not in expected_types:
+            ex = f'unexpected data type \'{value_type}\''
+            ml.log_event(ex, level=ml.ERROR)
+            raise TypeError(ex)
+        if value_type is int:
+            try:
+                value = str(value)
+            except Exception as e_err:
+                ml.log_event(f'unable to convert int to string', level=ml.ERROR)
+                ml.log_event(e_err.args[0], level=ml.ERROR)
+        value = check_if_no_data_in_(value)
+        return value
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
 def write_config_to_disk():
     try:
         qconf.write_config_to_disk()
@@ -484,9 +522,11 @@ def write_config_to_disk():
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def write_parser_value_with_(parser_key, value, section, mp=None, search=True, settings=False):
+def write_parser_value_with_(hashed_kv, section, mp=None, search=True, settings=False):
     try:  # FIXME p2, clunky interface, refactor
+        parser_key, value = hashed_kv
         if mp:
+            value = validate_metadata_type_for_(value)
             qconf.write_parser_section_with_key_(parser_key, value, section, mp)
         elif settings:
             qconf.write_parser_section_with_key_(parser_key, value, section, settings=settings)
