@@ -155,11 +155,11 @@ class QbitStateManager:
         try:
             search_term = read_parser_value_with_(key=s_key.TERM, section=self.active_section)
             search_properties = self.api.create_search_job(search_term, 'all', 'all')
-            search_job, search_status, search_state, search_id, search_count = search_properties
+            search_count, search_id, search_status = search_properties
             if search_id is None or empty_(search_id):
                 ml.log_event(f'invalid API return \'{search_id}\'', level=ml.ERROR)
                 raise Exception('search id from API is invalid')
-            if s_key.RUNNING in search_state:  # for search sorting
+            if s_key.RUNNING in search_status:  # for search sorting
                 write_parser_value_with_(s_key.TIME_LAST_SEARCHED, dt.now(), self.active_section)
                 ml.log_event(f'search started for \'{self.active_section}\' with search id \'{search_id}\'',
                              event_completed=True, announce=True)
