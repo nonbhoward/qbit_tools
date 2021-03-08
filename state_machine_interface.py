@@ -292,7 +292,7 @@ def hash_metadata(x, undo=False, offset=0):
     try:
         _undo = -1 if undo else 1
         _hash = ''.join([chr(ord(e) + int(offset)) * _undo for e in str(x) if x])
-        ml.log_event(f'hashed from.. \n\t\t\'{x}\' \n\t\tto \n\t\t\'{_hash}\'')
+        ml.log_event(f'hashed from.. \n\t\t\'{x}\' to.. \n\t\t\'{_hash}\'')
         return _hash
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
