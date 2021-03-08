@@ -109,7 +109,7 @@ class QbitStateManager:
                 if results is None or self.active_section not in self.active_search_ids:
                     ml.log_event(f'search \'{self.active_section}\' is stale, re-queued', level=ml.WARNING)
                 else:
-                    add_results_from_(results, active_kv, self.api)
+                    add_results_from_(results, active_kv, self.api)  # FIXME p0, this is the source of most bugs rn
                     self.set_search_id_as_(search_id, active=False)
                     if search_has_yielded_required_results(self.active_section):
                         self.update_search_states(s_key.CONCLUDED)
