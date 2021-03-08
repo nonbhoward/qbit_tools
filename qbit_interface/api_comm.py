@@ -45,9 +45,9 @@ class QbitApiCaller:
         try:
             job = self.qbit_client.search.start(pattern, plugins, category)
             assert job is not None, 'bad search job, fix it or handle it'
-            count, sid, state, status = QbitApiCaller.get_search_info_from_(job)
+            count, sid, status = QbitApiCaller.get_search_info_from_(job)
             ml.log_event(f'qbit client created search job for \'{pattern}\'')
-            return job, status, state, sid, count
+            return count, sid, status
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -87,10 +87,10 @@ class QbitApiCaller:
     def get_search_info_from_(cls, job) -> tuple:
         try:
             status = job.status()
-            state = status.data[0]['status']
-            sid = str(status.data[0]['id'])
-            count = status.data[0]['total']
-            return count, sid, state, status
+            search_status = status.data[0]['status']
+            search_id = str(status.data[0]['id'])
+            search_found_count = status.data[0]['total']
+            return search_found_count, search_id, search_status
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
