@@ -487,14 +487,15 @@ def store_metadata_of_(result, success):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def validate_metadata_type_for_(value) -> str:
+def validate_metadata_type_for_(metadata_kv: tuple) -> str:
     """
-    1. check if value's type is expected
+    1. unpack key/value, check if value's type is expected
     2. if not expected, raise error
     3. if expected, handle and return
-    :param value: metadata value to be written to disk
+    :param metadata_kv: metadata value to be written to disk
     :return: value ready to write to metadata parser
     """
+    parser_key, value = metadata_kv
     try:
         expected_types = [int, str]
         value_type = type(value)
@@ -524,7 +525,8 @@ def write_config_to_disk():
 def write_parser_value_with_(parser_key, value, section, mp=None, search=True, settings=False):
     try:  # FIXME p2, clunky interface, refactor
         if mp:
-            value = validate_metadata_type_for_(value)
+            metadata_kv = parser_key, value
+            value = validate_metadata_type_for_(metadata_kv)
             qconf.write_parser_section_with_key_(parser_key, value, section, mp)
         elif settings:
             qconf.write_parser_section_with_key_(parser_key, value, section, settings=settings)
