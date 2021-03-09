@@ -103,7 +103,7 @@ class QbitStateManager:
                     self.update_search_states(s_key.QUEUED)  # unexpected state, re-queue
             elif search_stopped:
                 results, active_kv = None, None
-                if self.active_section in self.active_search_ids.keys():
+                if self.active_section in self.active_search_ids:
                     active_kv = (self.active_section, self.active_search_ids[self.active_section])
                     results = get_search_results_for_(active_kv=active_kv, api=self.api)
                 if results is None or self.active_section not in self.active_search_ids:
