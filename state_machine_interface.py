@@ -1,11 +1,11 @@
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
 from time import sleep
-from user_configuration.settings_io import QbitConfig as qconf
+from user_configuration.settings_io import QbitConfig as QConf
 from re import findall
 ml = MinimalLog(__name__)
-m_key, s_key, u_key = qconf.get_keyrings()
-ma_parser, mf_parser, s_parser, u_parser = qconf.get_parsers()
+m_key, s_key, u_key = QConf.get_keyrings()
+ma_parser, mf_parser, s_parser, u_parser = QConf.get_parsers()
 
 
 def add_results_from_(results, active_kv, api):
@@ -190,12 +190,12 @@ def filter_(results: list, section: str, found=True, sort=True):
     :return:
     """
     try:
-        seeds_min = int(qconf.read_parser_value_with_(s_key.MIN_SEED, section))
-        bytes_min = int(qconf.read_parser_value_with_(s_key.SIZE_MIN_BYTES))
-        bytes_max = int(qconf.read_parser_value_with_(s_key.SIZE_MAX_BYTES))
+        seeds_min = int(QConf.read_parser_value_with_(s_key.MIN_SEED, section))
+        bytes_min = int(QConf.read_parser_value_with_(s_key.SIZE_MIN_BYTES))
+        bytes_max = int(QConf.read_parser_value_with_(s_key.SIZE_MAX_BYTES))
         megabytes_min = mega(bytes_min)
         megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
-        filename_regex = qconf.read_parser_value_with_(s_key.REGEX_FILENAME, section)
+        filename_regex = QConf.read_parser_value_with_(s_key.REGEX_FILENAME, section)
         results_filtered = list()
         for result in results:
             if found and previously_found_(result):
@@ -264,13 +264,13 @@ def get_add_mode_for_(section: str) -> bool:
 def get_all_sections_from_parser_(meta_add=False, meta_find=False, search=False, settings=False):
     try:
         if meta_add:
-            return qconf.get_all_sections_from_parser_(meta_add=True)
+            return QConf.get_all_sections_from_parser_(meta_add=True)
         if meta_find:
-            return qconf.get_all_sections_from_parser_(meta_find=True)
+            return QConf.get_all_sections_from_parser_(meta_find=True)
         if search:
-            return qconf.get_all_sections_from_parser_(search=True)
+            return QConf.get_all_sections_from_parser_(search=True)
         if settings:
-            return qconf.get_all_sections_from_parser_(settings=True)
+            return QConf.get_all_sections_from_parser_(settings=True)
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
 
@@ -378,13 +378,13 @@ def read_parser_value_with_(key, section, meta_add=False, meta_find=False, searc
     # FIXME p2, address TODO
     try:
         if meta_add:
-            return qconf.read_parser_value_with_(key, section, meta_add=meta_add)
+            return QConf.read_parser_value_with_(key, section, meta_add=meta_add)
         elif meta_find:
-            return qconf.read_parser_value_with_(key, section, meta_find=meta_find)
+            return QConf.read_parser_value_with_(key, section, meta_find=meta_find)
         elif settings:
-            return qconf.read_parser_value_with_(key, section, settings=settings)
+            return QConf.read_parser_value_with_(key, section, settings=settings)
         elif search:  # MUST be last since defaults true
-            return qconf.read_parser_value_with_(key, section)
+            return QConf.read_parser_value_with_(key, section)
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
 
@@ -476,7 +476,7 @@ def set_search_rank_using_(sort_key):
     :return:
     """
     try:
-        sdp_as_dict = qconf.get_search_parser_as_sortable()
+        sdp_as_dict = QConf.get_search_parser_as_sortable()
         sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key])
         number_of_sections = len(sdp_as_dict_sorted)
         for search_rank in range(number_of_sections):
@@ -544,7 +544,7 @@ def validate_metadata_type_for_(metadata_kv: tuple) -> tuple:
 
 def write_config_to_disk():
     try:
-        qconf.write_config_to_disk()
+        QConf.write_config_to_disk()
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
 
@@ -552,10 +552,10 @@ def write_config_to_disk():
 def write_parser_value_with_(parser_key, value, section, mp=None, search=True, settings=False):
     try:  # FIXME p2, clunky interface, refactor
         if mp:
-            qconf.write_parser_section_with_key_(parser_key, value, section, mp)
+            QConf.write_parser_section_with_key_(parser_key, value, section, mp)
         elif settings:
-            qconf.write_parser_section_with_key_(parser_key, value, section, settings=settings)
+            QConf.write_parser_section_with_key_(parser_key, value, section, settings=settings)
         elif search:  # MUST be last since search defaults true
-            qconf.write_parser_section_with_key_(parser_key, value, section)
+            QConf.write_parser_section_with_key_(parser_key, value, section)
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
