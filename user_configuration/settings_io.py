@@ -86,7 +86,7 @@ class QbitConfig:
             if meta_add:
                 return parsers.metadata_added_parser
             if meta_find:
-                return parsers.metadata_added_parser
+                return parsers.metadata_found_parser
             if search:
                 return parsers.search_parser
             if settings:
