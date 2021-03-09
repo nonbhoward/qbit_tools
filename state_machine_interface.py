@@ -8,25 +8,6 @@ m_key, s_key, u_key = qconf.get_keyrings()
 ma_parser, mf_parser, s_parser, u_parser = qconf.get_parsers()
 
 
-def add_is_successful_for_(result, api, section) -> bool:
-    try:
-        count_before_add_attempt = api.count_all_local_results()
-        ml.log_event(f'local machine has {count_before_add_attempt} stored results before add attempt..')
-        # TODO why does client fail to add so often? outside project scope?
-
-        api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=get_add_mode_for_(section))
-        pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
-        results_added_count = api.count_all_local_results() - count_before_add_attempt
-        success = False
-        if results_added_count:
-            success = True
-            increment_result_added_count_for_(section)
-        store_metadata_of_(result, success)
-        return success
-    except Exception as e_err:
-        ml.log_event(e_err.message, level=ml.ERROR)
-
-
 def add_results_from_(results, active_kv, api):
     # TODO this could be broken up?
     try:
@@ -34,7 +15,7 @@ def add_results_from_(results, active_kv, api):
         s_parser_at_active = s_parser[active_section]
         results_required_count = int(s_parser_at_active[s_key.RESULTS_REQUIRED_COUNT])
         results = filter_(results, active_section)
-        if not enough_found_in_(results, active_section):
+        if not enough_results_found_in_(results, active_section):
             reduce_search_expectations_for_(active_section)
             # FIXME p0, things crashing out of nowhere
             results_required_count = len(results) if results is not None else 0
@@ -45,7 +26,7 @@ def add_results_from_(results, active_kv, api):
                 ml.log_event(f'the search for \'{active_section}\' can be concluded', announce=True)
                 s_parser_at_active[s_key.CONCLUDED] = s_key.YES
                 return  # enough results have been added for this header, stop
-            if add_is_successful_for_(result, api, active_section):
+            if add_successful_for_(result, api, active_section):
                 create_metadata_section_for_(result, active_section)
                 add_to_found_metadata_as_(result, added=True)
                 if enough_results_added_for_(active_section):
@@ -54,6 +35,24 @@ def add_results_from_(results, active_kv, api):
                 continue  # result added, go to next
             ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
             continue  # FIXME p2, delete this, no longer does anything
+    except Exception as e_err:
+        ml.log_event(e_err.message, level=ml.ERROR)
+
+
+def add_successful_for_(result, api, section) -> bool:
+    try:
+        count_before_add_attempt = api.count_all_local_results()
+        ml.log_event(f'local machine has {count_before_add_attempt} stored results before add attempt..')
+        # TODO why does client fail to add so often? outside project scope?
+        api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=get_add_mode_for_(section))
+        pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
+        results_added_count = api.count_all_local_results() - count_before_add_attempt
+        success = False
+        if results_added_count:
+            success = True
+            increment_result_added_count_for_(section)
+        store_metadata_of_(result, success)
+        return success
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
 
@@ -140,7 +139,18 @@ def empty_(test_string) -> bool:
         ml.log_event(e_err.message, level=ml.ERROR)
 
 
-def enough_found_in_(filtered_results, active_section):
+def enough_results_added_for_(section) -> bool:
+    try:
+        results_added_count = int(s_parser[section][s_key.RESULTS_ADDED_COUNT])
+        results_required_count = int(s_parser[section][s_key.RESULTS_REQUIRED_COUNT])
+        if results_added_count >= results_required_count:  # TODO check that indexing is perfect
+            return True
+        return False
+    except Exception as e_err:
+        print(e_err.message)
+
+
+def enough_results_found_in_(filtered_results, active_section):
     try:
         expected_results_count = int(s_parser[active_section][s_key.RESULTS_REQUIRED_COUNT])
         filtered_results_count = 0
@@ -154,17 +164,6 @@ def enough_found_in_(filtered_results, active_section):
         return True
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
-
-
-def enough_results_added_for_(section) -> bool:
-    try:
-        results_added_count = int(s_parser[section][s_key.RESULTS_ADDED_COUNT])
-        results_required_count = int(s_parser[section][s_key.RESULTS_REQUIRED_COUNT])
-        if results_added_count >= results_required_count:  # TODO check that indexing is perfect
-            return True
-        return False
-    except Exception as e_err:
-        print(e_err.message)
 
 
 def fetch_metadata_from_(parser) -> dict:
