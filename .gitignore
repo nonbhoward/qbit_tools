@@ -1,5 +1,6 @@
 # extensions to ignore
 *.cfg
+*.kate*
 *.log
 *.swp
 
