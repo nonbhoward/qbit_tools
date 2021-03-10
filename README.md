@@ -37,7 +37,7 @@ dictates program behavior
 
 
 ### setup  
-0. install qbittorrent  
+0. install qbittorrent, install and enable search plugins  
 1. clone project  
 2. create virtual environment  
 3. activate virtual environment  
