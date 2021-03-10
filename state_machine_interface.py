@@ -17,23 +17,23 @@ def add_results_from_(results, active_kv, api):
         results = filter_(results, active_section)
         if not enough_results_found_in_(results, active_section):
             reduce_search_expectations_for_(active_section)
-            # FIXME p0, things crashing out of nowhere
+            # FIXME p0, things were crashing out of nowhere, delete me if resolved
             results_required_count = len(results) if results is not None else 0
         ml.log_event(f'add most popular \'{results_required_count}\' count results')
         for result in results:
             results_added_count = int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT])
-            if results_added_count > results_required_count:
+            if results_added_count > results_required_count:  # FIXME p2, shouldn't this use the conclusion check func?
                 ml.log_event(f'the search for \'{active_section}\' can be concluded', announce=True)
                 s_parser_at_active[s_key.CONCLUDED] = s_key.YES
                 return  # enough results have been added for this header, stop
             if add_successful_for_(result, api, active_section):
-                create_metadata_section_for_(result, active_section)
-                add_to_found_metadata_as_(result, added=True)
+                add_to_metadata_parsers_as_(result, added=True)
                 if enough_results_added_for_(active_section):
                     ml.log_event(f'enough results added for \'{active_section}\'')
                     return  # desired result count added, stop adding
                 continue  # result added, go to next
-            ml.log_event(f'client failed to add \'{result[m_key.NAME]}\'', level=ml.WARNING)
+            result_name = get_result_metadata_at_key_(result, m_key.NAME)
+            ml.log_event(f'client failed to add \'{result_name}\'', level=ml.WARNING)
             continue  # FIXME p2, delete this, no longer does anything
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
@@ -44,20 +44,20 @@ def add_successful_for_(result, api, section) -> bool:
         count_before_add_attempt = api.count_all_local_results()
         ml.log_event(f'local machine has {count_before_add_attempt} stored results before add attempt..')
         # TODO why does client fail to add so often? outside project scope?
-        api.qbit_client.torrents_add(urls=result[m_key.URL], is_paused=get_add_mode_for_(section))
+        url = get_result_metadata_at_key_(result, m_key.URL)
+        api.qbit_client.torrents_add(urls=url, is_paused=get_add_mode_for_(section))
         pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
         results_added_count = api.count_all_local_results() - count_before_add_attempt
         success = False
         if results_added_count:
             success = True
             increment_result_added_count_for_(section)
-        store_metadata_of_(result, success)
         return success
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
 
 
-def add_to_found_metadata_as_(result, added=False):
+def add_to_metadata_parsers_as_(result, added=False):
     try:
         mp = ma_parser if added else mf_parser
         # FIXME return to this and fix mp not writing
@@ -88,7 +88,9 @@ def all_searches_concluded() -> bool:
 
 def build_metadata_section_from_(result):
     try:
-        name, url = result[m_key.NAME], result[m_key.URL]
+        name, url = \
+            get_result_metadata_at_key_(result, m_key.NAME), \
+            get_result_metadata_at_key_(result, m_key.URL)
         if url == '':
             raise ValueError(f'empty url!')
         r_name, delim, r_url = hash_metadata(name), ' @ ', hash_metadata(url)
@@ -113,19 +115,22 @@ def check_if_no_data_in_(value: str) -> str:
 def create_metadata_section_for_(mp, result):
     try:
         offset = int(u_parser[u_key.DEFAULT][u_key.UNI_SHIFT])
-        ml.log_event(f'save metadata result to parser \'{result[m_key.NAME]}\'')
-        m_section = hash_metadata(result[m_key.NAME], offset=offset)
+        result_name = get_result_metadata_at_key_(result, m_key.NAME)
+        ml.log_event(f'save metadata result to parser \'{result_name}\'')
+        m_section = hash_metadata(build_metadata_section_from_(result), offset=offset)
         if mp.has_section(m_section):  # FIXME p3, two files, same name?
             ml.log_event(f'metadata parser already has section \'{m_section}\'', level=ml.WARNING)
             return
         mp.add_section(m_section)
-        ml.log_event(f'section has been added to metadata result \'{result[m_key.NAME]}\' for header \'{m_section}\'', announce=True)
+        result_name = get_result_metadata_at_key_(result, m_key.NAME)
+        ml.log_event(f'section has been added to metadata result \'{result_name}\' for header \'{m_section}\'', announce=True)
         for metadata_kv in result.items():
             attribute, detail = validate_metadata_type_for_(metadata_kv)
             h_attr, h_dtl = get_hashed_(attribute, detail, offset)
             # FIXME p3, this will break due to bad parser arg.. revisiting, resolved?
             write_parser_value_with_(h_attr, h_dtl, m_section, mp)
             pause_on_event(u_key.WAIT_FOR_USER)
+        return
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
 
@@ -198,20 +203,21 @@ def filter_(results: list, section: str, found=True, sort=True):
         filename_regex = read_parser_value_with_(s_key.REGEX_FILENAME, section)
         results_filtered = list()
         for result in results:
+            result_name = get_result_metadata_at_key_(result, m_key.NAME)
             if found and previously_found_(result):
                 continue
             if filter_provided_for_(seeds_min):
-                result_seeds = int(result[m_key.SUPPLY])
+                result_seeds = get_result_metadata_at_key_(result, m_key.SUPPLY, is_int=True)
                 enough_seeds = True if result_seeds > seeds_min else False
                 if not enough_seeds:
                     ml.log_event(f'required seeds \'{seeds_min}\' not met by result with '
-                                 f'\'{result_seeds}\' seeds, result : \'{result[m_key.NAME]}\'',
+                                 f'\'{result_seeds}\' seeds, result : \'{result_name}\'',
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
-                    add_to_found_metadata_as_(result)
+                    add_to_metadata_parsers_as_(result)
                     continue
             if filter_provided_for_(megabytes_min) or filter_provided_for_(megabytes_max):
-                bytes_result = int(result[m_key.SIZE])
+                bytes_result = get_result_metadata_at_key_(result, m_key.SIZE, is_int=True)
                 megabytes_result = mega(bytes_result)
                 if filter_provided_for_(megabytes_min) and filter_provided_for_(megabytes_max):
                     file_size_in_range = True if bytes_max > bytes_result > bytes_min else False
@@ -221,21 +227,20 @@ def filter_(results: list, section: str, found=True, sort=True):
                     file_size_in_range = True if bytes_result > bytes_min else False
                 if not file_size_in_range:
                     ml.log_event(f'size requirement \'{megabytes_min}\'MiB to \'{megabytes_max}\'MiB not met by '
-                                 f'result with size \'{megabytes_result}\'MiB, result: \'{result[m_key.NAME]}\'',
+                                 f'result with size \'{megabytes_result}\'MiB, result: \'{result_name}\'',
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
-                    add_to_found_metadata_as_(result)
+                    add_to_metadata_parsers_as_(result)
                     continue
             if filter_provided_for_(filename_regex):
                 ml.log_event(f'filtering results using filename regex \'{filename_regex}\'')
-                filename = result[m_key.NAME]
+                filename = get_result_metadata_at_key_(result, m_key.NAME)
                 if not regex_matches(filename_regex, filename):
                     ml.log_event(f'regex \'{filename_regex}\' does not match for \'{filename}\'', level=ml.WARNING)
-                    add_to_found_metadata_as_(result)
+                    add_to_metadata_parsers_as_(result)
                     continue
-            ml.log_event(f'result \'{result[m_key.NAME]}\' meets all requirements')
+            ml.log_event(f'result \'{result_name}\' meets all requirements')
             results_filtered.append(result)
-            add_to_found_metadata_as_(result, added=True)
         if sort:
             ml.log_event(f'results sorted for {section} # TODO dynamic sort values')
             results = sort_(results_filtered)
@@ -253,10 +258,7 @@ def filter_provided_for_(parser_val) -> bool:
 
 def get_add_mode_for_(section: str) -> bool:
     try:
-        add_paused = s_parser[section].getboolean(s_key.ADD_PAUSED)
-        if add_paused:
-            return True
-        return False
+        return s_parser[section].getboolean(s_key.ADD_PAUSED)
     except Exception as e_err:
         ml.log_event(e_err.message)
 
@@ -280,6 +282,13 @@ def get_hashed_(attribute, detail, offset):
         return hash_metadata(attribute, offset), hash_metadata(detail, offset)
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
+
+
+def get_result_metadata_at_key_(result, key: str, is_int=False):
+    try:
+        return int(result[key]) if is_int else result[key]
+    except Exception as e_err:
+        print(e_err.args[0])
 
 
 def get_search_id_from_(state_machine) -> str:
@@ -350,13 +359,13 @@ def pause_on_event(pause_type):
         ml.log_event(e_err.message, level=ml.ERROR)
 
 
-def previously_found_(result, verbose_log=False):
+def previously_found_(result, verbose_log=True):
     try:
-        result_name = result[m_key.NAME]
+        result_name = build_metadata_section_from_(result)
         added_or_found = [*ma_parser.sections(), *mf_parser.sections()]
         if result_name in added_or_found:
             if verbose_log:
-                ml.log_event(f'old result found, skipping \'{result_name}\'')
+                ml.log_event(f'old result found, skipping \'{result_name}\'', level=ml.WARNING)
             return True
         ml.log_event(f'new result found \'{result_name}\'')
         return False
@@ -500,16 +509,6 @@ def sort_(results):
         # TODO remove hardcoded nbSeeders
         results_sorted = sorted(results, key=lambda k: k['nbSeeders'], reverse=True)
         return results_sorted
-    except Exception as e_err:
-        ml.log_event(e_err.message, level=ml.ERROR)
-
-
-def store_metadata_of_(result, success):
-    try:  # TODO, how is this used, refresh?
-        mp = ma_parser if success else mf_parser
-        hashed_name = build_metadata_section_from_(result)
-        meta_parser_add_section_to_(mp, hashed_name)
-        ml.log_event(f'add is successful for \'{result[m_key.NAME]}\'')
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
 
