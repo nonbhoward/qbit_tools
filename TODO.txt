@@ -1,11 +1,14 @@
+note, each section is sorted by priority
 TOP BUGS
-    sorted by priority
-	0. resolve optionality for result filtering and how to handle defaults
+	0. metadata parsers aren't always building section names
+		results in overly frequent parser section collision
 	1. work out metadata read/write
 		believe this is resolved
-    	2. search rank soft-lock
+	2. search rank soft-lock
 		may be fixed by refactor, leaving with bugs for now
-    	3. add_result adds to expected_add_count - 1 instead of expected_add_count
+	3. add_result adds to expected_add_count - 1 instead of expected_add_count
+	4. on program conclusion, the search.cfg is not updated before exit() is called
+		..could cause confusion, but doesn't matter functionally
 
 ..focusing on program function  # TODO document current efforts
        -3. set required minimum values in EDIT_SETTINGS_HERE.cfg
@@ -25,6 +28,8 @@ TOP BUGS
 BUGS IN TESTING
        -1. search_attempt_count is incrementing too often
 		fix in place, resolved?
+	0. resolve optionality for result filtering and how to handle defaults
+		resolved by adding function state_machine_interface.filter_provided_by_
     	1. implement add_mode, rename to add_state? renamed to add_paused
     	2. refactor parsers/keys as globally scoped? success
         	this was a large milestone
