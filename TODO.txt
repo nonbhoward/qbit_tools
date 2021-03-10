@@ -18,8 +18,7 @@
 
 [BUG SECTION]
 	BUGS, DOCUMENTED (each section sorted by priority)
-	0. metadata parsers aren't always building section names
-		results in overly frequent parser section collision
+	1. metadata_added section count doesn't match qbit interface reality
 	2. search rank soft-lock
 		may be fixed by refactor, leaving with bugs for now
 	3. add_result adds to expected_add_count - 1 instead of expected_add_count
@@ -28,6 +27,8 @@
 	BUGS, IN TESTING
        -1. search_attempt_count is incrementing too often
 		fix in place, resolved?
+	0. metadata parsers aren't always building section names
+		resolved, function overlap
 	0. resolve optionality for result filtering and how to handle defaults
 		resolved by adding function state_machine_interface.filter_provided_by_
 	1. work out metadata read/write
