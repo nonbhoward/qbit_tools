@@ -135,7 +135,7 @@ class Parsers:  # Configuration.Parser.Parsers
         parser_paths = configuration.paths._get_parser_paths_from_(configuration)
         self.parsers_keyed_by_file_path = self.get_parsers_from_(parser_paths)
         self.metadata_added_parser = self.parsers_keyed_by_file_path[parser_paths[0]]
-        self.metadata_found_parser = self.parsers_keyed_by_file_path[parser_paths[1]]
+        self.metadata_failed_parser = self.parsers_keyed_by_file_path[parser_paths[1]]
         self.search_parser = self.parsers_keyed_by_file_path[parser_paths[2]]
         self.user_settings_parser = self.parsers_keyed_by_file_path[parser_paths[3]]
 
