@@ -1,30 +1,36 @@
-TOP BUGS
-    sorted by priority
-	0. resolve optionality for result filtering and how to handle defaults
-	1. work out metadata read/write
-		believe this is resolved
-    	2. search rank soft-lock
+[TODO SECTION]
+	TODO, NOTES (sometimes flagged with TODO in code)
+	..focusing on program function  # TODO document current efforts
+	       -3. set required minimum values in EDIT_SETTINGS_HERE.cfg
+	       -2. need to block diagram program out, define interfaces, note violations
+	       -1. decide what is going to dump to mtd_a, mtd_f, & how the state machine flow is affected
+		0. workout metadata_added vs metadata_found & parser 'crossover' solutions
+		1. could store & check against known "bad" results and prevent attempting to add them again, spamming the log
+		2. could check against added results and prevent attempting to add them again, spamming the log
+		3. maximize results by framing section header terms as permutations bookended AND delimited by permissive regex aka .*
+		4. implement avg seed count
+
+	..focusing on program organization  # TODO document current efforts
+		0. extend settings_wrapper with functions that return built classes based on args..
+			poorly worded but it's enough breadcrumbs to remember to re-visit this
+		1. delete unused functions
+
+[BUG SECTION]
+	BUGS, DOCUMENTED (each section sorted by priority)
+	0. metadata parsers aren't always building section names
+		results in overly frequent parser section collision
+	2. search rank soft-lock
 		may be fixed by refactor, leaving with bugs for now
-    	3. add_result adds to expected_add_count - 1 instead of expected_add_count
-
-..focusing on program function  # TODO document current efforts
-       -3. set required minimum values in EDIT_SETTINGS_HERE.cfg
-       -2. need to block diagram program out, define interfaces, note violations
-       -1. decide what is going to dump to mtd_a, mtd_f, & how the state machine flow is affected
-	0. workout metadata_added vs metadata_found & parser 'crossover' solutions
-	1. could store & check against known "bad" results and prevent attempting to add them again, spamming the log
-	2. could check against added results and prevent attempting to add them again, spamming the log
-    	3. maximize results by framing section header terms as permutations bookended AND delimited by permissive regex aka .*
-    	4. implement avg seed count
-
-..focusing on program organization  # TODO document current efforts
-    	0. extend settings_wrapper with functions that return built classes based on args..
-        	poorly worded but it's enough breadcrumbs to remember to re-visit this
-    	1. delete unused functions
-
-BUGS IN TESTING
+	3. add_result adds to expected_add_count - 1 instead of expected_add_count
+	4. on program conclusion, the search.cfg is not updated before exit() is called
+		..could cause confusion, but doesn't matter functionally
+	BUGS, IN TESTING
        -1. search_attempt_count is incrementing too often
 		fix in place, resolved?
+	0. resolve optionality for result filtering and how to handle defaults
+		resolved by adding function state_machine_interface.filter_provided_by_
+	1. work out metadata read/write
+		believe this is resolved
     	1. implement add_mode, rename to add_state? renamed to add_paused
     	2. refactor parsers/keys as globally scoped? success
         	this was a large milestone
@@ -32,8 +38,7 @@ BUGS IN TESTING
         	bug fix may be in place, same as for 0, testing
     	5. interpolation issue with configparser
 		bug fix in place, testing
-
-BUGS RESOLVED
+	BUGS, RESOLVED
        -2. after processing results, searches are not re-queued
        -1. after 10 failed attempts, search processing stops
     	0. after adding a single result, the processing code crashes
