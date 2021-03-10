@@ -14,7 +14,7 @@ class QbitConfig:
             if meta_add:
                 return parsers.metadata_added_parser.sections()
             if meta_find:
-                return parsers.metadata_found_parser.sections()
+                return parsers.metadata_failed_parser.sections()
             if search:
                 return parsers.search_parser.sections()
             if settings:
@@ -86,7 +86,7 @@ class QbitConfig:
             if meta_add:
                 return parsers.metadata_added_parser
             if meta_find:
-                return parsers.metadata_found_parser
+                return parsers.metadata_failed_parser
             if search:
                 return parsers.search_parser
             if settings:
@@ -145,8 +145,8 @@ class QbitConfig:
                 p_section = parsers.metadata_added_parser[section]
                 assert key in p_section, ml.log_event(ml.log_event(f'metadata key \'{key}\' not found'))
             elif meta_find:
-                assert section in parsers.metadata_found_parser, ml.log_event(f'meta_f section \'{section}\' not found')
-                p_section = parsers.metadata_found_parser[section]
+                assert section in parsers.metadata_failed_parser, ml.log_event(f'meta_f section \'{section}\' not found')
+                p_section = parsers.metadata_failed_parser[section]
                 assert key in p_section, ml.log_event(f'metadata key \'{key}\' not found')
             elif settings:
                 if section != keyrings.user_config_parser_keyring.DEFAULT:
