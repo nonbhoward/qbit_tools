@@ -12,9 +12,9 @@ git restore ./user_configuration/EDIT_SETTINGS_HERE.cfg
 echo -e '\tdeleting event log!'
 if [ -f event.log ]; then
 	rm event.log
-	echo -e '\tevent log removed!'
+	echo -e '\t\tevent log removed!'
 else
-	echo -e '\tevent log not found!'
+	echo -e '\t\tevent log not found!'
 fi
 git status
 echo -e '\t..done!'
