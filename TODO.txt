@@ -1,6 +1,7 @@
 [TODO SECTION]
 	TODO, NOTES (sometimes flagged with TODO in code)
 	..focusing on program function  # TODO document current efforts
+	       -4. instead of update search states so freely, increment or reset only
 	       -3. set required minimum values in EDIT_SETTINGS_HERE.cfg
 	       -2. need to block diagram program out, define interfaces, note violations
 	       -1. decide what is going to dump to mtd_a, mtd_f, & how the state machine flow is affected
