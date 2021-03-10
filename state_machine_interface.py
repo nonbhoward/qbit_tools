@@ -190,12 +190,12 @@ def filter_(results: list, section: str, found=True, sort=True):
     :return:
     """
     try:
-        seeds_min = int(QConf.read_parser_value_with_(s_key.MIN_SEED, section))
-        bytes_min = int(QConf.read_parser_value_with_(s_key.SIZE_MIN_BYTES, section))
-        bytes_max = int(QConf.read_parser_value_with_(s_key.SIZE_MAX_BYTES, section))
+        seeds_min = int(read_parser_value_with_(s_key.MIN_SEED, section))
+        bytes_min = int(read_parser_value_with_(s_key.SIZE_MIN_BYTES, section))
+        bytes_max = int(read_parser_value_with_(s_key.SIZE_MAX_BYTES, section))
         megabytes_min = mega(bytes_min)
         megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
-        filename_regex = QConf.read_parser_value_with_(s_key.REGEX_FILENAME, section)
+        filename_regex = read_parser_value_with_(s_key.REGEX_FILENAME, section)
         results_filtered = list()
         for result in results:
             if found and previously_found_(result):
