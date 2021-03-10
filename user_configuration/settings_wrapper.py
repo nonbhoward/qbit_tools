@@ -18,7 +18,7 @@ class ConfigParserFileNames:  # Configuration.HardCoded.FileNames.ConfigParserFi
     # project's configuration file names, cannot be changed without changing project structure
     def __init__(self):
         self.metadata_added = 'metadata_added.cfg'
-        self.metadata_found = 'metadata_found.cfg'
+        self.metadata_failed = 'metadata_failed.cfg'
         self.search = 'search.cfg'
         self.user_settings = 'EDIT_SETTINGS_HERE.cfg'
 
@@ -176,7 +176,7 @@ class Paths:  # Configuration.Paths
         self.meta = self._get_meta_path_from(configuration)
         self.search = self._get_search_path_from(configuration)
         self.user_config = self._get_user_config_path_from_(configuration)
-        self.metadata_added_parser, self.metadata_found_parser, \
+        self.metadata_added_parser, self.metadata_failed_parser, \
             self.search_parser, self.user_config_parser = \
             self._get_parser_paths_from_(configuration)
 
@@ -207,13 +207,13 @@ class Paths:  # Configuration.Paths
         try:
             # result metadata parsers
             meta_added_parser_path = Path(path.meta, configuration.hardcoded.filenames.config_parser.metadata_added)
-            meta_found_parser_path = Path(path.meta, configuration.hardcoded.filenames.config_parser.metadata_found)
+            meta_failed_parser_path = Path(path.meta, configuration.hardcoded.filenames.config_parser.metadata_failed)
             # search parser
             search_details_path = Path(path.search, configuration.hardcoded.filenames.config_parser.search)
             # user config parser
             user_config_path = Path(path.user_config, configuration.hardcoded.filenames.config_parser.user_settings)
             # build and return
-            parser_paths = [meta_added_parser_path, meta_found_parser_path, search_details_path, user_config_path]
+            parser_paths = [meta_added_parser_path, meta_failed_parser_path, search_details_path, user_config_path]
             return * parser_paths,
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
