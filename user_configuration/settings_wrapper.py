@@ -35,6 +35,7 @@ class MetadataParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
         self.DEMAND = 'nbLeechers'
         self.LINK = 'descrLink'
         self.NAME = 'fileName'
+        self.RESULTS = 'results'
         self.SIZE = 'fileSize'
         self.SITE = 'siteUrl'
         self.SUPPLY = 'nbSeeders'
