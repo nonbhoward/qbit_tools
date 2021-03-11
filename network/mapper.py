@@ -18,8 +18,7 @@ class NetProbe:
                 s = socket(AF_INET, SOCK_DGRAM)
                 s.connect(('10.255.255.255', 1))
                 return s.getsockname()[0]
-            return [(s.connect(('8.8.8.8', 53)),
-                     s.getsockname()[0],
+            return [(s.connect(('8.8.8.8', 53)), s.getsockname()[0],
                      s.close()) for s in [socket(AF_INET, SOCK_DGRAM)]][0][1]
         except Exception as e_err:
             print(e_err.args[0])
