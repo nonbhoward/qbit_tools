@@ -1,53 +1,51 @@
 [TODO SECTION]
-	TODO, NOTES (sometimes flagged with TODO in code)
-	..focusing on program function  # TODO document current efforts
-	   -4. implement a metadata statistics section that reports count, stats, etc
-       -3. instead of update search states so freely, increment or reset only
-       -2. set required minimum values in EDIT_SETTINGS_HERE.cfg
-	   -1. draw a block diagram of module relationships
-		0. could check against added results and prevent attempting to add them again, spamming the log
-		1. maximize results by framing section header terms as permutations bookended AND delimited by permissive regex aka .*
-		2. implement avg seed count
-
-	..focusing on program organization  # TODO document current efforts
-		0. extend settings_wrapper with functions that return built classes based on args..
-			poorly worded but it's enough breadcrumbs to remember to re-visit this
-		1. delete unused functions
-
+	TODOs focusing on program function  # TODO document current efforts
+		-4. implement a metadata statistics section that reports count, stats, etc
+		-3. instead of update search states so freely, increment or reset only
+		-2. set required minimum values in EDIT_SETTINGS_HERE.cfg
+		-1. draw a block diagram of module relationships
+		00. could check against added results and prevent attempting to add them again, spamming the log
+		+1. maximize results by framing section header terms as permutations bookended AND delimited by permissive regex aka .*
+		+2. implement avg seed count
+	TODOs focusing on program organization  # TODO document current efforts
+		00. extend settings_wrapper with function calls to replace keyring concept
+		+1. delete unused functions
 [BUG SECTION]
 	BUGS, DOCUMENTED (each section sorted by priority)
-	0. sometimes add_result adds two results for one magnet, causing it to desync with metadata parser
-	    ..not sure what causes this yet..
-	1. search rank soft-lock
-		may be fixed by refactor, leaving with bugs for now
-		isn't this technically resolved by user time-outs? should look into
-	2. add_result adds to expected_add_count - 1 instead of expected_add_count
-	3. on program conclusion, the search.cfg is not updated before exit() is called
-		..could cause confusion, but doesn't matter functionally
+		-1. not all children of Exception have message attribute.. 
+		00. sometimes add_result adds two results for one magnet..
+			..causing a desync with the metadata parser
+		+1. search rank soft-lock
+			may be fixed by refactor, leaving with bugs for now
+			isn't this technically resolved by user time-outs? should look into
+		+2. add_result adds to expected_add_count - 1 instead of expected_add_count
+		+3. on program conclusion, the search.cfg is not updated before exit() is called
+			..could cause confusion, but doesn't matter functionally
 	BUGS, IN TESTING
-       -1. search_attempt_count is incrementing too often
-		fix in place, resolved?
-	0. metadata parsers aren't always building section names
-		resolved, function overlap
-	0. resolve optionality for result filtering and how to handle defaults
-		resolved by adding function state_machine_interface.filter_provided_by_
-	1. work out metadata read/write
-		believe this is resolved
-    	1. implement add_mode, rename to add_state? renamed to add_paused
-    	2. refactor parsers/keys as globally scoped? success
-        	this was a large milestone
-    	2. conclusion state never reached
-        	bug fix may be in place, same as for 0, testing
-    	5. interpolation issue with configparser
-		bug fix in place, testing
+	       -1. search_attempt_count is incrementing too often
+			fix in place, resolved?
+		+0. metadata parsers aren't always building section names
+			resolved, function overlap
+		+0. resolve optionality for result filtering and how to handle defaults
+			resolved by adding function state_machine_interface.filter_provided_by_
+		+1. work out metadata read/write
+			believe this is resolved
+		+1. implement add_mode, rename to add_state? renamed to add_paused
+		+2. refactor parsers/keys as globally scoped? success
+			this was a large milestone
+		+2. conclusion state never reached
+			bug fix may be in place, same as for 0, testing
+		+5. interpolation issue with configparser
+			bug fix in place, testing
 	BUG LOG, RESOLVED
-       -2. after processing results, searches are not re-queued
-       -1. after 10 failed attempts, search processing stops
-    	0. after adding a single result, the processing code crashes
-        	bug fix in place, testing, suspect it was the rogue return
-    	0. search queueing and search rank is fucked
-    	0. results added count does it work?
-    	1. prioritize searches based on when they were last-run
-    	1. make sure getters handle all key/parser fetches
-    	2. make sure setters handle all key/parser fetches
-    	2. implement size filters
+		-2. after processing results, searches are not re-queued
+		-1. after 10 failed attempts, search processing stops
+		00. after adding a single result, the processing code crashes
+			bug fix in place, testing, suspect it was the rogue return
+		00. search queueing and search rank is fucked
+		00. results added count does it work?
+		+1. prioritize searches based on when they were last-run
+		+1. make sure getters handle all key/parser fetches
+		+2. make sure setters handle all key/parser fetches
+		+2. implement size filters
+
