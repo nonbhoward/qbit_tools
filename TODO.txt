@@ -1,5 +1,6 @@
 [TODO SECTION]
 	TODOs focusing on program function  # TODO document current efforts
+		-5. remove concluded results from search ranking algo
 		-4. implement a metadata statistics section that reports count, stats, etc
 		-3. instead of update search states so freely, increment or reset only
 		-2. set required minimum values in EDIT_SETTINGS_HERE.cfg
@@ -12,14 +13,13 @@
 		+1. delete unused functions
 [BUG SECTION]
 	BUGS, DOCUMENTED (each section sorted by priority)
+		-2. search rank soft-lock
+			search rank + conclusion state do not play well together
 		-1. not all children of Exception have message attribute.. 
 		00. sometimes add_result adds two results for one magnet..
 			..causing a desync with the metadata parser
-		+1. search rank soft-lock
-			may be fixed by refactor, leaving with bugs for now
-			isn't this technically resolved by user time-outs? should look into
-		+2. add_result adds to expected_add_count - 1 instead of expected_add_count
-		+3. on program conclusion, the search.cfg is not updated before exit() is called
+		+1. add_result adds to expected_add_count - 1 instead of expected_add_count
+		+2. on program conclusion, the search.cfg is not updated before exit() is called
 			..could cause confusion, but doesn't matter functionally
 	BUGS, IN TESTING
 	       -1. search_attempt_count is incrementing too often
