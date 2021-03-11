@@ -25,7 +25,7 @@ class NetProbe:
             print(e_err.args[0])
 
     @staticmethod
-    def ping_response_received_from_(ip_address):
+    def ping_response_received_from_(ip_address) -> bool:
         try:
             ml.log_event(f'pinging ip address at \'{ip_address}\'')
             return system('ping -c 1 ' + ip_address + ' >/dev/null') == 0
@@ -42,6 +42,7 @@ class NetProbe:
 
 class LocalServer:
     def __init__(self):
+        ml.log_event(f'initializing \'{self.__class__.__name__}\'')
         self.probe = NetProbe()
         self.properties = {
             'host name':    gethostname(),
