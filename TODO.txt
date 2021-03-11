@@ -18,6 +18,7 @@
 
 [BUG SECTION]
 	BUGS, DOCUMENTED (each section sorted by priority)
+	0. sometimes add_result adds two results for one magnet, causing it to desync with metadata parser
 	1. metadata_added section count doesn't match qbit interface reality
 	2. search rank soft-lock
 		may be fixed by refactor, leaving with bugs for now
