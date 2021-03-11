@@ -1,15 +1,15 @@
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
+from qbit_interface.api_comm import QbitApiCaller as QApi
 from time import sleep
 from user_configuration.settings_io import QbitConfig as QConf
-from re import findall
 ml = MinimalLog(__name__)
+q_api = QApi()
 m_key, s_key, u_key = QConf.get_keyrings()
 ma_parser, mf_parser, s_parser, u_parser = QConf.get_parsers()
 
 
-def add_results_from_(results, active_kv, api):
-    # TODO this could be broken up?
+def add_results_from_(results, active_kv):  # FIXME debug breadcrumb
     try:
         active_section = active_kv[0]
         s_parser_at_active = s_parser[active_section]
@@ -26,38 +26,38 @@ def add_results_from_(results, active_kv, api):
                 ml.log_event(f'the search for \'{active_section}\' can be concluded', announce=True)
                 s_parser_at_active[s_key.CONCLUDED] = s_key.YES
                 return  # enough results have been added for this header, stop
-            if add_successful_for_(result, api, active_section):
+            if add_successful_for_(result, active_section):  # FIXME p0, sometimes this adds two values
                 add_to_metadata_parsers_as_(result, added=True)
                 if enough_results_added_for_(active_section):
                     ml.log_event(f'enough results added for \'{active_section}\'')
                     return  # desired result count added, stop adding
+                write_config_to_disk()  # FIXME p0, debug line, consider removing
                 continue  # result added, go to next
             result_name = get_result_metadata_at_key_(result, m_key.NAME)
             ml.log_event(f'client failed to add \'{result_name}\'', level=ml.WARNING)
-            continue  # FIXME p2, delete this, no longer does anything
+            write_config_to_disk()  # FIXME p0, debug line, consider removing
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
 
 
-def add_successful_for_(result, api, section) -> bool:
+def add_successful_for_(result, section) -> bool:
     try:
-        count_before_add_attempt = api.count_all_local_results()
+        count_before_add_attempt = q_api.count_all_local_results()
         ml.log_event(f'local machine has {count_before_add_attempt} stored results before add attempt..')
         # TODO why does client fail to add so often? outside project scope?
         url = get_result_metadata_at_key_(result, m_key.URL)
-        api.qbit_client.torrents_add(urls=url, is_paused=get_add_mode_for_(section))
+        api_add_result_from_(url, get_add_mode_for_(section))
         pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
-        results_added_count = api.count_all_local_results() - count_before_add_attempt
-        success = False
-        if results_added_count:
-            success = True
+        results_added_count = q_api.count_all_local_results() - count_before_add_attempt
+        successfully_added = True if results_added_count else False
+        if successfully_added:
             increment_result_added_count_for_(section)
-        return success
+        return successfully_added
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
 
 
-def add_to_metadata_parsers_as_(result, added=False):
+def add_to_metadata_parsers_as_(result, added=False):  # FIXME metadata debug entry
     try:
         mp = ma_parser if added else mf_parser
         # FIXME return to this and fix mp not writing
@@ -118,7 +118,7 @@ def create_metadata_section_for_(mp, result):
         result_name = get_result_metadata_at_key_(result, m_key.NAME)
         ml.log_event(f'save metadata result to parser \'{result_name}\'')
         m_section = hash_metadata(build_metadata_section_from_(result), offset=offset)
-        if mp.has_section(m_section):  # FIXME p3, two files, same name?
+        if mp.has_section(m_section):
             ml.log_event(f'metadata parser already has section \'{m_section}\'', level=ml.WARNING)
             return
         mp.add_section(m_section)
@@ -207,7 +207,7 @@ def filter_(results: list, section: str, found=True, sort=True):
             if found and previously_found_(result):
                 continue
             if filter_provided_for_(seeds_min):
-                result_seeds = get_result_metadata_at_key_(result, m_key.SUPPLY, is_int=True)
+                result_seeds = get_result_metadata_at_key_(result, m_key.SUPPLY)  # FIXME int
                 enough_seeds = True if result_seeds > seeds_min else False
                 if not enough_seeds:
                     ml.log_event(f'required seeds \'{seeds_min}\' not met by result with '
@@ -217,7 +217,7 @@ def filter_(results: list, section: str, found=True, sort=True):
                     add_to_metadata_parsers_as_(result)
                     continue
             if filter_provided_for_(megabytes_min) or filter_provided_for_(megabytes_max):
-                bytes_result = get_result_metadata_at_key_(result, m_key.SIZE, is_int=True)
+                bytes_result = get_result_metadata_at_key_(result, m_key.SIZE)  # FIXME int
                 megabytes_result = mega(bytes_result)
                 if filter_provided_for_(megabytes_min) and filter_provided_for_(megabytes_max):
                     file_size_in_range = True if bytes_max > bytes_result > bytes_min else False
@@ -235,7 +235,7 @@ def filter_(results: list, section: str, found=True, sort=True):
             if filter_provided_for_(filename_regex):
                 ml.log_event(f'filtering results using filename regex \'{filename_regex}\'')
                 filename = get_result_metadata_at_key_(result, m_key.NAME)
-                if not regex_matches(filename_regex, filename):
+                if not q_api.regex_matches(filename_regex, filename):
                     ml.log_event(f'regex \'{filename_regex}\' does not match for \'{filename}\'', level=ml.WARNING)
                     add_to_metadata_parsers_as_(result)
                     continue
@@ -284,9 +284,9 @@ def get_hashed_(attribute, detail, offset):
         ml.log_event(e_err.message, level=ml.ERROR)
 
 
-def get_result_metadata_at_key_(result, key: str, is_int=False):
+def get_result_metadata_at_key_(result, key: str) -> str:  # QConf
     try:
-        return int(result[key]) if is_int else result[key]
+        return QConf.get_result_metadata_at_key_(result, key)
     except Exception as e_err:
         print(e_err.args[0])
 
@@ -302,11 +302,11 @@ def get_search_id_from_(state_machine) -> str:
         ml.log_event(e_err.message, level=ml.ERROR)
 
 
-def get_search_results_for_(active_kv: tuple, api) -> list:
+def get_search_results_for_(active_kv: tuple) -> list:
     try:
-        results = api.get_result_object_from_(search_id=active_kv[1])
+        results = q_api.get_result_object_from_(search_id=active_kv[1])
         assert results is not None, 'bad results, fix it or handle it'
-        results = results['results']  # TODO do this? or no?
+        results = results[m_key.RESULTS]  # TODO do this? or no?
         return results
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
@@ -353,8 +353,8 @@ def pause_on_event(pause_type):
     try:
         parser_at_default = u_parser[u_key.DEFAULT]
         delay = int(parser_at_default[pause_type])
-        ml.log_event(f'{dt.now()} waiting {delay} seconds for event \'{str(pause_type)}\'')
-        sleep(delay)
+        ml.log_event(f'waiting \'{delay}\' seconds for event \'{str(pause_type)}\'')
+        q_api.pause_for_(delay)
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
 
@@ -421,18 +421,6 @@ def reduce_search_expectations_for_(section: str):
             s_parser[section][c_key] = s_key.YES
         er_val -= 1
         write_parser_value_with_(re_key, er_val, section)
-    except Exception as e_err:
-        ml.log_event(e_err.message, level=ml.ERROR)
-
-
-def regex_matches(filename_regex, filename) -> bool:
-    try:
-        regex_match = findall(filename_regex, filename)
-        if regex_match:
-            ml.log_event(f'pattern \'{filename_regex}\' matched against filename \'{filename}\'')
-            pause_on_event(u_key.WAIT_FOR_USER)
-            return True
-        return False
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
 
@@ -541,6 +529,40 @@ def validate_metadata_type_for_(metadata_kv: tuple) -> tuple:
         ml.log_event(e_err.message, level=ml.ERROR)
 
 
+#### ### ### ### ### ### ### ### ### ### API INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
+def api_add_result_from_(url: str, is_paused: bool):  # API
+    try:
+        q_api.add_result_from_(url, is_paused)
+    except Exception as e_err:
+        print(e_err.args[0])
+
+
+def api_create_search_job_for_(pattern, plugins, category):
+    try:
+        job = q_api.qbit_client.search.start(pattern, plugins, category)
+        assert job is not None, 'bad search job, fix it or handle it'
+        count, sid, status = q_api.get_search_info_from_(job)
+        ml.log_event(f'qbit client created search job for \'{pattern}\'')
+        return count, sid, status
+    except Exception as e_err:
+        print(e_err.args[0])
+
+
+def api_get_connection_time_start():
+    try:
+        return q_api.get_connection_time_start()
+    except Exception as e_err:
+        print(e_err.args[0])
+
+
+def api_get_search_status_for_(search_id):
+    try:
+        return q_api.get_search_status_for_(search_id=search_id)
+    except Exception as e_err:
+        print(e_err.args[0])
+
+
+#### ### ### ### ### ### ### ### ### ### CFG INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
 def write_config_to_disk():
     try:
         QConf.write_config_to_disk()
@@ -558,3 +580,5 @@ def write_parser_value_with_(parser_key, value, section, mp=None, search=True, s
             QConf.write_parser_section_with_key_(parser_key, value, section)
     except Exception as e_err:
         ml.log_event(e_err.message, level=ml.ERROR)
+
+
