@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
-from state_machine_interface import regex_matches
 from qbittorrentapi.search import SearchStatusesList
+from re import findall
+from time import sleep
 from user_configuration.WEB_API_CREDENTIALS import *
 import qbittorrentapi
 ml = MinimalLog(__name__)
@@ -13,10 +14,13 @@ class QbitApiCaller:
         self.qbit_client_connected = True if self.client_is_connected() else False
         if self.qbit_client_connected:
             self.dump_surface_client()
-            self.connection_time_start = datetime.now()
+            self.connection_time_start = dt.now()
 
-    def add_result(self):
-        pass  # TODO write into this function?
+    def add_result_from_(self, url: str, is_paused: bool):
+        try:
+            self.qbit_client.torrents.add(urls=url, is_paused=is_paused)
+        except Exception as e_err:
+            print(e_err.args[0])
 
     def client_is_connected(self) -> bool:
         ml.log_event('connect to client', event_completed=False)
@@ -75,6 +79,12 @@ class QbitApiCaller:
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
+    def get_connection_time_start(self):
+        try:
+            return self.connection_time_start
+        except Exception as e_err:
+            print(e_err.args[0])
+
     def get_result_object_from_(self, search_id) -> list:
         try:
             ml.log_event(f'getting search results for search id \'{search_id}\'')
@@ -106,7 +116,7 @@ class QbitApiCaller:
                 ml.log_event(f'filtering results using filename regex \'{filename_regex}\'')
                 for result in results:
                     filename = result[metadata_filename_key]
-                    if regex_matches(filename_regex, filename):
+                    if self.regex_matches(filename_regex, filename):
                         filtered_results.append(result)
                 assert filtered_results is not None, 'bad filtered results, fix it or handle it'
                 results = filtered_results
@@ -114,7 +124,7 @@ class QbitApiCaller:
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
-    def get_search_status(self, search_id) -> str:
+    def get_search_status_for_(self, search_id) -> str:
         try:
             ml.log_event(f'check search status for search id \'{search_id}\'')
             search_status = self.qbit_client.search_status(search_id=search_id)
@@ -128,6 +138,25 @@ class QbitApiCaller:
             return search_status
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
+
+    @classmethod
+    def pause_for_(cls, delay):
+        try:
+            sleep(delay)
+        except Exception as e_err:
+            print(e_err.args[0])
+
+    @staticmethod
+    def regex_matches(filename_regex, filename) -> bool:
+        try:
+            regex_match = findall(filename_regex, filename)
+            if regex_match:
+                ml.log_event(f'pattern \'{filename_regex}\' matched against filename \'{filename}\'')
+                QbitApiCaller.pause_for_(0)  # FIXME this shouldn't be hardcoded
+                return True
+            return False
+        except Exception as e_err:
+            ml.log_event(e_err.message, level=ml.ERROR)
 
 
 if __name__ == '__main__':
