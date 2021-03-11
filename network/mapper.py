@@ -12,11 +12,15 @@ class NetProbe:
         pass
 
     @staticmethod
-    def get_local_ip_address() -> str:
+    def get_local_ip_address(alt_method=False) -> str:
         try:
-            s = socket(AF_INET, SOCK_DGRAM)
-            s.connect(('10.255.255.255', 1))
-            return s.getsockname()[0]
+            if alt_method:
+                s = socket(AF_INET, SOCK_DGRAM)
+                s.connect(('10.255.255.255', 1))
+                return s.getsockname()[0]
+            return [(s.connect(('8.8.8.8', 53)),
+                     s.getsockname()[0],
+                     s.close()) for s in [socket(AF_INET, SOCK_DGRAM)]][0][1]
         except Exception as e_err:
             print(e_err.args[0])
 
@@ -33,7 +37,8 @@ class LocalServer:
         self.probe = NetProbe()
         self.properties = {
             'host name':    gethostname(),
-            'ip address':   self.probe.get_local_ip_address()
+            'ip address':   self.probe.get_local_ip_address(),
+            'ip alt':       self.probe.get_local_ip_address(alt_method=True)
         }
 
 
