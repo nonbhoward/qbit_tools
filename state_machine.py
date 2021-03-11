@@ -2,6 +2,9 @@ from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
 from state_machine_interface import add_results_from_
 from state_machine_interface import all_searches_concluded
+from state_machine_interface import api_create_search_job_for_
+from state_machine_interface import api_get_connection_time_start
+from state_machine_interface import api_get_search_status_for_
 from state_machine_interface import empty_
 from state_machine_interface import get_all_sections_from_parser_
 from state_machine_interface import get_search_id_from_
@@ -16,7 +19,6 @@ from state_machine_interface import search_has_yielded_required_results
 from state_machine_interface import set_search_rank_using_
 from state_machine_interface import write_config_to_disk
 from state_machine_interface import write_parser_value_with_
-from qbit_interface.api_comm import QbitApiCaller
 
 u_parser_at_default = u_parser[u_key.DEFAULT]
 unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
@@ -25,10 +27,8 @@ unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
 class QbitStateManager:
     def __init__(self):
         ml.log_event(f'initialize \'{self.__class__}\'', event_completed=False, announce=True)
-        self.api = QbitApiCaller()
-        self.main_loop_count = 0
-        self.active_search_ids = dict()
-        self.active_section = ''
+        self.main_loop_count, self.active_section, self.active_search_ids = \
+            0, '', dict()
         ml.log_event(f'initialize \'{self.__class__}\'', event_completed=True, announce=True)
         pause_on_event(u_key.WAIT_FOR_USER)
 
@@ -51,7 +51,7 @@ class QbitStateManager:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def increment_loop_count(self):
-        ml.log_event(f'current connection to client was started at \'{self.api.connection_time_start}\'')
+        ml.log_event(f'current connection to client was started at \'{api_get_connection_time_start()}\'')
         self.main_loop_count += 1
         ml.log_event(f'main loop has ended, {self.main_loop_count} total loops..')
 
@@ -74,7 +74,7 @@ class QbitStateManager:
                 ml.log_event(f'monitoring search header \'{self.active_section}\'')
                 search_state = self.get_search_state()
                 self.manage_state_updates(search_state)
-            write_config_to_disk()
+            write_config_to_disk()  # FIXME p3, consider location of this line
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -89,7 +89,7 @@ class QbitStateManager:
             if ready_to_start_(search_queued, self):
                 self.start_search()
             elif search_running:
-                search_status = self.api.get_search_status(search_id)
+                search_status = api_get_search_status_for_(search_id)
                 if search_status is None:
                     ml.log_event(f'bad search id \'{search_id}\', ignored and re-queued', level=ml.WARNING)
                     self.update_search_states(s_key.QUEUED)  # search should be running, but status is None.. requeue
@@ -105,11 +105,11 @@ class QbitStateManager:
                 results, active_kv = None, None
                 if self.active_section in self.active_search_ids:
                     active_kv = (self.active_section, self.active_search_ids[self.active_section])
-                    results = get_search_results_for_(active_kv=active_kv, api=self.api)
+                    results = get_search_results_for_(active_kv=active_kv)
                 if results is None or self.active_section not in self.active_search_ids:
                     ml.log_event(f'search \'{self.active_section}\' is stale, re-queued', level=ml.WARNING)
                 else:
-                    add_results_from_(results, active_kv, self.api)  # FIXME p0, this is the source of most bugs rn
+                    add_results_from_(results, active_kv)  # FIXME p0, this is the source of most bugs rn
                     self.set_search_id_as_(search_id, active=False)
                     if search_has_yielded_required_results(self.active_section):
                         self.update_search_states(s_key.CONCLUDED)
@@ -154,7 +154,7 @@ class QbitStateManager:
     def start_search(self):
         try:
             search_term = read_parser_value_with_(key=s_key.TERM, section=self.active_section)
-            search_properties = self.api.create_search_job(search_term, 'all', 'all')
+            search_properties = api_create_search_job_for_(search_term, 'all', 'all')
             search_count, search_id, search_status = search_properties
             if search_id is None or empty_(search_id):
                 ml.log_event(f'invalid API return \'{search_id}\'', level=ml.ERROR)
