@@ -1,7 +1,9 @@
 from configparser import SectionProxy
 from minimalog.minimal_log import MinimalLog
+from string import digits
 from user_configuration.settings_wrapper import get_user_configuration
 ml = MinimalLog()
+digits_or_sign = digits + '-'
 uconf = get_user_configuration()
 parsers = uconf.parser.parsers
 keyrings = uconf.hardcoded.keys
@@ -105,6 +107,13 @@ class QbitConfig:
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
+    @classmethod
+    def get_result_metadata_at_key_(cls, result, key: str):
+        try:
+            return int(result[key]) if _is_int_(result[key]) else result[key]
+        except Exception as e_err:
+            print(e_err.args[0])
+
     @staticmethod
     def get_search_parser_as_sortable() -> dict:
         try:
@@ -204,3 +213,13 @@ class QbitConfig:
             p_section[parser_key] = str(value)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def _is_int_(value) -> bool:
+    try:
+        for char in list(str(value)):
+            if char not in digits_or_sign:
+                return False
+        return True
+    except Exception as e_err:
+        print(e_err.args[0])
