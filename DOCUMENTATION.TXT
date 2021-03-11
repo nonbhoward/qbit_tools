@@ -1,17 +1,19 @@
 [PROJECT STRUCTURE]
     data_meta
-        metadata_added.cfg is added results history
-        metadata_failed.cfg is non-added results history
+        metadata_added.cfg is results history which added
+        metadata_failed.cfg is results history which failed to add
     data_search
+        search_input.cfg TODO, a place to enter new searches at runtime
         search.cfg is a list of user-configured searches and state-data
     extra
         # TODO, has no content
     media
-        # TODO, has no content
+        # TODO, will contain any streaming code if the project goes in that direction
     network
-        # TODO, has no content
+        # TODO, will contain image distribution code
     qbit_interface
-        api_comm.py is minimal code to interact with the api
+        api_comm.py is code to interact with the api..
+            ..it also contains a few functions to prevent recursive imports
     user_configuration
         EDIT_SETTINGS_HERE.cfg is global settings, currently RO, edit before runtime
         settings_io.py is the central hub for parser interactions
@@ -23,18 +25,20 @@
     README.md is self-explanatory
     state_machine.py is minimal code to manage the state machine
     state_machine_interface.py is helper functions for the state machine
-	functions
-	1. offloads code from the state machine module, keeping it simple
-	2. offloads code from the api comm module, keeping it simple
-	3. is the go-to location for fetching parser data, communicates.. 
-		..directly and often with the settings_io module
+        the state_machine_interface..
+        0. ..is the center of the universe when it comes to accessing..
+            ..user configuration data, search configuration data, result metadata..
+            ..and finally indirect api calls should start here
+        1. ..offloads code from the state machine module, keeping it simple
+        2. ..offloads code from the api comm module, keeping it simple
+        3. ..is the go-to location for fetching parser data, communicates..
+            ..directly and often with the settings_io module
     TODO.txt is project notes, known bugs and a good place to start.. 
 	..when looking for work
 
 [STATE MACHINE NOTES]
-    all search states
-        queued, running, stopped, concluded
-            queued and concluded are user-defined, running and stopped are api-defined
+    all search states are : queued, running, stopped, concluded
+        fyi, queued and concluded are user-defined, running and stopped are api-defined
 
     states and transitions
         1. queued
