@@ -26,6 +26,9 @@
     state_machine.py is minimal code to manage the state machine
     state_machine_interface.py is helper functions for the state machine
         the state_machine_interface..
+        0. ..is the center of the universe when it comes to accessing..
+            ..user configuration data, search configuration data, result metadata..
+            ..and finally indirect api calls should start here
         1. ..offloads code from the state machine module, keeping it simple
         2. ..offloads code from the api comm module, keeping it simple
         3. ..is the go-to location for fetching parser data, communicates..
