@@ -274,14 +274,14 @@ def get_user_configuration(parse_all_project_files=False) -> ConfigurationManage
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def _parser_has_sections(rawconfigparser: RawConfigParser) -> bool:
+def _parser_has_sections(raw_config_parser: RawConfigParser) -> bool:
     try:
-        if _parser_has_defaults(rawconfigparser):
+        if _parser_has_defaults(raw_config_parser):
             return True
-        section_count = len(rawconfigparser.sections())
-        ml.log_event(f'configparser {rawconfigparser} has {section_count} sections')
+        section_count = len(raw_config_parser.sections())
+        ml.log_event(f'configparser {raw_config_parser} has {section_count} sections')
         if section_count < 1:
-            if _parser_able_to_read_write_(rawconfigparser):
+            if _parser_able_to_read_write_(raw_config_parser):
                 return True
             return False
         return True
@@ -289,38 +289,38 @@ def _parser_has_sections(rawconfigparser: RawConfigParser) -> bool:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def _parser_able_to_read_write_(rawconfigparser: RawConfigParser) -> bool:
+def _parser_able_to_read_write_(raw_config_parser: RawConfigParser) -> bool:
     try:
-        parser_modified_test_sections = _parser_modify_test_sections(rawconfigparser)
+        parser_modified_test_sections = _parser_modify_test_sections(raw_config_parser)
         if parser_modified_test_sections:
-            ml.log_event(f'parser {rawconfigparser} is able tod modify sections, parser is valid')
+            ml.log_event(f'parser {raw_config_parser} is able tod modify sections, parser is valid')
             return True
         return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def _parser_has_defaults(rawconfigparser: RawConfigParser) -> bool:
+def _parser_has_defaults(raw_config_parser: RawConfigParser) -> bool:
     try:
-        if rawconfigparser.defaults() is not None:
+        if raw_config_parser.defaults() is not None:
             return True
         return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def _parser_modify_test_sections(rawconfigparser: RawConfigParser) -> bool:
+def _parser_modify_test_sections(raw_config_parser: RawConfigParser) -> bool:
     # TODO function completely untested, has never needed to run.. maybe just learn to use pytest?
     try:
         parser_test_section = 'configparser self test header, can be deleted'
-        if rawconfigparser.has_section(parser_test_section):
-            rawconfigparser.remove_section(parser_test_section)
-            if not rawconfigparser.has_section(parser_test_section):
+        if raw_config_parser.has_section(parser_test_section):
+            raw_config_parser.remove_section(parser_test_section)
+            if not raw_config_parser.has_section(parser_test_section):
                 return True
-        rawconfigparser.add_section(parser_test_section)
-        if rawconfigparser.has_section(parser_test_section):
-            rawconfigparser.remove_section(parser_test_section)
-            if not rawconfigparser.has_section(parser_test_section):
+        raw_config_parser.add_section(parser_test_section)
+        if raw_config_parser.has_section(parser_test_section):
+            raw_config_parser.remove_section(parser_test_section)
+            if not raw_config_parser.has_section(parser_test_section):
                 return True
         return False
     except Exception as e_err:
