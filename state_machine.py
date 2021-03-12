@@ -1,24 +1,24 @@
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
-from state_machine_interface import add_results_from_
-from state_machine_interface import all_searches_concluded
-from state_machine_interface import api_create_search_job_for_
-from state_machine_interface import api_get_connection_time_start
-from state_machine_interface import api_get_search_status_for_
-from state_machine_interface import empty_
-from state_machine_interface import get_all_sections_from_parser_
-from state_machine_interface import get_search_id_from_
-from state_machine_interface import get_search_results_for_
-from state_machine_interface import s_key, u_key
-from state_machine_interface import s_parser, u_parser
-from state_machine_interface import pause_on_event
-from state_machine_interface import print_search_ids_from_
-from state_machine_interface import read_parser_value_with_
-from state_machine_interface import ready_to_start_
-from state_machine_interface import search_has_yielded_required_results
-from state_machine_interface import set_search_rank_using_
-from state_machine_interface import write_config_to_disk
-from state_machine_interface import write_parser_value_with_
+from state_machine_ifs import add_results_from_
+from state_machine_ifs import all_searches_concluded
+from state_machine_ifs import api_create_search_job_for_
+from state_machine_ifs import api_get_connection_time_start
+from state_machine_ifs import api_get_search_status_for_
+from state_machine_ifs import empty_
+from state_machine_ifs import get_all_sections_from_parser_
+from state_machine_ifs import get_search_id_from_
+from state_machine_ifs import get_search_results_for_
+from state_machine_ifs import s_key, u_key
+from state_machine_ifs import s_parser, u_parser
+from state_machine_ifs import pause_on_event
+from state_machine_ifs import print_search_ids_from_
+from state_machine_ifs import read_parser_value_with_
+from state_machine_ifs import ready_to_start_
+from state_machine_ifs import search_has_yielded_required_results
+from state_machine_ifs import set_search_rank_using_
+from state_machine_ifs import cfg_write_to_disk
+from state_machine_ifs import cfg_write_parser_value_with_
 
 u_parser_at_default = u_parser[u_key.DEFAULT]
 unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
@@ -26,11 +26,15 @@ unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
 
 class QbitStateManager:
     def __init__(self):
-        ml.log_event(f'initialize \'{self.__class__}\'', event_completed=False, announce=True)
-        self.main_loop_count, self.active_section, self.active_search_ids = \
-            0, '', dict()
-        ml.log_event(f'initialize \'{self.__class__}\'', event_completed=True, announce=True)
-        pause_on_event(u_key.WAIT_FOR_USER)
+        try:
+            ml.log_event(f'initialize \'{self.__class__}\'', event_completed=False, announce=True)
+            self.main_loop_count, self.active_section, self.active_search_ids = \
+                0, '', dict()
+            ml.log_event(f'initialize \'{self.__class__}\'', event_completed=True, announce=True)
+            pause_on_event(u_key.WAIT_FOR_USER)
+        except Exception as e_err:
+            ml.log_event(f'error initializing \'{self.__class__.__name__}\'', level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def get_search_state(self) -> tuple:
         try:
@@ -48,12 +52,17 @@ class QbitStateManager:
                          f'\n\tconcluded: {search_concluded}', announce=True)
             return search_queued, search_running, search_stopped, search_concluded
         except Exception as e_err:
+            ml.log_event(f'error getting search state', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def increment_loop_count(self):
-        ml.log_event(f'current connection to client was started at \'{api_get_connection_time_start()}\'')
-        self.main_loop_count += 1
-        ml.log_event(f'main loop has ended, {self.main_loop_count} total loops..')
+        try:
+            ml.log_event(f'current connection to client was started at \'{api_get_connection_time_start()}\'')
+            self.main_loop_count += 1
+            ml.log_event(f'main loop has ended, {self.main_loop_count} total loops..')
+        except Exception as e_err:
+            ml.log_event(f'error incrementing loop count', level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def increment_search_attempt_count(self):
         try:
@@ -62,6 +71,7 @@ class QbitStateManager:
             ml.log_event(f'search try counter at {search_attempt_count}, incrementing..')
             parser_at_active[s_key.SEARCH_ATTEMPT_COUNT] = str(search_attempt_count + 1)
         except Exception as e_err:
+            ml.log_event(f'error incrementing search attempt count', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def initiate_and_monitor_searches(self):
@@ -74,8 +84,9 @@ class QbitStateManager:
                 ml.log_event(f'monitoring search header \'{self.active_section}\'')
                 search_state = self.get_search_state()
                 self.manage_state_updates(search_state)
-            write_config_to_disk()  # FIXME p3, consider location of this line
+            cfg_write_to_disk()  # FIXME p3, consider location of this line
         except Exception as e_err:
+            ml.log_event(f'error during initiating and monitoring of searches', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def manage_state_updates(self, section_search_state):
@@ -123,6 +134,7 @@ class QbitStateManager:
                 self.update_search_states(s_key.QUEUED)
             pause_on_event(u_key.WAIT_FOR_SEARCH_STATUS_CHECK)
         except Exception as e_err:
+            ml.log_event(f'error managing state updates', leve=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def search_queue_full(self) -> bool:
@@ -136,6 +148,7 @@ class QbitStateManager:
             ml.log_event(f'search queue is FULL, cannot add header \'{self.active_section}\'', announce=True)
             return True
         except Exception as e_err:
+            ml.log_event(f'error checking if search queue full', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def set_search_id_as_(self, search_id: str, active=False):
@@ -149,6 +162,7 @@ class QbitStateManager:
             ml.log_event(f'creating dict entry for \'{search_id}\' at \'{self.active_section}\'')
             self.active_search_ids[self.active_section] = search_id
         except Exception as e_err:
+            ml.log_event(f'error setting search id \'{search_id}\' as active=\'{active}\'', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def start_search(self):
@@ -160,7 +174,7 @@ class QbitStateManager:
                 ml.log_event(f'invalid API return \'{search_id}\'', level=ml.ERROR)
                 raise Exception('search id from API is invalid')
             if s_key.RUNNING in search_status:  # for search sorting
-                write_parser_value_with_(s_key.TIME_LAST_SEARCHED, dt.now(), self.active_section)
+                cfg_write_parser_value_with_(s_key.TIME_LAST_SEARCHED, dt.now(), self.active_section)
                 ml.log_event(f'search started for \'{self.active_section}\' with search id \'{search_id}\'',
                              event_completed=True, announce=True)
                 self.active_search_ids[self.active_section] = search_id
@@ -172,6 +186,7 @@ class QbitStateManager:
                 ml.log_event(f'search_state is not \'{s_key.RUNNING}\' or \'{s_key.STOPPED}\', there was a '
                              f'problem starting the search!', level=ml.ERROR)
         except Exception as e_err:
+            ml.log_event(f'error starting search', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def update_search_states(self, api_state_key):
@@ -214,6 +229,7 @@ class QbitStateManager:
                 pass
             parser_at_active[s_key.TIME_LAST_WRITTEN] = str(dt.now())
         except Exception as e_err:
+            ml.log_event(f'error updating search states with \'{api_state_key}\'', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
