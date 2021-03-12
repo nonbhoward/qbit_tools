@@ -174,7 +174,7 @@ class QbitStateManager:
                 ml.log_event(f'invalid API return \'{search_id}\'', level=ml.ERROR)
                 raise Exception('search id from API is invalid')
             if s_key.RUNNING in search_status:  # for search sorting
-                cfg_if_write_parser_value_with_(self.active_section, s_key.TIME_LAST_SEARCHED, dt.now())
+                cfg_if_write_parser_value_with_(self.active_section, s_key.TIME_LAST_SEARCHED, str(dt.now()))
                 ml.log_event(f'search started for \'{self.active_section}\' with search id \'{search_id}\'',
                              event_completed=True, announce=True)
                 self.active_search_ids[self.active_section] = search_id
