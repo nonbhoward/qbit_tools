@@ -14,11 +14,9 @@ ma_parser, mf_parser, s_parser, u_parser = QConf.get_parsers()
 def add_results_from_(results: list, active_kv: tuple):
     try:
         section = active_kv[0]
-        results_required_count = sp_if_get_int_from_(section, s_key.RESULTS_REQUIRED_COUNT)
         results = filter_(results, section)
-        if not enough_results_found_in_(results, section):
-            reduce_search_expectations_for_(section)
-            results_required_count = len(results) if results is not None else 0  # FIXME look at this?
+        evaluate_filtered_results_for_(section, results)
+        results_required_count = sp_if_get_int_from_(section, s_key.RESULTS_REQUIRED_COUNT)
         ml.log_event(f'add most popular \'{results_required_count}\' count results')
         for result in results:
             results_added_count = sp_if_get_int_from_(section, s_key.RESULTS_ADDED_COUNT)
@@ -133,7 +131,7 @@ def enough_results_added_for_(section: str) -> bool:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def enough_results_found_in_(filtered_results: list, section: str) -> bool:
+def enough_results_found_in_(section: str, filtered_results: list) -> bool:
     try:
         expected_results_count = int(s_parser[section][s_key.RESULTS_REQUIRED_COUNT])
         filtered_results_count = 0
@@ -147,6 +145,15 @@ def enough_results_found_in_(filtered_results: list, section: str) -> bool:
         return True
     except Exception as e_err:
         ml.log_event(f'error checking if enough results found in \'{section}\'', level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def evaluate_filtered_results_for_(section: str, filtered_results: list) -> None:
+    try:
+        if not enough_results_found_in_(section, filtered_results):
+            reduce_search_expectations_for_(section)
+    except Exception as e_err:
+        ml.log_event(f'error evaluating search result quality for \'{section}')
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -423,7 +430,7 @@ def reduce_search_expectations_for_(section: str):
             ml.log_event(f'concluding search for \'{section}\'', level=ml.WARNING)
             s_parser[section][c_key] = s_key.YES
         er_val -= 1
-        cfg_if_write_parser_value_with_(re_key, er_val, section)
+        cfg_if_write_parser_value_with_(section, re_key, er_val)  # FIXME fix args
     except Exception as e_err:
         ml.log_event(f'error reducing search expectations for \'{section}\'', level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -602,9 +609,9 @@ def cfg_if_get_search_parser_as_sortable():
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def cfg_if_write_parser_value_with_(parser_key: str, value: datetime, section: str,
+def cfg_if_write_parser_value_with_(section: str, parser_key: str, value,
                                     mp=None, search=True, settings=False):
-    try:  # FIXME p2, clunky interface, refactor
+    try:  # FIXME p2, keep value type handling in mind (datetime, int, else?)
         if mp:
             QConf.write_parser_section_with_key_(parser_key, value, section, mp)
         elif settings:
@@ -661,7 +668,7 @@ def mp_if_create_section_for_(mp: RawConfigParser, result: dict) -> None:
             attribute, detail = validate_metadata_type_for_(metadata_kv)
             h_attr, h_dtl = get_hashed_(attribute, detail, offset)
             # FIXME p3, this will break due to bad parser arg.. revisiting, resolved?
-            cfg_if_write_parser_value_with_(h_attr, h_dtl, m_section, mp)
+            cfg_if_write_parser_value_with_(m_section, h_attr, h_dtl, mp)
             pause_on_event(u_key.WAIT_FOR_USER)
         return
     except Exception as e_err:
