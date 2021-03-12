@@ -20,7 +20,8 @@ class QbitApiCaller:
         try:
             self.qbit_client.torrents.add(urls=url, is_paused=is_paused)
         except Exception as e_err:
-            print(e_err.args[0])
+            ml.log_event(f'error adding result for \'{url}\'', level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def client_is_connected(self) -> bool:
         ml.log_event('connect to client', event_completed=False)
@@ -33,16 +34,7 @@ class QbitApiCaller:
                 return True
             return False
         except Exception as e_err:
-            ml.log_event(e_err.args[0], level=ml.ERROR)
-
-    def count_all_local_results(self) -> int:
-        try:
-            local_result_count = 0
-            if self.qbit_client.torrents.info().data:
-                local_result_count = len(self.qbit_client.torrents.info().data)
-            ml.log_event(f'counted {local_result_count} existing local results')
-            return local_result_count
-        except Exception as e_err:
+            ml.log_event(f'error checking is client is connected', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def create_search_job(self, pattern, plugins, category) -> tuple:
@@ -53,6 +45,7 @@ class QbitApiCaller:
             ml.log_event(f'qbit client created search job for \'{pattern}\'')
             return count, sid, status
         except Exception as e_err:
+            ml.log_event(f'error creating search job for \'{pattern}\'', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def dump_surface_client(self):
@@ -77,13 +70,26 @@ class QbitApiCaller:
             for surface_key, surface_attr in dump.items():
                 ml.log_event(f'\'{surface_key}\' : \'{surface_attr}\'')
         except Exception as e_err:
+            ml.log_event(f'error dumping surface client', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def get_connection_time_start(self):
         try:
             return self.connection_time_start
         except Exception as e_err:
-            print(e_err.args[0])
+            ml.log_event(f'error getting connection time start \'{self.connection_time_start}\'', level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
+
+    def get_local_results_count(self) -> int:
+        try:
+            local_result_count = 0
+            if self.qbit_client.torrents.info().data:
+                local_result_count = len(self.qbit_client.torrents.info().data)
+            ml.log_event(f'counted {local_result_count} existing local results')
+            return local_result_count
+        except Exception as e_err:
+            ml.log_event(f'error getting local result count', level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def get_result_object_from_(self, search_id) -> list:
         try:
@@ -91,6 +97,7 @@ class QbitApiCaller:
             results = self.qbit_client.search_results(search_id)
             return results
         except Exception as e_err:
+            ml.log_event(f'error getting result object from search id \'{search_id}\'', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @classmethod
@@ -102,6 +109,7 @@ class QbitApiCaller:
             search_found_count = status.data[0]['total']
             return search_found_count, search_id, search_status
         except Exception as e_err:
+            ml.log_event(f'error getting search info from \'{job}\'', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def get_search_results(self, search_id, filename_regex,
@@ -122,6 +130,8 @@ class QbitApiCaller:
                 results = filtered_results
             return results
         except Exception as e_err:
+            ml.log_event(f'error getting search results for \'{search_id}\' with regex \'{filename_regex}\'',
+                         level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     def get_search_status_for_(self, search_id) -> str:
@@ -137,6 +147,7 @@ class QbitApiCaller:
             assert search_status is not None, 'bad search status attribute, fix it or handle it'
             return search_status
         except Exception as e_err:
+            ml.log_event(f'error getting search status for \'{search_id}\'', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @classmethod
@@ -144,7 +155,8 @@ class QbitApiCaller:
         try:
             sleep(delay)
         except Exception as e_err:
-            print(e_err.args[0])
+            ml.log_event(f'error pausing for delay : \'{delay}\'', level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def regex_matches(filename_regex, filename) -> bool:
@@ -156,7 +168,8 @@ class QbitApiCaller:
                 return True
             return False
         except Exception as e_err:
-            ml.log_event(e_err.message, level=ml.ERROR)
+            ml.log_event(f'error checking regex \'{filename_regex}\' for filename \'{filename}\'', level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 if __name__ == '__main__':
