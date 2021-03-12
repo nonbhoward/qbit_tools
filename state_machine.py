@@ -2,9 +2,9 @@ from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
 from state_machine_ifs import add_results_from_
 from state_machine_ifs import all_searches_concluded
-from state_machine_ifs import api_create_search_job_for_
-from state_machine_ifs import api_get_connection_time_start
-from state_machine_ifs import api_get_search_status_for_
+from state_machine_ifs import api_if_create_search_job_for_
+from state_machine_ifs import api_if_get_connection_time_start
+from state_machine_ifs import api_if_get_search_status_for_
 from state_machine_ifs import empty_
 from state_machine_ifs import get_all_sections_from_parser_
 from state_machine_ifs import get_search_id_from_
@@ -17,8 +17,8 @@ from state_machine_ifs import read_parser_value_with_
 from state_machine_ifs import ready_to_start_
 from state_machine_ifs import search_has_yielded_required_results
 from state_machine_ifs import set_search_rank_using_
-from state_machine_ifs import cfg_write_to_disk
-from state_machine_ifs import cfg_write_parser_value_with_
+from state_machine_ifs import cfg_if_write_to_disk
+from state_machine_ifs import cfg_if_write_parser_value_with_
 
 u_parser_at_default = u_parser[u_key.DEFAULT]
 unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
@@ -57,7 +57,7 @@ class QbitStateManager:
 
     def increment_loop_count(self):
         try:
-            ml.log_event(f'current connection to client was started at \'{api_get_connection_time_start()}\'')
+            ml.log_event(f'current connection to client was started at \'{api_if_get_connection_time_start()}\'')
             self.main_loop_count += 1
             ml.log_event(f'main loop has ended, {self.main_loop_count} total loops..')
         except Exception as e_err:
@@ -84,7 +84,7 @@ class QbitStateManager:
                 ml.log_event(f'monitoring search header \'{self.active_section}\'')
                 search_state = self.get_search_state()
                 self.manage_state_updates(search_state)
-            cfg_write_to_disk()  # FIXME p3, consider location of this line
+            cfg_if_write_to_disk()  # FIXME p3, consider location of this line
         except Exception as e_err:
             ml.log_event(f'error during initiating and monitoring of searches', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -100,7 +100,7 @@ class QbitStateManager:
             if ready_to_start_(search_queued, self):
                 self.start_search()
             elif search_running:
-                search_status = api_get_search_status_for_(search_id)
+                search_status = api_if_get_search_status_for_(search_id)
                 if search_status is None:
                     ml.log_event(f'bad search id \'{search_id}\', ignored and re-queued', level=ml.WARNING)
                     self.update_search_states(s_key.QUEUED)  # search should be running, but status is None.. requeue
@@ -168,13 +168,13 @@ class QbitStateManager:
     def start_search(self):
         try:
             search_term = read_parser_value_with_(key=s_key.TERM, section=self.active_section)
-            search_properties = api_create_search_job_for_(search_term, 'all', 'all')
+            search_properties = api_if_create_search_job_for_(search_term, 'all', 'all')
             search_count, search_id, search_status = search_properties
             if search_id is None or empty_(search_id):
                 ml.log_event(f'invalid API return \'{search_id}\'', level=ml.ERROR)
                 raise Exception('search id from API is invalid')
             if s_key.RUNNING in search_status:  # for search sorting
-                cfg_write_parser_value_with_(s_key.TIME_LAST_SEARCHED, dt.now(), self.active_section)
+                cfg_if_write_parser_value_with_(s_key.TIME_LAST_SEARCHED, dt.now(), self.active_section)
                 ml.log_event(f'search started for \'{self.active_section}\' with search id \'{search_id}\'',
                              event_completed=True, announce=True)
                 self.active_search_ids[self.active_section] = search_id
