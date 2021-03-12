@@ -1,6 +1,9 @@
+from configparser import SectionProxy
 from minimalog.minimal_log import MinimalLog
 from qbit_interface.api_comm import QbitApiCaller as QApi
+from string import digits
 from user_configuration.settings_io import QbitConfig as QConf
+digits_or_sign = digits + '-'
 ml = MinimalLog(__name__)
 q_api = QApi()
 m_key, s_key, u_key = QConf.get_keyrings()
@@ -10,8 +13,8 @@ ma_parser, mf_parser, s_parser, u_parser = QConf.get_parsers()
 def add_results_from_(results, active_kv):  # FIXME debug breadcrumb
     try:
         active_section = active_kv[0]
-        s_parser_at_active = sps_get_parser(active_section)
-        results_required_count = int(s_parser_at_active[s_key.RESULTS_REQUIRED_COUNT])
+        sps_at_active = sps_get_parser(active_section)
+        results_required_count = sps_get_int_from_(sps_at_active, s_key.RESULTS_REQUIRED_COUNT)
         results = filter_(results, active_section)
         if not enough_results_found_in_(results, active_section):
             reduce_search_expectations_for_(active_section)
@@ -19,10 +22,10 @@ def add_results_from_(results, active_kv):  # FIXME debug breadcrumb
             results_required_count = len(results) if results is not None else 0
         ml.log_event(f'add most popular \'{results_required_count}\' count results')
         for result in results:
-            results_added_count = int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT])
+            results_added_count = int(sps_at_active[s_key.RESULTS_ADDED_COUNT])
             if results_added_count > results_required_count:  # FIXME p2, shouldn't this use the conclusion check func?
                 ml.log_event(f'the search for \'{active_section}\' can be concluded', announce=True)
-                s_parser_at_active[s_key.CONCLUDED] = s_key.YES
+                sps_at_active[s_key.CONCLUDED] = s_key.YES
                 return  # enough results have been added for this header, stop
             if add_successful_for_(result, active_section):  # FIXME p0, sometimes this adds two values
                 add_to_metadata_parsers_as_(result, added=True)
@@ -556,6 +559,10 @@ def validate_metadata_type_for_(metadata_kv: tuple) -> tuple:
 
 
 #### ### ### ### ### ### ### ### ### ### API INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                     API INTERFACE BELOW                                            #
+#                                                                                                    #
+#### ### ### ### ### ### ### ### ### ### API INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
 def api_add_result_from_(url: str, is_paused: bool):
     try:
         q_api.add_result_from_(url, is_paused)
@@ -600,6 +607,15 @@ def api_get_search_status_for_(search_id):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+#### ### ### ### ### ### ### ### ### ### API INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                     API INTERFACE ABOVE                                            #
+#                                                                                                    #
+#### ### ### ### ### ### ### ### ### ### API INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
+#### ### ### ### ### ### ### ### ### ### CFG INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                     CFG INTERFACE BELOW                                            #
+#                                                                                                    #
 #### ### ### ### ### ### ### ### ### ### CFG INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
 def cfg_get_result_metadata_at_key_(result, key: str) -> str:  # QConf
     try:
@@ -638,6 +654,15 @@ def cfg_write_to_disk():
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+#### ### ### ### ### ### ### ### ### ### CFG INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                     CFG INTERFACE ABOVE                                            #
+#                                                                                                    #
+#### ### ### ### ### ### ### ### ### ### CFG INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
+### ### ### ### ### ### ### ### # METADATA PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ####
+#                                                                                                    #
+#                              METADATA PARSER INTERFACE BELOW                                       #
+#                                                                                                    #
 ### ### ### ### ### ### ### ### # METADATA PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ####
 def mtd_get_parser(section: str, added=False):
     try:
@@ -650,7 +675,39 @@ def mtd_get_parser(section: str, added=False):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+### ### ### ### ### ### ### ### # METADATA PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ####
+#                                                                                                    #
+#                              METADATA PARSER INTERFACE ABOVE                                       #
+#                                                                                                    #
+### ### ### ### ### ### ### ### # METADATA PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ####
 ### ### ### ### ### ### ### ### ## SEARCH PARSER INTERFACE ## ### ### ### ### ### ### ### ### ### ####
+#                                                                                                    #
+#                               SEARCH PARSER INTERFACE BELOW                                        #
+#                                                                                                    #
+### ### ### ### ### ### ### ### ## SEARCH PARSER INTERFACE ## ### ### ### ### ### ### ### ### ### ####
+def sps_get_int_from_(sps_at_active: SectionProxy, sps_key: str) -> int:
+    try:
+        val = sps_at_active[sps_key]
+        ml.log_event(f'returning int \'{val}\' from search parser')
+        for char in val:  # FIXME this would allow values like -79 but also 7-9 which would error
+            if char not in digits_or_sign:
+                raise TypeError(f'unexpected character in value for key \'{sps_key}\'')
+        return int(val)
+    except Exception as e_err:
+        ml.log_event(f'error getting value from search parser at active section', level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def sps_get_str_from_(sps_at_active: SectionProxy, sps_key: str) -> str:
+    try:
+        val = sps_at_active[sps_key]
+        ml.log_event(f'returning str \'{val}\' from search parser')
+        return str(val)
+    except Exception as e_err:
+        ml.log_event(f'error getting value from search parser at active section', level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
 def sps_get_parser(section: str):
     try:
         return s_parser[section] if section else s_parser
@@ -661,7 +718,29 @@ def sps_get_parser(section: str):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+### ### ### ### ### ### ### ### ## SEARCH PARSER INTERFACE ## ### ### ### ### ### ### ### ### ### ####
+#                                                                                                    #
+#                               SEARCH PARSER INTERFACE ABOVE                                        #
+#                                                                                                    #
+### ### ### ### ### ### ### ### ## SEARCH PARSER INTERFACE ## ### ### ### ### ### ### ### ### ### ####
 ### ### ### ### ### ### ### ### USER CONFIG PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                            USER CONFIG PARSER INTERFACE BELOW                                      #
+#                                                                                                    #
+### ### ### ### ### ### ### ### USER CONFIG PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ###
+def ucf_get_int_from_(ucf_at_active: SectionProxy, ucf_key: str) -> int:
+    try:
+        val = ucf_at_active[ucf_key]
+        ml.log_event(f'returning int \'{val}\' from search parser')
+        for char in val:  # FIXME this would allow values like -79 but also 7-9 which would error
+            if char not in digits_or_sign:
+                raise TypeError(f'unexpected character in value for key \'{ucf_key}\'')
+        return int(val)
+    except Exception as e_err:
+        ml.log_event(f'error getting value from search parser at active section', level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
 def ucf_get_parser(section: str):
     try:
         return u_parser[section] if section else u_parser
@@ -670,3 +749,10 @@ def ucf_get_parser(section: str):
         event = error + f' at \'{section}\'' if section else error
         ml.log_event(event, level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+### ### ### ### ### ### ### ### USER CONFIG PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                            USER CONFIG PARSER INTERFACE ABOVE                                      #
+#                                                                                                    #
+### ### ### ### ### ### ### ### USER CONFIG PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ###
