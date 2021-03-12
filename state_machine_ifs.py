@@ -42,7 +42,7 @@ def add_results_from_(results, active_kv):  # FIXME debug breadcrumb
 
 def add_successful_for_(result, section) -> bool:
     try:
-        count_before_add_attempt = q_api.count_all_local_results()
+        count_before_add_attempt = api_count_local_results()
         ml.log_event(f'local machine has {count_before_add_attempt} stored results before add attempt..')
         # TODO why does client fail to add so often? outside project scope?
         url = get_result_metadata_at_key_(result, m_key.URL)
@@ -534,7 +534,14 @@ def api_add_result_from_(url: str, is_paused: bool):  # API
     try:
         q_api.add_result_from_(url, is_paused)
     except Exception as e_err:
-        print(e_err.args[0])
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def api_count_local_results():
+    try:
+        return q_api.count_all_local_results()
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def api_create_search_job_for_(pattern, plugins, category):
@@ -545,7 +552,7 @@ def api_create_search_job_for_(pattern, plugins, category):
         ml.log_event(f'qbit client created search job for \'{pattern}\'')
         return count, sid, status
     except Exception as e_err:
-        print(e_err.args[0])
+        ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def api_get_connection_time_start():
