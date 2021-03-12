@@ -1,20 +1,22 @@
 from configparser import RawConfigParser, SectionProxy
-from datetime import datetime
 from minimalog.minimal_log import MinimalLog
 from qbit_interface.api_comm import QbitApiCaller as QApi
 from string import digits
 from user_configuration.settings_io import QbitConfig as QConf
+
 digits_or_sign = digits + '-'
-ml = MinimalLog(__name__)
-q_api = QApi()
 m_key, s_key, u_key = QConf.get_keyrings()
 ma_parser, mf_parser, s_parser, u_parser = QConf.get_parsers()
+ml = MinimalLog(__name__)
+q_api = QApi()
+u_parser_at_default = u_parser[u_key.DEFAULT]
+unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
 
 
-def add_results_from_(results: list, active_kv: tuple):
+def add_results_from_(section_and_id: tuple, results: list):
     try:
-        section = active_kv[0]
-        results = filter_(results, section)
+        section = section_and_id[0]
+        results = filter_(section, results)
         evaluate_filtered_results_for_(section, results)
         results_required_count = sp_if_get_int_from_(section, s_key.RESULTS_REQUIRED_COUNT)
         ml.log_event(f'add most popular \'{results_required_count}\' count results')
@@ -24,27 +26,27 @@ def add_results_from_(results: list, active_kv: tuple):
                 ml.log_event(f'the search for \'{section}\' can be concluded', announce=True)
                 sp_if_set_bool_for_(section, s_key.CONCLUDED, True)
                 return  # enough results have been added for this header, stop
-            if add_successful_for_(result, section):  # FIXME p0, sometimes this adds two values
+            if add_successful_for_(section, result):  # FIXME p0, sometimes this adds two values
                 add_to_metadata_parsers_as_(result, added=True)
                 if enough_results_added_for_(section):
                     ml.log_event(f'enough results added for \'{section}\'')
                     return  # desired result count added, stop adding
                 cfg_if_write_to_disk()  # FIXME p0, debug line, consider removing
                 continue  # result added, go to next
-            result_name = cfg_if_get_result_metadata_at_key_(result, m_key.NAME)
+            result_name = cfg_if_get_result_metadata_at_key_(m_key.NAME, result)
             ml.log_event(f'client failed to add \'{result_name}\'', level=ml.WARNING)
             cfg_if_write_to_disk()  # FIXME p0, debug line, consider removing
     except Exception as e_err:
-        ml.log_event(f'error adding results from \'{active_kv}\'', level=ml.ERROR)
+        ml.log_event(f'error adding results from \'{section_and_id}\'', level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def add_successful_for_(result: dict, section: str) -> bool:
+def add_successful_for_(section: str, result: dict) -> bool:
     try:
         count_before_add_attempt = api_if_get_local_results_count()
         ml.log_event(f'local machine has {count_before_add_attempt} stored results before add attempt..')
         # TODO why does client fail to add so often? outside project scope?
-        url = cfg_if_get_result_metadata_at_key_(result, m_key.URL)
+        url = cfg_if_get_result_metadata_at_key_(m_key.URL, result)
         api_if_add_result_from_(url, get_add_mode_for_(section))
         pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
         results_added_count = api_if_get_local_results_count() - count_before_add_attempt
@@ -84,8 +86,8 @@ def all_searches_concluded() -> bool:
 def build_metadata_section_from_(result: dict) -> str:
     try:
         name, url = \
-            cfg_if_get_result_metadata_at_key_(result, m_key.NAME), \
-            cfg_if_get_result_metadata_at_key_(result, m_key.URL)
+            cfg_if_get_result_metadata_at_key_(m_key.NAME, result), \
+            cfg_if_get_result_metadata_at_key_(m_key.URL, result)
         if url == '':
             raise ValueError(f'empty url!')
         r_name, delim, r_url = hash_metadata(name), ' @ ', hash_metadata(url)
@@ -183,7 +185,7 @@ def fetch_metadata_from_(parser) -> dict:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def filter_(results: list, section: str, found=True, sort=True):
+def filter_(section: str, results: list, found=True, sort=True):
     """
     1. get search priority
     :param results: results returned from the api
@@ -202,11 +204,11 @@ def filter_(results: list, section: str, found=True, sort=True):
         filename_regex = read_parser_value_with_(s_key.REGEX_FILENAME, section)
         results_filtered = list()
         for result in results:
-            result_name = cfg_if_get_result_metadata_at_key_(result, m_key.NAME)
+            result_name = cfg_if_get_result_metadata_at_key_(m_key.NAME, result)
             if found and previously_found_(result):
                 continue
             if filter_provided_for_(seeds_min):
-                result_seeds = cfg_if_get_result_metadata_at_key_(result, m_key.SUPPLY)  # FIXME int
+                result_seeds = cfg_if_get_result_metadata_at_key_(m_key.SUPPLY, result)  # FIXME int
                 enough_seeds = True if result_seeds > seeds_min else False
                 if not enough_seeds:
                     ml.log_event(f'required seeds \'{seeds_min}\' not met by result with '
@@ -216,7 +218,7 @@ def filter_(results: list, section: str, found=True, sort=True):
                     add_to_metadata_parsers_as_(result)
                     continue
             if filter_provided_for_(megabytes_min) or filter_provided_for_(megabytes_max):
-                bytes_result = cfg_if_get_result_metadata_at_key_(result, m_key.SIZE)  # FIXME int
+                bytes_result = cfg_if_get_result_metadata_at_key_(m_key.SIZE, result)  # FIXME int
                 megabytes_result = mega(bytes_result)
                 if filter_provided_for_(megabytes_min) and filter_provided_for_(megabytes_max):
                     file_size_in_range = True if bytes_max > bytes_result > bytes_min else False
@@ -233,7 +235,7 @@ def filter_(results: list, section: str, found=True, sort=True):
                     continue
             if filter_provided_for_(filename_regex):
                 ml.log_event(f'filtering results using filename regex \'{filename_regex}\'')
-                filename = cfg_if_get_result_metadata_at_key_(result, m_key.NAME)
+                filename = cfg_if_get_result_metadata_at_key_(m_key.NAME, result)
                 if not q_api.regex_matches(filename_regex, filename):
                     ml.log_event(f'regex \'{filename_regex}\' does not match for \'{filename}\'', level=ml.WARNING)
                     add_to_metadata_parsers_as_(result)
@@ -593,7 +595,7 @@ def api_if_get_search_status_for_(search_id: str) -> str:
 #                                     CFG INTERFACE BELOW                                            #
 #                                                                                                    #
 #### ### ### ### ### ### ### ### ### ### CFG INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
-def cfg_if_get_result_metadata_at_key_(result: dict, key: str) -> str:  # QConf
+def cfg_if_get_result_metadata_at_key_(key: str, result: dict) -> str:  # QConf
     try:
         return QConf.get_result_metadata_at_key_(result, key)
     except Exception as e_err:
@@ -655,14 +657,14 @@ def metadata_parser(section: str, successful_add=False):
 def mp_if_create_section_for_(mp: RawConfigParser, result: dict) -> None:
     try:
         offset = int(u_parser[u_key.DEFAULT][u_key.UNI_SHIFT])
-        result_name = cfg_if_get_result_metadata_at_key_(result, m_key.NAME)
+        result_name = cfg_if_get_result_metadata_at_key_(m_key.NAME, result)
         ml.log_event(f'save metadata result to parser \'{result_name}\'')
         m_section = hash_metadata(build_metadata_section_from_(result), offset=offset)
         if mp.has_section(m_section):
             ml.log_event(f'metadata parser already has section \'{m_section}\'', level=ml.WARNING)
             return
         mp.add_section(m_section)
-        result_name = cfg_if_get_result_metadata_at_key_(result, m_key.NAME)
+        result_name = cfg_if_get_result_metadata_at_key_(m_key.NAME, result)
         ml.log_event(f'section has been added to metadata result \'{result_name}\' for header \'{m_section}\'', announce=True)
         for metadata_kv in result.items():
             attribute, detail = validate_metadata_type_for_(metadata_kv)
