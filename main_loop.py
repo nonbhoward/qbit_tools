@@ -4,8 +4,8 @@ from os import getcwd as cwd, listdir as ls
 from os.path import exists
 from pathlib import Path
 from state_machine import QbitStateManager
-from state_machine_interface import QConf
-from state_machine_interface import pause_on_event
+from state_machine_ifs import QConf
+from state_machine_ifs import pause_on_event
 from subprocess import Popen
 from subprocess import run as launch
 from sys import platform
@@ -34,6 +34,7 @@ def application_is_running(app_path: Path) -> bool:
             return True
         return False
     except Exception as e_err:
+        ml.log_event(f'error checking if application is running', level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -53,6 +54,7 @@ def start_application_and_return_state_machine():
         launch(app)
         return QbitStateManager()
     except Exception as e_err:
+        ml.log_event(f'error starting application and fetching state machine', level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -67,6 +69,7 @@ def supported_os() -> bool:
             return True
         return False
     except Exception as e_err:
+        ml.log_event(f'error checking if operating system supported', level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
