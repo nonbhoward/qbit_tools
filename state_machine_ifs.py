@@ -609,9 +609,9 @@ def cfg_if_get_search_parser_as_sortable():
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def cfg_if_write_parser_value_with_(section: str, parser_key: str, value,
+def cfg_if_write_parser_value_with_(section: str, parser_key: str, value: str,
                                     mp=None, search=True, settings=False):
-    try:  # FIXME p2, keep value type handling in mind (datetime, int, else?)
+    try:
         if mp:
             QConf.write_parser_section_with_key_(parser_key, value, section, mp)
         elif settings:
