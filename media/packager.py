@@ -4,15 +4,19 @@ ml = MinimalLog(__name__)
 
 
 class MediaBox:
-    def __init__(self, root, types: list, compress=True):
-        self.sender_inventory = self.get_content_from_sender(root)
-        self.contents = {}
+    def __init__(self):
+        try:
+            self.contents = {}
+        except Exception as e_err:
+            ml.log_event(f'error initializing \'{self.__class__.__name__}\'', level=ml.ERROR)
+            ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
-    def get_content_from_sender(root: Path):
+    def get_content_from_sender():
         try:
             pass
         except Exception as e_err:
+            ml.log_event(f'error getting content from sender', level=ml.ERROR)
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
