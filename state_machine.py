@@ -5,23 +5,19 @@ from state_machine_ifs import all_searches_concluded
 from state_machine_ifs import api_if_create_search_job_for_
 from state_machine_ifs import api_if_get_connection_time_start
 from state_machine_ifs import api_if_get_search_status_for_
+from state_machine_ifs import cfg_if_write_parser_value_with_
+from state_machine_ifs import cfg_if_write_to_disk
 from state_machine_ifs import empty_
 from state_machine_ifs import get_all_sections_from_parser_
 from state_machine_ifs import get_search_id_from_
 from state_machine_ifs import get_search_results_for_
-from state_machine_ifs import s_key, u_key
-from state_machine_ifs import s_parser, u_parser
 from state_machine_ifs import pause_on_event
 from state_machine_ifs import print_search_ids_from_
 from state_machine_ifs import read_parser_value_with_
 from state_machine_ifs import ready_to_start_
 from state_machine_ifs import search_has_yielded_required_results
 from state_machine_ifs import set_search_rank_using_
-from state_machine_ifs import cfg_if_write_to_disk
-from state_machine_ifs import cfg_if_write_parser_value_with_
-
-u_parser_at_default = u_parser[u_key.DEFAULT]
-unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
+from state_machine_ifs import u_key
 
 
 class QbitStateManager:
@@ -113,14 +109,14 @@ class QbitStateManager:
                 else:
                     self.update_search_states(s_key.QUEUED)  # unexpected state, re-queue
             elif search_stopped:
-                results, active_kv = None, None
+                results, section_and_id = None, None
                 if self.active_section in self.active_search_ids:
-                    active_kv = (self.active_section, self.active_search_ids[self.active_section])
-                    results = get_search_results_for_(active_kv=active_kv)
+                    section_and_id = (self.active_section, self.active_search_ids[self.active_section])
+                    results = get_search_results_for_(active_kv=section_and_id)
                 if results is None or self.active_section not in self.active_search_ids:
                     ml.log_event(f'search \'{self.active_section}\' is stale, re-queued', level=ml.WARNING)
                 else:
-                    add_results_from_(results, active_kv)  # FIXME p0, this is the source of most bugs rn
+                    add_results_from_(section_and_id, results)  # FIXME p0, this is the source of most bugs rn
                     self.set_search_id_as_(search_id, active=False)
                     if search_has_yielded_required_results(self.active_section):
                         self.update_search_states(s_key.CONCLUDED)
