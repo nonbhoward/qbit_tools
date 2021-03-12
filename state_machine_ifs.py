@@ -12,25 +12,24 @@ ma_parser, mf_parser, s_parser, u_parser = QConf.get_parsers()
 
 def add_results_from_(results, active_kv):  # FIXME debug breadcrumb
     try:
-        active_section = active_kv[0]
-        sps_at_active = sps_get_parser(active_section)
-        results_required_count = sps_get_int_from_(sps_at_active, s_key.RESULTS_REQUIRED_COUNT)
-        results = filter_(results, active_section)
-        if not enough_results_found_in_(results, active_section):
-            reduce_search_expectations_for_(active_section)
+        section = active_kv[0]
+        results_required_count = sps_get_int_from_(section, s_key.RESULTS_REQUIRED_COUNT)
+        results = filter_(results, section)
+        if not enough_results_found_in_(results, section):
+            reduce_search_expectations_for_(section)
             # FIXME p0, things were crashing out of nowhere, delete me if resolved
             results_required_count = len(results) if results is not None else 0
         ml.log_event(f'add most popular \'{results_required_count}\' count results')
         for result in results:
-            results_added_count = int(sps_at_active[s_key.RESULTS_ADDED_COUNT])
+            results_added_count = int(search_parser(section)[s_key.RESULTS_ADDED_COUNT])
             if results_added_count > results_required_count:  # FIXME p2, shouldn't this use the conclusion check func?
-                ml.log_event(f'the search for \'{active_section}\' can be concluded', announce=True)
-                sps_at_active[s_key.CONCLUDED] = s_key.YES
+                ml.log_event(f'the search for \'{section}\' can be concluded', announce=True)
+                search_parser(section)[s_key.CONCLUDED] = s_key.YES
                 return  # enough results have been added for this header, stop
-            if add_successful_for_(result, active_section):  # FIXME p0, sometimes this adds two values
+            if add_successful_for_(result, section):  # FIXME p0, sometimes this adds two values
                 add_to_metadata_parsers_as_(result, added=True)
-                if enough_results_added_for_(active_section):
-                    ml.log_event(f'enough results added for \'{active_section}\'')
+                if enough_results_added_for_(section):
+                    ml.log_event(f'enough results added for \'{section}\'')
                     return  # desired result count added, stop adding
                 cfg_write_to_disk()  # FIXME p0, debug line, consider removing
                 continue  # result added, go to next
@@ -207,6 +206,7 @@ def filter_(results: list, section: str, found=True, sort=True):
     :return:
     """
     try:
+        sps_at_active = search_parser(section)
         seeds_min = int(read_parser_value_with_(s_key.MIN_SEED, section))
         bytes_min = int(read_parser_value_with_(s_key.SIZE_MIN_BYTES, section))
         bytes_max = int(read_parser_value_with_(s_key.SIZE_MAX_BYTES, section))
@@ -664,7 +664,7 @@ def cfg_write_to_disk():
 #                              METADATA PARSER INTERFACE BELOW                                       #
 #                                                                                                    #
 ### ### ### ### ### ### ### ### # METADATA PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ####
-def mtd_get_parser(section: str, added=False):
+def metadata_parser(section: str, added=False):
     try:
         mp = ma_parser if added else mf_parser
         return mp[section] if section else mp
@@ -685,9 +685,19 @@ def mtd_get_parser(section: str, added=False):
 #                               SEARCH PARSER INTERFACE BELOW                                        #
 #                                                                                                    #
 ### ### ### ### ### ### ### ### ## SEARCH PARSER INTERFACE ## ### ### ### ### ### ### ### ### ### ####
-def sps_get_int_from_(sps_at_active: SectionProxy, sps_key: str) -> int:
+def search_parser(section: str):
     try:
-        val = sps_at_active[sps_key]
+        return s_parser[section] if section else s_parser
+    except Exception as e_err:
+        error = f'error getting search parser'
+        event = error + f' at \'{section}\'' if section else error
+        ml.log_event(event, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def sps_get_int_from_(section: str, sps_key: str) -> int:
+    try:
+        val = search_parser(section)[sps_key]
         ml.log_event(f'returning int \'{val}\' from search parser')
         for char in val:  # FIXME this would allow values like -79 but also 7-9 which would error
             if char not in digits_or_sign:
@@ -705,16 +715,6 @@ def sps_get_str_from_(sps_at_active: SectionProxy, sps_key: str) -> str:
         return str(val)
     except Exception as e_err:
         ml.log_event(f'error getting value from search parser at active section', level=ml.ERROR)
-        ml.log_event(e_err.args[0], level=ml.ERROR)
-
-
-def sps_get_parser(section: str):
-    try:
-        return s_parser[section] if section else s_parser
-    except Exception as e_err:
-        error = f'error getting search parser'
-        event = error + f' at \'{section}\'' if section else error
-        ml.log_event(event, level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -741,7 +741,7 @@ def ucf_get_int_from_(ucf_at_active: SectionProxy, ucf_key: str) -> int:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def ucf_get_parser(section: str):
+def uconf_parser(section: str):
     try:
         return u_parser[section] if section else u_parser
     except Exception as e_err:
