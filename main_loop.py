@@ -19,7 +19,7 @@ def main_loop():
     while True:
         ml.log_event(event=f'new loop starting at {datetime.now()}', announce=True)
         qsm.initiate_and_monitor_searches()
-        qsm.increment_loop_count()
+        qsm.increment_main_loop_count()
         pause_on_event(u_key.WAIT_FOR_MAIN_LOOP)
 
 
@@ -34,7 +34,7 @@ def application_is_running(app_path: Path) -> bool:
             return True
         return False
     except Exception as e_err:
-        ml.log_event(f'error checking if application is running', level=ml.ERROR)
+        ml.log_event(f'error checking if application is running')
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -44,17 +44,17 @@ def start_application_and_return_state_machine():
         std_path, app_name = ['usr', 'bin'], 'qbittorrent'
         app = Path(Path(cwd()).root).joinpath(*std_path, app_name)
         if not supported_os():
-            ml.log_event('unsupported OS', level=ml.ERROR)
+            ml.log_event('unsupported OS')
             exit()
         if application_is_running(app):
             return QbitStateManager()
         if not exists(app):
-            ml.log_event('install qbittorrent', level=ml.ERROR)
+            ml.log_event('install qbittorrent')
             exit()
         launch(app)
         return QbitStateManager()
     except Exception as e_err:
-        ml.log_event(f'error starting application and fetching state machine', level=ml.ERROR)
+        ml.log_event(f'error starting application and fetching state machine')
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -69,7 +69,7 @@ def supported_os() -> bool:
             return True
         return False
     except Exception as e_err:
-        ml.log_event(f'error checking if operating system supported', level=ml.ERROR)
+        ml.log_event(f'error checking if operating system supported')
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
