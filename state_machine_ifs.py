@@ -732,9 +732,9 @@ def sp_if_increment_search_state_for_(section: str, state_machine):
 
 
 def sp_if_ready_to_start_(queued: bool, state_machine) -> bool:
-    try:  # FIXME labal arg QbitStateMachine without recursive import?
-        search_rank = int(s_parser[state_machine.active_section][s_key.RANK])
-        search_rank_required_to_start = int(u_parser[u_key.DEFAULT][u_key.RANK_REQUIRED])
+    try:  # FIXME label arg QbitStateMachine without recursive import?
+        search_rank = sp_if_get_int_from_(state_machine.active_section, s_key.RANK)
+        search_rank_required_to_start = uc_if_get_int_from_key_(u_key.RANK_REQUIRED)
         queue_has_room = not state_machine.search_queue_full()
         search_rank_allowed = search_rank <= search_rank_required_to_start
         if queued and queue_has_room and search_rank_allowed:
@@ -897,7 +897,7 @@ def sp_if_set_time_last_searched_for_(section: str) -> None:
 def user_configuration(section: str):
     try:
         event = f'getting user config parser'
-        default = 'DEFAULT'
+        default = 'DEFAULT'  # FIXME p3, if add more sections this will need to be adjusted
         if section != default:
             ml.log_event(f'the section value \'{section}\' may be an issue', level=ml.WARNING)
         ml.log_event(f'ignoring user section \'{section}\'.. setting to \'{default}\'')
@@ -910,10 +910,11 @@ def user_configuration(section: str):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def uc_if_get_int_from_key_(ucf_at_active: SectionProxy, ucf_key: str) -> int:
+def uc_if_get_int_from_key_(ucf_key: str) -> int:
     try:  # TODO input user config parser isn't "at active"
         event = f'getting integer from user configuration parser with key \'{ucf_key}\''
-        val = ucf_at_active[ucf_key]
+        default = 'DEFAULT'  # FIXME p3, if add more sections this will need to be fixed
+        val = user_configuration(default)[ucf_key]
         for char in val:  # FIXME this would allow values like -79 but also 7-9 which would error
             if char not in digits_or_sign:
                 raise TypeError(f'unexpected character in value for key \'{ucf_key}\'')
