@@ -1,27 +1,27 @@
 from minimalog.minimal_log import MinimalLog
-from state_machine_ifs import add_results_from_
-from state_machine_ifs import all_searches_concluded
-from state_machine_ifs import create_search_job_for_
-from state_machine_ifs import empty_
-from state_machine_ifs import get_all_sections_from_parser_
-from state_machine_ifs import get_connection_time_start
-from state_machine_ifs import get_search_id_from_
-from state_machine_ifs import get_search_results_for_
-from state_machine_ifs import get_search_states_for_
-from state_machine_ifs import get_search_status_for_
-from state_machine_ifs import get_search_term_for_
-from state_machine_ifs import increment_search_state_for_
-from state_machine_ifs import pause_on_event
-from state_machine_ifs import print_search_ids_from_
-from state_machine_ifs import ready_to_start_
-from state_machine_ifs import search_has_yielded_required_results_for_
-from state_machine_ifs import search_is_running_with_
-from state_machine_ifs import search_is_stopped_with_
-from state_machine_ifs import set_search_id_for_
-from state_machine_ifs import set_search_ranks
-from state_machine_ifs import set_time_last_searched_for_
-from state_machine_ifs import u_key  # FIXME refactor this out, no keys belong in the state machine
-from state_machine_ifs import write_parsers_to_disk
+from core.interface import add_results_from_
+from core.interface import all_searches_concluded
+from core.interface import create_search_job_for_
+from core.interface import empty_
+from core.interface import get_all_sections_from_parser_
+from core.interface import get_connection_time_start
+from core.interface import get_search_id_from_
+from core.interface import get_search_results_for_
+from core.interface import get_search_states_for_
+from core.interface import get_search_status_for_
+from core.interface import get_search_term_for_
+from core.interface import increment_search_state_for_
+from core.interface import pause_on_event
+from core.interface import print_search_ids_from_
+from core.interface import ready_to_start_
+from core.interface import search_has_yielded_required_results_for_
+from core.interface import search_is_running_with_
+from core.interface import search_is_stopped_with_
+from core.interface import set_search_id_for_
+from core.interface import set_search_ranks
+from core.interface import set_time_last_searched_for_
+from core.interface import u_key  # FIXME refactor this out, no keys belong in the state machine
+from core.interface import write_parsers_to_disk
 
 
 class QbitStateManager:

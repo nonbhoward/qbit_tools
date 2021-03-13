@@ -4,8 +4,8 @@ from os import getcwd as cwd, listdir as ls
 from os.path import exists
 from pathlib import Path
 from state_machine import QbitStateManager
-from state_machine_ifs import QConf
-from state_machine_ifs import pause_on_event
+from core.interface import QConf
+from core.interface import pause_on_event
 from subprocess import Popen
 from subprocess import run as launch
 from sys import platform
