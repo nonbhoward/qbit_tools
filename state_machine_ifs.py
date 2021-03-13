@@ -534,6 +534,53 @@ def validate_metadata_type_for_(metadata_kv: tuple) -> tuple:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+def value_provided_for_(value_to_check) -> bool:
+    try:
+        event = f'checking if value provided for \'{value_to_check}\''
+        return False if value_to_check == '0' else True
+    except Exception as e_err:
+        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+#### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                STATE MACHINE INTERFACE BELOW                                       #
+#                                                                                                    #
+#### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
+def search_is_running_with_(search_status: str) -> bool:
+    try:  # FIXME hierarchy status < search_id < section < state_machine could be reduced
+        return True if s_key.RUNNING in search_status else False
+    except Exception as e_err:
+        ml.log_event(f'error checking if search is running', level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def search_is_stopped_with_(search_status: str) -> bool:
+    try:  # FIXME hierarchy status < search_id < section < state_machine could be reduced
+        return True if s_key.STOPPED in search_status else False
+    except Exception as e_err:
+        ml.log_event(f'error checking if search is stopped', level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def sm_if_get_search_id_from_(state_machine) -> str:
+    try:  # FIXME label arg QbitStateMachine without recursion import?
+        search_id = ''
+        if state_machine.active_section in state_machine.active_search_ids:
+            search_id = state_machine.active_search_ids[state_machine.active_section]
+            ml.log_event(f'search id \'{search_id}\' successfully fetched')
+        return search_id
+    except Exception as e_err:
+        ml.log_event(f'error getting search id from state machine', level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+#### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                STATE MACHINE INTERFACE ABOVE                                       #
+#                                                                                                    #
+#### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
 #### ### ### ### ### ### ### ### ### ### API INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
 #                                                                                                    #
 #                                     API INTERFACE BELOW                                            #
@@ -688,6 +735,7 @@ def mp_if_create_section_for_(mp: RawConfigParser, result: dict) -> None:
 ### ### ### ### ### ### ### ### ## SEARCH PARSER INTERFACE ## ### ### ### ### ### ### ### ### ### ####
 def search_parser(section=''):
     try:
+        event = f'getting search parser for \'{section}\''
         return s_parser[section] if not empty_(section) else s_parser
     except Exception as e_err:
         error = f'error getting search parser'
@@ -721,12 +769,48 @@ def sp_if_get_int_from_(section: str, key: str) -> int:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+def sp_if_get_parser_as_sortable() -> dict:
+    try:  # FIXME remove/replace this function
+        return QConf.get_search_parser_as_sortable()
+    except Exception as e_err:
+        ml.log_event(f'cfg error getting search parser as sortable', level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def sp_if_get_search_state_for_(section) -> tuple:
+    try:
+        event = f'getting search state for \'{section}\''
+        sp_if_set_str_for_(section, s_key.TIME_LAST_READ, str(dt.now()))  # FIXME move to function
+        search_queued = sp_if_get_bool_from_(section, s_key.QUEUED)
+        search_running = sp_if_get_bool_from_(section, s_key.RUNNING)
+        search_stopped = sp_if_get_bool_from_(section, s_key.STOPPED)
+        search_concluded = sp_if_get_bool_from_(section, s_key.CONCLUDED)
+        ml.log_event(f'search state for \'{section}\': '
+                     f'\n\tqueued: {search_queued}'
+                     f'\n\trunning: {search_running}'
+                     f'\n\tstopped: {search_stopped}'
+                     f'\n\tconcluded: {search_concluded}', announce=True)
+        return search_queued, search_running, search_stopped, search_concluded
+        pass
+    except Exception as e_err:
+        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def sp_if_get_search_term_for_(section: str) -> str:
+    try:
+        event = f'getting search term for \'{section}\''
+        search_term = sp_if_get_str_from_(section, s_key.TERM)
+        return search_term if value_provided_for_(search_term) else section
+    except Exception as e_err:
+        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
 def sp_if_get_str_from_(section: str, key: str) -> str:
     try:
         event = f'getting str value for search parser at \'{key}\''
-        string = search_parser(section)[key]
-        ml.log_event(event)
-        return str(string)
+        return search_parser(section)[key]
     except Exception as e_err:
         ml.log_event(f'error ' + event, level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -772,7 +856,23 @@ def sp_if_set_str_for_(section: str, key: str, string: str):
 #                            USER CONFIG PARSER INTERFACE BELOW                                      #
 #                                                                                                    #
 ### ### ### ### ### ### ### ### USER CONFIG PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ###
-def uc_if_get_int_from_(ucf_at_active: SectionProxy, ucf_key: str) -> int:
+def user_configuration(section: str):
+    try:
+        event = f'getting user config parser'
+        default = 'DEFAULT'
+        if section != default:
+            ml.log_event(f'the section value \'{section}\' may be an issue', level=ml.WARNING)
+        ml.log_event(f'ignoring user section \'{section}\'.. setting to \'{default}\'')
+        section = default  # FIXME p3, this is a dumb patch, fix it later
+        return u_parser[section] if section else u_parser
+    except Exception as e_err:
+        error = f'error ' + event
+        event = error + f' at \'{section}\'' if section else error
+        ml.log_event(event, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def uc_if_get_int_from_key_(ucf_at_active: SectionProxy, ucf_key: str) -> int:
     try:  # TODO input user config parser isn't "at active"
         val = ucf_at_active[ucf_key]
         ml.log_event(f'returning int \'{val}\' from search parser')
