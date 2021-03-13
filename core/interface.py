@@ -12,6 +12,8 @@ ml = MinimalLog(__name__)
 q_api = QApi()
 u_parser_at_default = u_parser[u_key.DEFAULT]
 unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
+default = 'DEFAULT'
+empty = ''
 
 
 def add_results_from_(section_and_id: tuple, results: list):
@@ -253,6 +255,33 @@ def get_all_sections_from_parser_(meta_add=False, meta_find=False, search=False,
         ml.log_event(f'error ' + event)
 
 
+def get_all_sections_from_metadata_parsers() -> tuple:
+    event = f'getting all sections from metadata parser'
+    try:
+        return *metadata_added_parser()._sections, *metadata_failed_parser()._sections
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
+
+
+def get_all_sections_from_user_config_parser() -> list:
+    event = f'getting all sections from user config parser'
+    try:
+        return user_configuration()._sections
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
+
+
+def get_all_sections_from_search_parser() -> list:
+    event = f'getting all sections from search parser'
+    try:
+        return search_parser()._sections
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
+
+
 def get_connection_time_start():
     event = f'getting connection time start'
     try:
@@ -332,10 +361,10 @@ def hash_metadata(x: str, offset=0, undo=False) -> str:
         ml.log_event(f'error ' + event)
 
 
-def increment_search_state_for_(section: str, state_machine):
-    event = f'incrementing search state for \'{section}\''
+def increment_search_state_at_active_section_for_(state_machine):
+    event = f'incrementing search state for \'{state_machine.active_section}\''
     try:
-        sp_if_increment_search_state_for_(section, state_machine)
+        sp_if_increment_search_state_for_(state_machine)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error ' + event)
@@ -394,10 +423,28 @@ def result_has_enough_seeds() -> bool:
         ml.log_event(f'error ' + event)
 
 
+def search_concluded_for_(section) -> bool:
+    event = f'checking if search concluded for \'{section}\''
+    try:
+        return sp_if_get_bool_from_(section, s_key.CONCLUDED)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
+
+
 def search_has_yielded_required_results_for_(section: str) -> bool:
     event = f'checking if search has yielded required results for \'{section}\''
     try:
         return sp_if_search_has_yielded_required_results_for_(section)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
+
+
+def set_active_section_to_(section: str, state_machine):
+    event = f'setting active section for state machine to \'{section}\''
+    try:
+        state_machine.active_section = section
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error ' + event)
@@ -416,6 +463,15 @@ def set_search_ranks() -> None:
     event = f'setting search ranks'
     try:
         sp_if_set_search_ranks()
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
+
+
+def set_time_last_read_for_(section: str) -> None:
+    event = f'setting time last read for \'{section}\''
+    try:
+        sp_if_set_time_last_read_for_(section)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error ' + event)
@@ -628,11 +684,23 @@ def cfg_if_write_parsers_to_disk():
 #                              METADATA PARSER INTERFACE BELOW                                       #
 #                                                                                                    #
 ### ### ### ### ### ### ### ### # METADATA PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ####
-def metadata_parser(section: str, successful_add=False):
-    event = f'getting metadata parser at \'{section}\'' if section else f'getting metadata parser'
+def metadata_added_parser(section=empty) -> RawConfigParser:
+    event = f'getting metadata added parser at \'{section}\'' if section else f'getting metadata added parser'
     try:
-        mp = ma_parser if successful_add else mf_parser
-        return mp[section] if section else mp
+        if not empty_(section):
+            assert section in ma_parser.sections(), KeyError(f'section \'{section}\' not in parser')
+        return ma_parser[section] if not empty_(section) else ma_parser
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
+
+
+def metadata_failed_parser(section=empty) -> RawConfigParser:
+    event = f'getting metadata failed parser at \'{section}\'' if section else f'getting metadata failed parser'
+    try:
+        if not empty_(section):
+            assert section in mf_parser.sections(), KeyError(f'section \'{section}\' not in parser')
+        return mf_parser[section] if not empty_(section) else mf_parser
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error ' + event)
@@ -737,9 +805,11 @@ def mp_if_write_metadata_from_(result: dict, added=False) -> None:  # FIXME meta
 #                               SEARCH PARSER INTERFACE BELOW                                        #
 #                                                                                                    #
 ### ### ### ### ### ### ### ### ## SEARCH PARSER INTERFACE ## ### ### ### ### ### ### ### ### ### ####
-def search_parser(section=''):
+def search_parser(section=empty):
     event = f'getting search parser for \'{section}\''
     try:
+        if not empty_(section):
+            assert section in s_parser.sections(), KeyError(f'section \'{section}\' not in parser')
         return s_parser[section] if not empty_(section) else s_parser
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -818,7 +888,7 @@ def sp_if_get_search_term_for_(section: str) -> str:
 def sp_if_get_str_from_(section: str, key: str) -> str:
     event = f'getting str value for search parser at \'{key}\''
     try:
-        return search_parser(section)[key]
+        return str(search_parser(section)[key])
     except Exception as e_err:
         ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -826,9 +896,9 @@ def sp_if_get_str_from_(section: str, key: str) -> str:
 
 def sp_if_increment_result_added_count_for_(section: str) -> None:
     event = f'incrementing result added count for \'{section}\''
-    try:  # FIXME bring into compliance with standard interface functions
-        s_parser[section][s_key.RESULTS_ADDED_COUNT] = \
-            str(int(s_parser[section][s_key.RESULTS_ADDED_COUNT]) + 1)
+    key = s_key.RESULTS_ADDED_COUNT
+    try:
+        search_parser(section)[key] = str(sp_if_get_int_from_(section, key) + 1)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error ' + event)
@@ -845,26 +915,27 @@ def sp_if_increment_search_attempt_count_for_(section: str) -> None:
         ml.log_event(f'error ' + event)
 
 
-def sp_if_increment_search_state_for_(section: str, state_machine):
+def sp_if_increment_search_state_for_(state_machine):
+    section = state_machine.active_section
     event = f'incrementing search state for \'{section}\''
-    try:  # FIXME p0, working out bugs
+    try:  # FIXME p0, working out bugs.. stripped down for now
         search_state = sp_if_get_search_states_for_(section)
         queued, running, stopped, concluded = search_state
         if queued:
-            s_parser.remove_section(s_key.ID)  # queued, delete any existing search id
-            if section in state_machine.active_search_ids:
-                del state_machine.active_search_ids[section]  # FIXME bug source, deleting id after starting
-            ml.log_event(f' search for \'{section}\' queued, will be started at vacancy')
+            queued, running = False, True
+            ml.log_event(event + f' from queued to running')
         elif running:
-            # FIXME p1, this could increment multiple times if the main_loop is too fast
-            ml.log_event(f'search for \'{section}\' running.. please stand by..')
+            # FIXME p1, this could increment multiple times if the main_loop is too fast?
+            running, stopped = False, True
+            ml.log_event(event + f' from running to stopped, will be processed on next loop')
             sp_if_increment_search_attempt_count_for_(section)
         elif stopped:
-            ml.log_event(f'search for \'{section}\' stopped, will process next loop')
+            stopped = False
+            concluded = True if search_concluded_for_(section) else False
+            queued = True if not concluded else False
         elif concluded:
             ml.log_event(f'search for \'{section}\' concluded, cannot increment')
-            return
-        search_state = queued, running, stopped
+        search_state = queued, running, stopped, concluded
         sp_if_set_search_state_for_(section, *search_state)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -874,7 +945,7 @@ def sp_if_increment_search_state_for_(section: str, state_machine):
 def sp_if_ready_to_start_(queued: bool, state_machine) -> bool:
     try:  # FIXME label arg QbitStateMachine without recursive import?
         search_rank = sp_if_get_int_from_(state_machine.active_section, s_key.RANK)
-        search_rank_required_to_start = uc_if_get_int_from_key_(u_key.RANK_REQUIRED)
+        search_rank_required_to_start = uc_if_get_int_for_key_(u_key.RANK_REQUIRED)
         queue_has_room = not state_machine.search_queue_full()
         search_rank_allowed = search_rank <= search_rank_required_to_start
         if queued and queue_has_room and search_rank_allowed:
@@ -966,7 +1037,6 @@ def sp_if_set_search_id_for_(section: str, search_id: str) -> None:
 
 
 def sp_if_set_search_ranks() -> None:
-    event = f'setting search ranks'
     try:  # FIXME top bug is the soft-lock this function could resolve
         sort_key = s_key.TIME_LAST_SEARCHED
         sdp_as_dict = sp_if_get_parser_as_sortable()
@@ -979,7 +1049,6 @@ def sp_if_set_search_ranks() -> None:
             ml.log_event(f'search rank \'{search_rank}\' assigned to header \'{header}\'')
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
 
 
 def sp_if_set_search_state_for_(section,
@@ -1016,12 +1085,10 @@ def sp_if_set_str_for_(section: str, key: str, string: str):
 
 
 def sp_if_set_time_last_read_for_(section: str) -> None:
-    event = f'setting time last read for \'{section}\''
     try:
         sp_if_set_str_for_(section, s_key.TIME_LAST_READ, str(dt.now()))
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
 
 
 def sp_if_set_time_last_searched_for_(section: str) -> None:
@@ -1041,30 +1108,40 @@ def sp_if_set_time_last_searched_for_(section: str) -> None:
 #                            USER CONFIG PARSER INTERFACE BELOW                                      #
 #                                                                                                    #
 ### ### ### ### ### ### ### ### USER CONFIG PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ###
-def user_configuration(section: str):
-    event = f'getting user config parser at \'{section}\'' if section else f'getting user config parser'
+def user_configuration(section=empty):
+    event = f'getting user config parser at \'{section}\'' if not empty_(section) else f'getting user config parser'
     try:
-        default = 'DEFAULT'  # FIXME p3, if add more sections this will need to be adjusted
-        if section != default:
-            ml.log_event(f'the section value \'{section}\' may be an issue', level=ml.WARNING)
+        if section:
+            if section != default:
+                ml.log_event(f'the section value \'{section}\' may be an issue', level=ml.WARNING)
         ml.log_event(f'ignoring user section \'{section}\'.. setting to \'{default}\'')
         section = default  # FIXME p3, this is a dumb patch, fix it later
-        return u_parser[section] if section else u_parser
+        return u_parser[section] if not empty_(section) else u_parser
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error ' + event)
 
 
-def uc_if_get_int_from_key_(ucf_key: str) -> int:
-    event = f'getting integer from user configuration parser with key \'{ucf_key}\''
-    try:  # TODO input user config parser isn't "at active"
-        default = 'DEFAULT'  # FIXME p3, if add more sections this will need to be fixed
-        val = user_configuration(default)[ucf_key]
+def uc_if_get_int_for_key_(key: str) -> int:
+    event = f'getting int from user configuration parser with key \'{key}\''
+    try:
+        val = user_configuration(default)[key]
         for char in val:  # FIXME this would allow values like -79 but also 7-9 which would error
             if char not in digits_or_sign:
-                raise TypeError(f'unexpected character in value for key \'{ucf_key}\'')
+                raise TypeError(f'unexpected character in value for key \'{key}\'')
         ml.log_event(f'returning int({val}) from search parser')
         return int(val)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
+
+
+def uc_if_get_str_for_key_(key: str) -> str:
+    event = f'getting str from user configuration parser with key \'{key}\''
+    try:
+        val = user_configuration(default)[key]
+        ml.log_event(f'returning str({val}) from search parser')
+        return str(val)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error ' + event)
