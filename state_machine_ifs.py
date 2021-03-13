@@ -1,4 +1,4 @@
-from configparser import RawConfigParser, SectionProxy
+from configparser import RawConfigParser
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
 from qbit_interface.api_comm import QbitApiCaller as QApi
@@ -87,8 +87,8 @@ def build_metadata_section_from_(result: dict) -> str:
             mp_if_get_result_metadata_at_key_(m_key.URL, result)
         if url == '':
             raise ValueError(f'empty url!')
-        r_name, delim, r_url = hash_metadata(name), ' @ ', hash_metadata(url)
-        hashed_name = r_name + delim + r_url
+        r_name, delimiter, r_url = hash_metadata(name), ' @ ', hash_metadata(url)
+        hashed_name = r_name + delimiter + r_url
         return hashed_name
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -384,7 +384,7 @@ def ready_to_start_(queued: bool, state_machine) -> bool:
         ml.log_event(f'error ' + event)
 
 
-def result_has_enough_seeds(result) -> bool:
+def result_has_enough_seeds() -> bool:
     event = f'checking if result has enough seeds'
     try:
         pass  # TODO refactor into this function?
@@ -598,7 +598,7 @@ def cfg_if_get_parser_value_at_(section: str, key: str,
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def cfg_if_set_parser_value_at_(section: str, parser_key: str, value: str,
+def cfg_if_set_parser_value_at_(section: str, parser_key: str, value,
                                 mp=None, search=True, settings=False):
     try:  # FIXME remove/replace this function
         if mp:
@@ -663,7 +663,7 @@ def mp_if_create_section_for_(mp: RawConfigParser, result: dict) -> None:
             return
         mp.add_section(m_section)
         result_name = mp_if_get_result_metadata_at_key_(m_key.NAME, result)
-        ml.log_event(f'section has been added to metadata result \'{result_name}\' for header \'{m_section}\'', announce=True)
+        ml.log_event(f'section for header \'{m_section}\' added to metadata @ \'{result_name}\'', announce=True)
         for metadata_kv in result.items():
             attribute, detail = validate_metadata_type_for_(metadata_kv)
             h_attr, h_dtl = get_hashed_(attribute, detail, offset)
@@ -738,8 +738,8 @@ def mp_if_write_metadata_from_(result: dict, added=False) -> None:  # FIXME meta
 #                                                                                                    #
 ### ### ### ### ### ### ### ### ## SEARCH PARSER INTERFACE ## ### ### ### ### ### ### ### ### ### ####
 def search_parser(section=''):
+    event = f'getting search parser for \'{section}\''
     try:
-        event = f'getting search parser for \'{section}\''
         return s_parser[section] if not empty_(section) else s_parser
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
