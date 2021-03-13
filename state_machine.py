@@ -3,20 +3,21 @@ from core.interface import add_results_from_
 from core.interface import all_searches_concluded
 from core.interface import create_search_job_for_
 from core.interface import empty_
-from core.interface import get_all_sections_from_parser_
+from core.interface import get_all_sections_from_search_parser
 from core.interface import get_connection_time_start
 from core.interface import get_search_id_from_
 from core.interface import get_search_results_for_
 from core.interface import get_search_states_for_
 from core.interface import get_search_status_for_
 from core.interface import get_search_term_for_
-from core.interface import increment_search_state_for_
+from core.interface import increment_search_state_at_active_section_for_
 from core.interface import pause_on_event
 from core.interface import print_search_ids_from_
 from core.interface import ready_to_start_
 from core.interface import search_has_yielded_required_results_for_
 from core.interface import search_is_running_with_
 from core.interface import search_is_stopped_with_
+from core.interface import set_active_section_to_
 from core.interface import set_search_id_for_
 from core.interface import set_search_ranks
 from core.interface import set_time_last_searched_for_
@@ -38,10 +39,10 @@ class QbitStateManager:
 
     def increment_main_loop_count(self):
         event = f'incrementing main loop count'
-        try:
+        try:  # FIXME is this a better place to put a pause vs main_loop?
             self.main_loop_count += 1
-            ml.log_event(f'connection to client was started at \'{get_connection_time_start()}\'')
             ml.log_event(f'main loop has ended, {self.main_loop_count} total loops..')
+            ml.log_event(f'connection to client was started at \'{get_connection_time_start()}\'')
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
             ml.log_event(f'error ' + event)
@@ -49,12 +50,11 @@ class QbitStateManager:
     def initiate_and_monitor_searches(self):
         event = f'initiating and monitoring searches'
         try:
-            search_sections = get_all_sections_from_parser_(search=True)
+            search_parser_sections = get_all_sections_from_search_parser()
             set_search_ranks()
             pause_on_event(u_key.WAIT_FOR_USER)
-            for search_section in search_sections:
-                self.active_section = search_section
-                ml.log_event(f'monitoring search header \'{self.active_section}\'')
+            for search_parser_section in search_parser_sections:
+                set_active_section_to_(search_parser_section, self)
                 search_state = get_search_states_for_(self.active_section)
                 self.manage_state_updates(search_state)
             write_parsers_to_disk()  # FIXME p3, consider location of this line
@@ -76,15 +76,15 @@ class QbitStateManager:
                 search_status = get_search_status_for_(search_id)
                 if search_status is None:
                     ml.log_event(f'bad search id \'{search_id}\', ignored and re-queued', level=ml.WARNING)
-                    increment_search_state_for_(self.active_section, self)  # search should be running, status is None.. requeue
+                    increment_search_state_at_active_section_for_(self.active_section, self)  # search should be running, status is None.. requeue
                     return
                 print_search_ids_from_(self.active_search_ids)
                 if search_is_running_with_(search_status):
                     pass  # search ongoing, do nothing
                 elif search_is_stopped_with_(search_status):
-                    increment_search_state_for_(self.active_section, self)  # mark search as stopped (finished)
+                    increment_search_state_at_active_section_for_(self.active_section, self)  # mark search as stopped (finished)
                 else:
-                    increment_search_state_for_(self.active_section, self)  # unexpected state, re-queue
+                    increment_search_state_at_active_section_for_(self.active_section, self)  # unexpected state, re-queue
             elif search_stopped:
                 results, section_and_id = None, None
                 if self.active_section in self.active_search_ids:
@@ -96,15 +96,15 @@ class QbitStateManager:
                     add_results_from_(section_and_id, results)  # FIXME p0, this is the source of most bugs rn
                     self.set_search_id_as_(search_id, active=False)
                     if search_has_yielded_required_results_for_(self.active_section):
-                        increment_search_state_for_(self.active_section, self)
+                        increment_search_state_at_active_section_for_(self.active_section, self)
                         return
-                increment_search_state_for_(self.active_section, self)
+                increment_search_state_at_active_section_for_(self.active_section, self)
             elif search_concluded:
                 pass
             else:
                 ml.log_event(f'header \'{self.active_section}\' is restricted from starting by search '
                              f'rank and/or search queue, this is by design', level=ml.WARNING)
-                increment_search_state_for_(self.active_section, self)
+                increment_search_state_at_active_section_for_(self.active_section, self)
             pause_on_event(u_key.WAIT_FOR_SEARCH_STATUS_CHECK)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -154,7 +154,7 @@ class QbitStateManager:
                 ml.log_event(f'search started for \'{self.active_section}\' with search id \'{search_id}\'',
                              event_completed=True, announce=True)
                 self.active_search_ids[self.active_section] = search_id
-                increment_search_state_for_(self.active_section, self)  # search is confirmed to be running
+                increment_search_state_at_active_section_for_(self)  # search is confirmed to be running
             elif search_is_stopped_with_(search_status):
                 ml.log_event(f'search status is stopped immediately after starting for \'{self.active_section}\'',
                              announce=True, level=ml.WARNING)
