@@ -1,33 +1,60 @@
-# primary modules  
-### main_loop.py  
-main program loop, abstracted program behavior  
-  
-### api_comm.py  
-the interface to the api  
-  
-### settings_wrapper.py  
-module contains classes to parse configuration files  
-  
-### settings_io.py  
-interact (read/write) with settings on disk  
-  
-### state_machine.py  
-automatically conduct & monitor searches based on user parameters  
-  
-### state_machine_interface.py  
-offloaded code from the state machine  
-  
-  
-# configuration  
-### metadata_added.cfg & metadata_failed.cfg  
-search results information  
-  
-### search.cfg  
-dictates search behavior  
-  
-### user_configuration.cfg  
-dictates program behavior  
+# a brief project summary follows
+###core.interface.py
+module handling transactions between other modules such as..
+1. state machine uses core.interface to fetch, save, and process data
+2. settings_io uses core.interface to communicate parser data to other modules
+3. api_comm uses core.interface to communicate api data to other modules
 
+###data_meta
+this is a data directory that contains configuration files related to result metadata
+1. metadata_added.cfg is results that have been added to local results
+2. metadata_failed.cfg is results that have been previously encountered and failed
+
+###data_search
+this is a data directory that contains configuration files related to search configuration
+1. search.cfg  
+   i. should be setup before runtime  
+   ii. can be used to configure individual search headers  
+   iii. comes with examples
+   
+###extra
+TODO, nothing here, may be used for managing logs
+
+###media
+TODO, nothing here, may be used for managing local results
+
+###minimalog (https://github.com/nonbhoward/minimalog)
+logger written by myself, it's buggy but including it in this project is motivation for me to work on it  
+all calls to it could be removed without affecting program function  
+
+###network
+TODO, i have started to work on a few modules, but nothing here matters yet
+
+###qbit_interface.api_comm
+this are functions that directly perform api calls to qbittorrent
+
+###user_configuration
+1. EDIT_SETTINGS_HERE.cfg is program globals, right now mostly determines program delays  
+2. settings_io.py is the interface to the configuration parsers and keys  
+3. settings_wrapper.py is a hierarchy of classes that allows "easy" access to parsers structure
+
+### api_comm.py  
+the interface to the qbittorrent api, all api calls should be found or moved to here  
+  
+###DOCUMENTATION.txt is similar to README.md
+
+###LICENSE is self explanatory
+
+###main_loop is main program loop, minimal & abstracted program behavior
+
+###README.md is what you are reading
+
+###requirements.txt is the typical venv constructor helper, see pip documentation
+
+###state_machine.py controls the high-level program flow, a traditional 'state machine' as found all throughout engineering
+
+##+++ === +++ === +++ === +++ === +++
+##=== +++ === +++ === +++ === +++ ===
 
 # requirements & setup
 ### requirements
@@ -37,14 +64,16 @@ dictates program behavior
 
 
 ### setup  
-0. install qbittorrent, install and enable search plugins  
-1. clone project  
-2. create virtual environment  
-3. activate virtual environment  
-4. pip install dependencies per requirements.txt  
-5. enable web ui [^1]
-6. enable search plugins
-7. supply web ui credentials (user, pass, host) as preferred  
-8. launch with 'python main_loop.py' or via IDE  
+00. install qbittorrent  
+01. clone this project  
+02. if using minimalog, clone minimalog to a parallel dir and softlink it
+03. if not using minimalog, delete all calls to minimalog (sorry)  
+04. create virtual environment 
+05. activate virtual environment  
+06. pip install dependencies per requirements.txt
+07. enable qbittorrent's web ui (setup user and pass)
+08. once again, check that search plugins are enabled
+09. supply web ui credentials (user, pass, host) as preferred  
+10. launch with 'python main_loop.py', via IDE, or however you do you  
 
 [^1] : https://github.com/lgallard/qBittorrent-Controller/wiki/How-to-enable-the-qBittorrent-Web-UI
