@@ -8,7 +8,7 @@ class MediaBox:
         try:
             self.contents = {}
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'', level=ml.ERROR)
+            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
@@ -16,7 +16,7 @@ class MediaBox:
         try:
             pass
         except Exception as e_err:
-            ml.log_event(f'error getting content from sender', level=ml.ERROR)
+            ml.log_event(f'error getting content from sender')
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
