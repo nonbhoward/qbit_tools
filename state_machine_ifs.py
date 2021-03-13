@@ -715,13 +715,13 @@ def sp_if_increment_search_state_for_(section: str, state_machine):
             if section in state_machine.active_search_ids:
                 del state_machine.active_search_ids[section]
             ml.log_event(f' search for \'{section}\' queued, will be started at vacancy')
-        if running:
+        elif running:
             # FIXME p1, this could increment multiple times if the main_loop is too fast
             ml.log_event(f'search for \'{section}\' running.. please stand by..')
             sp_if_increment_search_attempt_count_for_(section)
-        if stopped:
+        elif stopped:
             ml.log_event(f'search for \'{section}\' stopped, will process next loop')
-        if concluded:
+        elif concluded:
             ml.log_event(f'search for \'{section}\' concluded, cannot increment')
             return
         search_state = queued, running, stopped

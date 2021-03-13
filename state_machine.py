@@ -148,7 +148,7 @@ class QbitStateManager:
                 ml.log_event(f'search started for \'{self.active_section}\' with search id \'{search_id}\'',
                              event_completed=True, announce=True)
                 self.active_search_ids[self.active_section] = search_id
-                sp_if_increment_search_state_for_(self.active_section)  # search is confirmed to be running
+                sp_if_increment_search_state_for_(self.active_section, self)  # search is confirmed to be running
             elif search_is_stopped_with_(search_status):
                 ml.log_event(f'search status is stopped immediately after starting for \'{self.active_section}\'',
                              announce=True, level=ml.WARNING)
