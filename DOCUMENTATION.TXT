@@ -1,57 +1,23 @@
 [PROJECT STRUCTURE]
-    data_meta
-        metadata_added.cfg is results history which added
-        metadata_failed.cfg is results history which failed to add
-    data_search
-        search_input.cfg TODO, a place to enter new searches at runtime
-        search.cfg is a list of user-configured searches and state-data
-    extra
-        # TODO, has no content
-    media
-        # TODO, will contain any streaming code if the project goes in that direction
-    network
-        # TODO, will contain image distribution code
-    qbit_interface
-        api_comm.py is code to interact with the api..
-            ..it also contains a few functions to prevent recursive imports
-    user_configuration
-        EDIT_SETTINGS_HERE.cfg is global settings, currently RO, edit before runtime
-        settings_io.py is the central hub for parser interactions
-        settings_wrapper.py is a parser-wrapping class hierarchy
-    .gitignore is self-explanatory
-    DOCUMENTATION.TXT is YOU ARE HERE
-    LICENSE is self-explanatory
-    main_loop.py is the abstracted application function
-    README.md is self-explanatory
-    state_machine.py is minimal code to manage the state machine
-    state_machine_interface.py is helper functions for the state machine
-        the state_machine_interface..
-        0. ..is the center of the universe when it comes to accessing..
-            ..user configuration data, search configuration data, result metadata..
-            ..and finally indirect api calls should start here
-        1. ..offloads code from the state machine module, keeping it simple
-        2. ..offloads code from the api comm module, keeping it simple
-        3. ..is the go-to location for fetching parser data, communicates..
-            ..directly and often with the settings_io module
-    TODO.txt is project notes, known bugs and a good place to start.. 
-	..when looking for work
+	# TODO, update this, for now just see README.md
 
 [STATE MACHINE NOTES]
-    all search states are : queued, running, stopped, concluded
-        fyi, queued and concluded are user-defined, running and stopped are api-defined
+	the state machine has..
+		two actions : increment, reset  
+		four states : queued, running, stopped, concluded. queued and concluded are user-defined, running and stopped are api-defined
 
     states and transitions
         1. queued
-            when to go to 2? start_search -> search_status = RUNNING
-            when to go to 3? never
-            when to go to 4? never
+            	when to go to 2? start_search -> search_status = RUNNING
+            	when to go to 3? it should be impossible to go to state 3 from 1
+            	when to go to 4? it should be impossible to go to state 4 from 1
         2. running
-            when to go to 1? if bad data, reset to 1
-            when to go to 3? search_status = STOPPED
-            when to go to 4? never
+            	when to go to 1? if bad (or no) data is returned from a search results fetch, reset to 1
+            	when to go to 3? search_status = STOPPED
+            	when to go to 4? it should be impossible to go to state 4 from 2
         3. stopped
-            when to go to 1? if bad results or no results, reset to 1
-            when to go to 2? never
-            when to go to 4? if exceed user thresholds
+		when to go to 1? if bad (or no) data is returned from a search results fetch, reset to 1
+		when to go to 2? it should be impossible to go from state 3 to 2
+		when to go to 4? if the thresholds set in searches.cfg are met for that search header
         4. concluded
-            once entered, never exit
+		once entered, never leave this state without manual intervention
