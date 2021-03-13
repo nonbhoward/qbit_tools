@@ -108,7 +108,7 @@ class QbitConfig:
             ml.log_event(e_err.args[0], level=ml.ERROR)
 
     @classmethod
-    def get_result_metadata_at_key_(cls, result: dict, key: str):
+    def get_result_metadata_at_key_(cls, key: str, result: dict):
         try:
             return int(result[key]) if _is_int_(result[key]) else result[key]
         except Exception as e_err:

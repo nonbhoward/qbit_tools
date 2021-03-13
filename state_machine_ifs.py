@@ -1,4 +1,5 @@
 from configparser import RawConfigParser, SectionProxy
+from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
 from qbit_interface.api_comm import QbitApiCaller as QApi
 from string import digits
@@ -99,13 +100,8 @@ def build_metadata_section_from_(result: dict) -> str:
 
 
 def check_for_no_data_in_(value: str) -> str:
-    """
-    1. if value is empty string, return NO DATA for parser write
-    :param value: test value to be checked for empty string
-    :return: 'NO DATA' if empty string
-    """
     try:
-        return 'NO DATA' if value == '' else value
+        return 'NO DATA' if empty_(value) else value
     except Exception as e_err:
         ml.log_event(f'error checking data in value \'{value}\'', level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -186,22 +182,13 @@ def fetch_metadata_from_(parser) -> dict:
 
 
 def filter_(section: str, results: list, found=True, sort=True):
-    """
-    1. get search priority
-    :param results: results returned from the api
-    :param section: the active section of the search parser
-    :param found: bool, True = don't parse previously failed results
-    :param sort: bool, True = sort by key determined elsewhere
-    :return:
-    """
     try:
-        sps_at_active = search_parser(section)
-        seeds_min = int(read_parser_value_with_(s_key.MIN_SEED, section))
-        bytes_min = int(read_parser_value_with_(s_key.SIZE_MIN_BYTES, section))
-        bytes_max = int(read_parser_value_with_(s_key.SIZE_MAX_BYTES, section))
+        seeds_min = sp_if_get_int_from_(section, s_key.MIN_SEED)
+        bytes_min = sp_if_get_int_from_(section, s_key.SIZE_MIN_BYTES)
+        bytes_max = sp_if_get_int_from_(section, s_key.SIZE_MAX_BYTES)
         megabytes_min = mega(bytes_min)
         megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
-        filename_regex = read_parser_value_with_(s_key.REGEX_FILENAME, section)
+        filename_regex = sp_if_get_str_from_(section, s_key.REGEX_FILENAME)  # FIXME check this return
         results_filtered = list()
         for result in results:
             result_name = cfg_if_get_result_metadata_at_key_(m_key.NAME, result)
@@ -311,6 +298,25 @@ def get_search_results_for_(active_kv: tuple) -> list:
     except Exception as e_err:
         ml.log_event(f'error getting search results for \'{active_kv}\'', level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
+        
+
+def get_search_state(section) -> tuple:
+    try:
+        sp_if_set_str_for_(section, s_key.TIME_LAST_READ, str(dt.now()))  # FIXME move to function
+        search_queued = sp_if_get_bool_from_(section, s_key.QUEUED)
+        search_running = sp_if_get_bool_from_(section, s_key.RUNNING)
+        search_stopped = sp_if_get_bool_from_(section, s_key.STOPPED)
+        search_concluded = sp_if_get_bool_from_(section, s_key.CONCLUDED)
+        ml.log_event(f'search state for \'{section}\': '
+                     f'\n\tqueued: {search_queued}'
+                     f'\n\trunning: {search_running}'
+                     f'\n\tstopped: {search_stopped}'
+                     f'\n\tconcluded: {search_concluded}', announce=True)
+        return search_queued, search_running, search_stopped, search_concluded
+        pass
+    except Exception as e_err:
+        ml.log_event(f'error getting search state', level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def hash_metadata(x: str, undo=False, offset=0) -> str:
@@ -330,6 +336,60 @@ def increment_result_added_count_for_(section: str) -> None:
             str(int(s_parser[section][s_key.RESULTS_ADDED_COUNT]) + 1)
     except Exception as e_err:
         ml.log_event(f'error incrementing result added count for \'{section}\'', level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def increment_search_attempt_count(section):
+    try:
+        pass
+        search_attempt_count = sp_if_get_int_from_(section, s_key.SEARCH_ATTEMPT_COUNT)
+        ml.log_event(f'search try counter at \'{search_attempt_count}\', incrementing..')
+        sp_if_set_int_for_(section, s_key.SEARCH_ATTEMPT_COUNT, search_attempt_count + 1)
+    except Exception as e_err:
+        ml.log_event(f'', level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def increment_search_state(section):
+    ml.log_event('updating the search state machine..')
+    try:  # FIXME reframe this to 'increment search state'
+        if api_state_key == s_key.QUEUED:
+            search_parser(section)[s_key.QUEUED] = s_key.YES
+            search_parser(section)[s_key.RUNNING] = s_key.NO
+            search_parser(section)[s_key.STOPPED] = s_key.NO
+            search_parser(section)[s_key.CONCLUDED] = s_key.NO
+            s_parser.remove_section(s_key.ID)  # queued, delete any existing search id
+            if section in self.active_search_ids:
+                del self.active_search_ids[self.active_section]
+            ml.log_event(f'search for \'{section}\' is queued, will '
+                         f'be started when search queue has vacancy')
+        elif api_state_key == s_key.RUNNING:
+            search_parser(section)[s_key.QUEUED] = s_key.NO
+            search_parser(section)[s_key.RUNNING] = s_key.YES
+            search_parser(section)[s_key.STOPPED] = s_key.NO
+            search_parser(section)[s_key.CONCLUDED] = s_key.NO
+            # FIXME p1, this could increment multiple times if the main_loop is too fast?
+            increment_search_attempt_count()
+            ml.log_event(f'search for \'{section}\' is running.. please stand by..')
+        elif api_state_key == s_key.STOPPED:
+            search_parser(section)[s_key.QUEUED] = s_key.NO
+            search_parser(section)[s_key.RUNNING] = s_key.NO
+            search_parser(section)[s_key.STOPPED] = s_key.YES
+            search_parser(section)[s_key.CONCLUDED] = s_key.NO
+            ml.log_event(f'search for \'{section}\' is stopped and will '
+                         f'be processed on next loop')
+        elif api_state_key == s_key.CONCLUDED:
+            search_parser(section)[s_key.QUEUED] = s_key.NO
+            search_parser(section)[s_key.RUNNING] = s_key.NO
+            search_parser(section)[s_key.STOPPED] = s_key.NO
+            search_parser(section)[s_key.CONCLUDED] = s_key.YES
+            ml.log_event(f'search for \'{section}\' has concluded due to '
+                         f'exceeding user preferences, no further action to be taken')
+        else:
+            pass
+        search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())
+    except Exception as e_err:
+        ml.log_event(f'error updating search states with \'{api_state_key}\'', level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -387,25 +447,6 @@ def print_search_ids_from_(active_search_ids: dict):
             ml.log_event(f'\tsearch header : \'{active_search_header_name}\'')
     except Exception as e_err:
         ml.log_event(f'error printing search ids from \'{active_search_ids}\'', level=ml.ERROR)
-        ml.log_event(e_err.args[0], level=ml.ERROR)
-
-
-def read_parser_value_with_(key: str, section: str,
-                            meta_add=False, meta_find=False,
-                            search=True, settings=False):
-    # TODO this interface is lazy, above is a bool, and what is below? this is needlessly confusing
-    # FIXME p2, address TODO
-    try:
-        if meta_add:
-            return QConf.read_parser_value_with_(key, section, meta_add=meta_add)
-        elif meta_find:
-            return QConf.read_parser_value_with_(key, section, meta_find=meta_find)
-        elif settings:
-            return QConf.read_parser_value_with_(key, section, settings=settings)
-        elif search:  # MUST be last since defaults true
-            return QConf.read_parser_value_with_(key, section)
-    except Exception as e_err:
-        ml.log_event(f'error reading parser value with \'{key}\' at \'{section}\'', level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -483,21 +524,6 @@ def search_set_end_reason(section, reason_key):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def set_search_rank_using_(sort_key: str):
-    try:
-        sdp_as_dict = cfg_if_get_search_parser_as_sortable()
-        sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key])
-        number_of_sections = len(sdp_as_dict_sorted)
-        for search_rank in range(number_of_sections):
-            # TODO this is a bit lazy, could use some refining
-            header = sdp_as_dict_sorted[search_rank][0]
-            s_parser[header][s_key.RANK] = str(search_rank)
-            ml.log_event(f'search rank \'{search_rank}\' assigned to header \'{header}\'')
-    except Exception as e_err:
-        ml.log_event(f'error setting search rank using key \'{sort_key}\'', level=ml.ERROR)
-        ml.log_event(e_err.args[0], level=ml.ERROR)
-
-
 def set_time_last_searched_for_active_header():
     try:
         pass  # TODO refactor into this function?
@@ -511,6 +537,22 @@ def sort_(results: list) -> list:
         return sorted(results, key=lambda k: k['nbSeeders'], reverse=True)  # FIXME remove hardcode
     except Exception as e_err:
         ml.log_event(f'error sorting results', level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def sort_and_prioritize_searches():
+    try:  # FIXME top bug is the soft-lock this function could resolve
+        sort_key = s_key.TIME_LAST_SEARCHED
+        sdp_as_dict = cfg_if_get_search_parser_as_sortable()
+        sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key])
+        number_of_sections = len(sdp_as_dict_sorted)
+        for search_rank in range(number_of_sections):
+            # TODO this is a bit lazy, could use some refining
+            header = sdp_as_dict_sorted[search_rank][0]
+            s_parser[header][s_key.RANK] = str(search_rank)
+            ml.log_event(f'search rank \'{search_rank}\' assigned to header \'{header}\'')
+    except Exception as e_err:
+        ml.log_event(f'error setting search rank using key \'{sort_key}\'', level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -597,7 +639,7 @@ def api_if_get_search_status_for_(search_id: str) -> str:
 #### ### ### ### ### ### ### ### ### ### CFG INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
 def cfg_if_get_result_metadata_at_key_(key: str, result: dict) -> str:  # QConf
     try:
-        return QConf.get_result_metadata_at_key_(result, key)
+        return QConf.get_result_metadata_at_key_(key, result)
     except Exception as e_err:
         ml.log_event(f'cfg error getting result metadata at key \'{key}\'', level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -608,6 +650,24 @@ def cfg_if_get_search_parser_as_sortable():
         return QConf.get_search_parser_as_sortable()
     except Exception as e_err:
         ml.log_event(f'cfg error getting search parser as sortable', level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def cfg_if_read_parser_value_at_(section: str, key: str,
+                                 meta_add=False, meta_find=False,
+                                 search=True, settings=False):
+    # FIXME p2, address interface concerns
+    try:
+        if meta_add:
+            return QConf.read_parser_value_with_(key, section, meta_add=meta_add)
+        elif meta_find:
+            return QConf.read_parser_value_with_(key, section, meta_find=meta_find)
+        elif settings:
+            return QConf.read_parser_value_with_(key, section, settings=settings)
+        elif search:  # MUST be last since defaults true
+            return QConf.read_parser_value_with_(key, section)
+    except Exception as e_err:
+        ml.log_event(f'error reading parser value with \'{key}\' at \'{section}\'', level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
