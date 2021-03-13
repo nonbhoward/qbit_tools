@@ -317,7 +317,7 @@ def value_provided_for_(value_to_check) -> bool:
         event = f'checking if value provided for \'{value_to_check}\''
         return False if value_to_check == '0' else True
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -620,7 +620,7 @@ def sp_if_get_bool_from_(section: str, key: str) -> bool:
         ml.log_event(event)
         return val_bool
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -634,7 +634,7 @@ def sp_if_get_int_from_(section: str, key: str) -> int:
                 raise TypeError(f'unexpected character while ' + event)
         return int(integer)
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -662,7 +662,7 @@ def sp_if_get_search_state_for_(section) -> tuple:
         return search_queued, search_running, search_stopped, search_concluded
         pass
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -672,7 +672,7 @@ def sp_if_get_search_term_for_(section: str) -> str:
         search_term = sp_if_get_str_from_(section, s_key.TERM)
         return search_term if value_provided_for_(search_term) else section
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -681,7 +681,7 @@ def sp_if_get_str_from_(section: str, key: str) -> str:
         event = f'getting str value for search parser at \'{key}\''
         return search_parser(section)[key]
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -727,7 +727,7 @@ def sp_if_increment_search_state_for_(section: str, state_machine):
         search_state = queued, running, stopped
         sp_if_set_search_state_for_(section, *search_state)
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -788,10 +788,10 @@ def sp_if_set_bool_for_(section: str, key: str, boolean: bool):
     try:
         event = f'setting bool value for search parser at \'{key}\''
         ml.log_event(event)
-        search_parser(section)[key] = boolean
+        search_parser(section)[key] = s_key.YES if boolean else s_key.NO
         search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())  # don't do it
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -813,7 +813,7 @@ def sp_if_set_int_for_(section: str, key: str, integer: int) -> None:
         search_parser(section)[key] = str(integer)
         search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())  # don't do it
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -851,7 +851,7 @@ def sp_if_set_search_state_for_(section,
                      f'\n\tconcluded: {concluded}', announce=True)
         pass
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -862,7 +862,7 @@ def sp_if_set_str_for_(section: str, key: str, string: str):
         search_parser(section)[key] = string
         search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())  # don't do it
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -871,7 +871,7 @@ def sp_if_set_time_last_read_for_(section: str) -> None:
         event = f'setting time last read for \'{section}\''
         sp_if_set_str_for_(section, s_key.TIME_LAST_READ, str(dt.now()))
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -880,7 +880,7 @@ def sp_if_set_time_last_searched_for_(section: str) -> None:
         event = f'setting time last searched for \'{section}\''
         sp_if_set_str_for_(section, s_key.TIME_LAST_SEARCHED, str(dt.now()))
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -920,7 +920,7 @@ def uc_if_get_int_from_key_(ucf_at_active: SectionProxy, ucf_key: str) -> int:
         ml.log_event(f'returning int({val}) from search parser')
         return int(val)
     except Exception as e_err:
-        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(f'error ' + event)
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
