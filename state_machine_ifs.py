@@ -312,6 +312,15 @@ def validate_metadata_type_for_(metadata_kv: tuple) -> tuple:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
+def value_provided_for_(value_to_check) -> bool:
+    try:
+        event = f'checking if value provided for \'{value_to_check}\''
+        return False if value_to_check == '0' else True
+    except Exception as e_err:
+        ml.log_event(f'error ' + event, level=ml.ERROR)
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
 #### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
 #                                                                                                    #
 #                                STATE MACHINE INTERFACE BELOW                                       #
@@ -661,7 +670,7 @@ def sp_if_get_search_term_for_(section: str) -> str:
     try:
         event = f'getting search term for \'{section}\''
         search_term = sp_if_get_str_from_(section, s_key.TERM)
-        return search_term
+        return search_term if value_provided_for_(search_term) else section
     except Exception as e_err:
         ml.log_event(f'error ' + event, level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -670,9 +679,7 @@ def sp_if_get_search_term_for_(section: str) -> str:
 def sp_if_get_str_from_(section: str, key: str) -> str:
     try:
         event = f'getting str value for search parser at \'{key}\''
-        string = search_parser(section)[key]
-        ml.log_event(event)
-        return str(string)
+        return search_parser(section)[key]
     except Exception as e_err:
         ml.log_event(f'error ' + event, level=ml.ERROR)
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -903,7 +910,7 @@ def user_configuration(section: str):
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def user_configuration_get_int_from_key_(ucf_at_active: SectionProxy, ucf_key: str) -> int:
+def uc_if_get_int_from_key_(ucf_at_active: SectionProxy, ucf_key: str) -> int:
     try:  # TODO input user config parser isn't "at active"
         event = f'getting integer from user configuration parser with key \'{ucf_key}\''
         val = ucf_at_active[ucf_key]
