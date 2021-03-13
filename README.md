@@ -41,7 +41,7 @@ this are functions that directly perform api calls to qbittorrent
 ### api_comm.py  
 the interface to the qbittorrent api, all api calls should be found or moved to here  
   
-###DOCUMENTATION.txt is similar to README.md
+###DOCUMENTATION.txt is similar to README.md, usually contains more info if updated recently
 
 ###LICENSE is self explanatory
 
