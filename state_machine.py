@@ -76,15 +76,15 @@ class QbitStateManager:
                 search_status = get_search_status_for_(search_id)
                 if search_status is None:
                     ml.log_event(f'bad search id \'{search_id}\', ignored and re-queued', level=ml.WARNING)
-                    increment_search_state_at_active_section_for_(self.active_section, self)  # search should be running, status is None.. requeue
+                    increment_search_state_at_active_section_for_(self)  # search should be running, status is None.. requeue
                     return
                 print_search_ids_from_(self.active_search_ids)
                 if search_is_running_with_(search_status):
                     pass  # search ongoing, do nothing
                 elif search_is_stopped_with_(search_status):
-                    increment_search_state_at_active_section_for_(self.active_section, self)  # mark search as stopped (finished)
+                    increment_search_state_at_active_section_for_(self)  # mark search as stopped (finished)
                 else:
-                    increment_search_state_at_active_section_for_(self.active_section, self)  # unexpected state, re-queue
+                    increment_search_state_at_active_section_for_(self)  # unexpected state, re-queue
             elif search_stopped:
                 results, section_and_id = None, None
                 if self.active_section in self.active_search_ids:
@@ -96,15 +96,15 @@ class QbitStateManager:
                     add_results_from_(section_and_id, results)  # FIXME p0, this is the source of most bugs rn
                     self.set_search_id_as_(search_id, active=False)
                     if search_has_yielded_required_results_for_(self.active_section):
-                        increment_search_state_at_active_section_for_(self.active_section, self)
+                        increment_search_state_at_active_section_for_(self)
                         return
-                increment_search_state_at_active_section_for_(self.active_section, self)
+                increment_search_state_at_active_section_for_(self)
             elif search_concluded:
                 pass
             else:
                 ml.log_event(f'header \'{self.active_section}\' is restricted from starting by search '
                              f'rank and/or search queue, this is by design', level=ml.WARNING)
-                increment_search_state_at_active_section_for_(self.active_section, self)
+                increment_search_state_at_active_section_for_(self)
             pause_on_event(u_key.WAIT_FOR_SEARCH_STATUS_CHECK)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
