@@ -450,6 +450,29 @@ def set_active_section_to_(section: str, state_machine):
         ml.log_event(f'error ' + event)
 
 
+def set_search_id_activity_for_(state_machine, active=False) -> None:
+    event = 'setting search id activity'
+    action = 'creating' if active else 'destroying'
+    state = 'active' if active else 'inactive'
+    try:
+        section = state_machine.active_section
+        active_search_ids = state_machine.active_search_ids
+        search_id = active_search_ids.get(section)
+        event = f'{action} state machine entry for \'{search_id}\' at \'{section}\', entry is {state} '
+        if not active:
+            ml.log_event(event)
+            section_exists = True if section in active_search_ids else False
+            if section_exists:
+                del active_search_ids[section]
+            return
+        ml.log_event(event)
+        active_search_ids[section] = search_id
+        return
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
+
+
 def set_search_id_for_(section: str, search_id: str) -> None:
     event = f'setting search id \'{search_id}\' for \'{section}\''
     try:
