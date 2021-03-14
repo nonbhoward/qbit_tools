@@ -68,7 +68,7 @@ def all_searches_concluded() -> bool:
     event = f'checking if all searches concluded'
     try:
         concluded_bools = list()
-        for section in search_parser().sections():
+        for section in get_all_sections_from_search_parser():
             concluded_bool = True if sp_if_get_bool_from_(section, s_key.CONCLUDED) else False
             concluded_bools.append(concluded_bool)
         if concluded_bools and all(concluded_bools):
@@ -258,7 +258,7 @@ def get_all_sections_from_parser_(meta_add=False, meta_find=False, search=False,
 def get_all_sections_from_metadata_parsers() -> tuple:
     event = f'getting all sections from metadata parser'
     try:
-        return *metadata_added_parser()._sections, *metadata_failed_parser()._sections
+        return *metadata_added_parser().sections(), *metadata_failed_parser().sections()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error ' + event)
@@ -267,7 +267,7 @@ def get_all_sections_from_metadata_parsers() -> tuple:
 def get_all_sections_from_user_config_parser() -> list:
     event = f'getting all sections from user config parser'
     try:
-        return user_configuration()._sections
+        return user_configuration().sections()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error ' + event)
@@ -275,8 +275,8 @@ def get_all_sections_from_user_config_parser() -> list:
 
 def get_all_sections_from_search_parser() -> list:
     event = f'getting all sections from search parser'
-    try:
-        return search_parser()._sections
+    try:  # parser surface abstraction depth = 1
+        return search_parser().sections()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error ' + event)
@@ -441,6 +441,34 @@ def search_has_yielded_required_results_for_(section: str) -> bool:
         ml.log_event(f'error ' + event)
 
 
+def search_queue_full_for_(state_machine) -> bool:
+    event = f'checking if search queue full'
+    try:
+        active_search_ids = state_machine.active_search_ids
+        section = state_machine.active_section
+        active_search_count = len(active_search_ids)
+        if active_search_count < 5:  # maximum simultaneous searches allowed by api
+            ml.log_event(f'search queue is not full, \'{5-active_search_count}\' spaces available')
+            print_search_ids_from_(active_search_ids)
+            return False
+        event = f'search queue is full, cannot add \'{section}\''
+        ml.log_event(event, announce=True)
+        return True
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
+
+
+def search_started_for_(state_machine) -> bool:
+    section = state_machine.active_section
+    event = f'checking if search started for \'{section}\''
+    try:
+        return True
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
+
+
 def set_active_section_to_(section: str, state_machine):
     event = f'setting active section for state machine to \'{section}\''
     try:
@@ -490,6 +518,34 @@ def sort_(results: list) -> list:
     event = f'sorting results'
     try:
         return sorted(results, key=lambda k: k['nbSeeders'], reverse=True)  # FIXME remove hardcode
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
+
+
+def start_search_with_(state_machine):
+    section = state_machine.active_section
+    event = f'starting search with \'{section}\''
+    try:
+        search_term = get_search_term_for_(section)
+        search_properties = create_search_job_for_(search_term, 'all', 'all')
+        search_count, search_id, search_status = search_properties
+        if search_id is None or empty_(search_id):
+            event = f'invalid search start properties \'{search_properties}\''
+            ml.log_event(event)
+            raise Exception(event)
+        if search_is_running_with_(search_status):  # for search sorting
+            set_search_id_for_(section, search_id)
+            set_time_last_searched_for_(section)
+            event = f'search started for \'{section}\' with \'{search_id}\''
+            ml.log_event(event, announce=True)
+            state_machine.active_search_ids[section] = search_id
+        elif search_is_stopped_with_(search_status):
+            event = f'search stopped immediately after starting at \'{section}\''
+            ml.log_event(event, level=ml.WARNING)
+        else:
+            event = f'there was a problem starting the search for \'{section}\''
+            ml.log_event(event, level=ml.WARNING)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error ' + event)
@@ -807,7 +863,7 @@ def mp_if_write_metadata_from_(result: dict, added=False) -> None:  # FIXME meta
 ### ### ### ### ### ### ### ### ## SEARCH PARSER INTERFACE ## ### ### ### ### ### ### ### ### ### ####
 def search_parser(section=empty):
     event = f'getting search parser for \'{section}\''
-    try:
+    try:  # parser surface abstraction depth = 0
         if not empty_(section):
             assert section in s_parser.sections(), KeyError(f'section \'{section}\' not in parser')
         return s_parser[section] if not empty_(section) else s_parser
@@ -827,9 +883,8 @@ def sp_if_get_add_mode_for_(section: str) -> bool:
 
 def sp_if_get_bool_from_(section: str, key: str) -> bool:
     event = f'getting bool value for search parser at \'{key}\''
-    try:
+    try:  # parser surface abstraction depth = 1
         val_bool = search_parser(section).getboolean(key)
-        ml.log_event(event)
         return val_bool
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -838,7 +893,7 @@ def sp_if_get_bool_from_(section: str, key: str) -> bool:
 
 def sp_if_get_int_from_(section: str, key: str) -> int:
     event = f'getting int value for search parser at \'{key}\''
-    try:
+    try:  # parser surface abstraction depth = 1
         integer = search_parser(section)[key]
         ml.log_event(event)
         for char in integer:  # FIXME this would allow values like -79 but also 7-9 which would error
@@ -860,7 +915,7 @@ def sp_if_get_parser_as_sortable() -> dict:
 
 
 def sp_if_get_search_states_for_(section) -> tuple:
-    try:
+    try:  # parser surface abstraction depth = 2
         sp_if_set_str_for_(section, s_key.TIME_LAST_READ, str(dt.now()))  # FIXME move to function
         search_queued = sp_if_get_bool_from_(section, s_key.QUEUED)
         search_running = sp_if_get_bool_from_(section, s_key.RUNNING)
@@ -887,7 +942,7 @@ def sp_if_get_search_term_for_(section: str) -> str:
 
 def sp_if_get_str_from_(section: str, key: str) -> str:
     event = f'getting str value for search parser at \'{key}\''
-    try:
+    try:  # parser surface abstraction depth = 1
         return str(search_parser(section)[key])
     except Exception as e_err:
         ml.log_event(f'error ' + event)
@@ -897,7 +952,7 @@ def sp_if_get_str_from_(section: str, key: str) -> str:
 def sp_if_increment_result_added_count_for_(section: str) -> None:
     event = f'incrementing result added count for \'{section}\''
     key = s_key.RESULTS_ADDED_COUNT
-    try:
+    try:  # parser surface abstraction depth = 1
         search_parser(section)[key] = str(sp_if_get_int_from_(section, key) + 1)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -946,7 +1001,7 @@ def sp_if_ready_to_start_(queued: bool, state_machine) -> bool:
     try:  # FIXME label arg QbitStateMachine without recursive import?
         search_rank = sp_if_get_int_from_(state_machine.active_section, s_key.RANK)
         search_rank_required_to_start = uc_if_get_int_for_key_(u_key.RANK_REQUIRED)
-        queue_has_room = not state_machine.search_queue_full()
+        queue_has_room = not search_queue_full_for_(state_machine)
         search_rank_allowed = search_rank <= search_rank_required_to_start
         if queued and queue_has_room and search_rank_allowed:
             return True
@@ -997,8 +1052,7 @@ def sp_if_search_has_yielded_required_results_for_(section: str) -> bool:
 
 def sp_if_set_bool_for_(section: str, key: str, boolean: bool):
     event = f'setting bool value for search parser at \'{key}\''
-    try:
-        ml.log_event(event)
+    try:  # parser surface abstraction depth = 1
         search_parser(section)[key] = s_key.YES if boolean else s_key.NO
         search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())  # don't do it
     except Exception as e_err:
@@ -1008,7 +1062,7 @@ def sp_if_set_bool_for_(section: str, key: str, boolean: bool):
 
 def sp_if_set_end_reason_for_(section, reason_key):
     event = f'setting end reason for \'{section}\' with reason \'{reason_key}\''
-    try:
+    try:  # parser surface abstraction depth = 2
         ml.log_event(event)
         sp_if_set_str_for_(section, s_key.SEARCH_STOPPED_REASON, reason_key)
         if all_searches_concluded():
@@ -1020,7 +1074,7 @@ def sp_if_set_end_reason_for_(section, reason_key):
 
 def sp_if_set_int_for_(section: str, key: str, integer: int) -> None:
     event = f'setting int value for search parser at \'{key}\''
-    try:
+    try:  # parser surface abstraction depth = 1
         ml.log_event(event)
         search_parser(section)[key] = str(integer)
         search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())  # don't do it
@@ -1030,23 +1084,24 @@ def sp_if_set_int_for_(section: str, key: str, integer: int) -> None:
 
 
 def sp_if_set_search_id_for_(section: str, search_id: str) -> None:
-    try:
+    try:  # parser surface abstraction depth = 2
         sp_if_set_str_for_(section, s_key.ID, search_id)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def sp_if_set_search_ranks() -> None:
-    try:  # FIXME top bug is the soft-lock this function could resolve
+    # FIXME top bug is the soft-lock this function could resolve
+    try:  # parser surface abstraction depth = 2
         sort_key = s_key.TIME_LAST_SEARCHED
         sdp_as_dict = sp_if_get_parser_as_sortable()
         sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key])
         number_of_sections = len(sdp_as_dict_sorted)
         for search_rank in range(number_of_sections):
             # TODO this is a bit lazy, could use some refining
-            header = sdp_as_dict_sorted[search_rank][0]
-            s_parser[header][s_key.RANK] = str(search_rank)
-            ml.log_event(f'search rank \'{search_rank}\' assigned to header \'{header}\'')
+            section = sdp_as_dict_sorted[search_rank][0]
+            sp_if_set_str_for_(section, s_key.RANK, str(search_rank))
+            ml.log_event(f'search rank \'{search_rank}\' assigned to \'{section}\'')
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -1067,7 +1122,6 @@ def sp_if_set_search_state_for_(section,
                      f'\n\trunning: {running}'
                      f'\n\tstopped: {stopped}'
                      f'\n\tconcluded: {concluded}', announce=True)
-        pass
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error ' + event)
@@ -1075,7 +1129,7 @@ def sp_if_set_search_state_for_(section,
 
 def sp_if_set_str_for_(section: str, key: str, string: str):
     event = f'setting str value for search parser at \'{key}\''
-    try:
+    try:  # parser surface abstraction depth = 1
         ml.log_event(event)
         search_parser(section)[key] = string
         search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())  # don't do it
@@ -1085,14 +1139,14 @@ def sp_if_set_str_for_(section: str, key: str, string: str):
 
 
 def sp_if_set_time_last_read_for_(section: str) -> None:
-    try:
+    try:  # parser surface abstraction depth = 2
         sp_if_set_str_for_(section, s_key.TIME_LAST_READ, str(dt.now()))
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def sp_if_set_time_last_searched_for_(section: str) -> None:
-    try:
+    try:  # parser surface abstraction depth = 2
         sp_if_set_str_for_(section, s_key.TIME_LAST_SEARCHED, str(dt.now()))
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
