@@ -14,10 +14,10 @@ from core.interface import ready_to_start_
 from core.interface import search_has_yielded_required_results_for_
 from core.interface import search_is_running_with_
 from core.interface import search_is_stopped_with_
-from core.interface import search_queue_full_for_
 from core.interface import search_started_for_
 from core.interface import set_active_section_to_
 from core.interface import set_search_ranks
+from core.interface import set_search_id_activity_for_
 from core.interface import start_search_with_
 from core.interface import u_key  # FIXME refactor this out, no keys belong in the state machine
 from core.interface import write_parsers_to_disk
@@ -70,8 +70,6 @@ class QbitStateManager:
                 exit()
             if ready_to_start_(search_queued, self):
                 start_search_with_(self)
-                if search_started_for_(self):
-                    increment_search_state_at_active_section_for_(self)
             elif search_running:
                 search_status = get_search_status_for_(search_id)
                 if search_status is None:
@@ -79,7 +77,7 @@ class QbitStateManager:
                     increment_search_state_at_active_section_for_(self)  # search should be running, status is None.. requeue
                     return
                 print_search_ids_from_(self.active_search_ids)
-                if search_is_running_with_(search_status):
+                if search_is_running_with_(search_status):  # FIXME might want to wrapper this
                     pass  # search ongoing, do nothing
                 elif search_is_stopped_with_(search_status):
                     increment_search_state_at_active_section_for_(self)  # mark search as stopped (finished)
@@ -94,7 +92,7 @@ class QbitStateManager:
                     ml.log_event(f'search \'{self.active_section}\' is stale, re-queued', level=ml.WARNING)
                 else:
                     add_results_from_(section_and_id, results)  # FIXME p0, this is the source of most bugs rn
-                    self.set_search_id_as_(search_id, active=False)
+                    set_search_id_activity_for_(self, search_id, active=False)
                     if search_has_yielded_required_results_for_(self.active_section):
                         increment_search_state_at_active_section_for_(self)
                         return
@@ -110,24 +108,10 @@ class QbitStateManager:
             ml.log_event(e_err.args[0], level=ml.ERROR)
             ml.log_event(f'error ' + event)
 
-    def set_search_id_as_(self, search_id: str, active=False):
-        event = f'setting search id \'{search_id}\' as active={active}'
-        try:
-            if not active:
-                ml.log_event(f'deleting dict entry for \'{search_id}\' at \'{self.active_section}\'')
-                section_exists = True if self.active_section in self.active_search_ids else False
-                if section_exists:
-                    del self.active_search_ids[self.active_section]
-                return
-            ml.log_event(f'creating dict entry for \'{search_id}\' at \'{self.active_section}\'')
-            self.active_search_ids[self.active_section] = search_id
-        except Exception as e_err:
-            ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
-
 
 if __name__ == '__main__':
     ml = MinimalLog()
-    ml.log_event('this should not be run directly, user main loop')
+    this_module = __file__.split('/')[-1]
+    ml.log_event(f'do not run \'{this_module}\' directly, use main loop', level=ml.WARNING)
 else:
     ml = MinimalLog(__name__)
