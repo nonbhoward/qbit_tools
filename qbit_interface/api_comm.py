@@ -140,19 +140,21 @@ class QbitApiCaller:
             ml.log_event(e_err.args[0], level=ml.ERROR)
             ml.log_event(f'error ' + event)
 
-    def get_search_status_for_(self, search_id) -> str:
+    def get_search_properties_for_(self, search_id) -> tuple:
         event = f'getting search status for \'{search_id}\''
-        try:
-            ml.log_event(f'check search status for search id \'{search_id}\'')
-            search_status = self.qbit_client.search_status(search_id=search_id)
-            assert isinstance(search_status, SearchStatusesList), 'bad search status, fix it or handle it'
-            # TODO note that search_status.data[n] has attribute 'id', this could be useful for validation
-            if len(search_status.data) == 0:
-                ml.log_event('search status yielded from expired or null search id, discarding', level=ml.WARNING)
-                return None
-            search_status = search_status.data[0]['status']
-            assert search_status is not None, 'bad search status attribute, fix it or handle it'
-            return search_status
+        search_count, search_status = 0, ''
+        try:  # TODO i'd like to clean this up
+            search_statuses_list = self.qbit_client.search_status(search_id=search_id)
+            assert isinstance(search_statuses_list, SearchStatusesList), TypeError('bad type for api search status')
+            search_statuses_list_data = search_statuses_list.data
+            for search_status_list_data in search_statuses_list_data:
+                if search_id == str(search_status_list_data.id):
+                    search_count = str(search_status_list_data.total)
+                    search_id = str(search_status_list_data.id)
+                    search_status = search_status_list_data.status
+                    break
+            search_properties = search_count, search_id, search_status
+            return search_properties
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
             ml.log_event(f'error ' + event)
