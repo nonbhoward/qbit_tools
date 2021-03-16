@@ -300,6 +300,39 @@ def get_hashed_(attribute: str, detail: str, offset: int) -> tuple:
         ml.log_event(f'error ' + event)
 
 
+def get_search_id_activity_for_(state_machine, search_properties: tuple, active=False) -> dict:
+    event = 'setting search id activity'
+    action = 'creating' if active else 'destroying'
+    state = 'active' if active else 'inactive'
+    try:
+        section = state_machine.active_section
+        search_count = search_properties[0]
+        search_id = search_properties[1]
+        search_status = search_properties[2]
+        active_search_ids = state_machine.active_search_ids
+        event = f'{action} {state} search id entry for state machine at \'{section}\' with id \'{search_id}\''
+        if not active:
+            ml.log_event(f'checking if \'{section}\' exists as active key')
+            section_exists = True if section in active_search_ids else False
+            if section_exists:
+                ml.log_event(f'section found')
+                ml.log_event(event)
+                del active_search_ids[section]
+                return
+            ml.log_event(f'section not found', level=ml.WARNING)
+            return
+        ml.log_event(event)
+        active_search_ids[section] = {
+            'count':    search_count,
+            'id':       search_id,
+            'status':   search_status
+        }
+        return active_search_ids
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
+
+
 def get_search_id_from_(state_machine) -> str:
     event = f'getting search id from state machine'
     try:  # FIXME label arg QbitStateMachine without recursion import?
@@ -331,10 +364,19 @@ def get_search_states_for_(section) -> tuple:
         ml.log_event(f'error ' + event)
 
 
-def get_search_status_for_(search_id: str) -> str:
+def get_search_properties_from_(state_machine) -> tuple:
+    search_id = ''
+    event = f'getting search id for active section'
+    try:
+        section = state_machine.active_section
+        search_id = state_machine.active_search_ids[section]
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error ' + event)
     event = f'getting search status for \'{search_id}\''
     try:
-        return api_if_get_search_status_for_(search_id)
+        search_properties = api_if_get_search_properties_for_(search_id)
+        return search_properties
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error ' + event)
@@ -492,37 +534,11 @@ def set_active_section_to_(section: str, state_machine):
         ml.log_event(f'error ' + event)
 
 
-def set_search_id_activity_for_(state_machine, search_id: str, active=False) -> None:
-    event = 'setting search id activity'
-    action = 'creating' if active else 'destroying'
-    state = 'active' if active else 'inactive'
-    try:
-        section = state_machine.active_section
-        active_search_ids = state_machine.active_search_ids
-        event = f'{action} {state} search id entry for state machine at \'{section}\' with id \'{search_id}\''
-        if not active:
-            ml.log_event(f'checking if \'{section}\' exists as active key')
-            section_exists = True if section in active_search_ids else False
-            if section_exists:
-                ml.log_event(f'section found')
-                ml.log_event(event)
-                del active_search_ids[section]
-                return
-            ml.log_event(f'section not found', level=ml.WARNING)
-            return
-        ml.log_event(event)
-        active_search_ids[section] = search_id
-        return
-    except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
-
-
 def set_search_id_for_(state_machine, search_id: str) -> None:
     section = state_machine.active_section
     event = f'setting search id \'{search_id}\' for \'{section}\''
     try:  # FIXME is this function redundant or should it be defined as a meta-function?
-        set_search_id_activity_for_(state_machine, search_id, active=True)
+        get_search_id_activity_for_(state_machine, search_id, active=True)
         sp_if_set_search_id_for_(section, search_id)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -572,7 +588,7 @@ def start_search_with_(state_machine):
         search_term = get_search_term_for_(section)
         search_properties = create_search_job_for_(search_term, 'all', 'all')
         search_count, search_id, search_status = search_properties
-        set_search_id_activity_for_(state_machine, search_id, active=True)
+        state_machine.active_search_ids = get_search_id_activity_for_(state_machine, search_properties, active=True)
         if search_id is None or empty_(search_id):
             event = f'invalid search start properties \'{search_properties}\''
             ml.log_event(event)
@@ -644,8 +660,8 @@ def write_parsers_to_disk():
 def search_is_running_with_(properties: tuple, state_machine) -> bool:
     try:  # FIXME hierarchy status < search_id < section < state_machine could be reduced
         search_count, search_id, search_status = properties
-        return True if s_key.RUNNING in search_status and \
-                       search_id in state_machine.active_search_ids else False
+        active_search_ids = state_machine.active_search_ids.values()
+        return True if s_key.RUNNING in search_status and search_id in active_search_ids else False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -711,9 +727,9 @@ def api_if_get_search_results_for_(active_kv: tuple) -> list:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def api_if_get_search_status_for_(search_id: str) -> str:
+def api_if_get_search_properties_for_(search_id: str) -> tuple:
     try:
-        return q_api.get_search_status_for_(search_id=search_id)
+        return q_api.get_search_properties_for_(search_id=search_id)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
