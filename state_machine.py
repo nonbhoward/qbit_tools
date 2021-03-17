@@ -15,8 +15,8 @@ from core.interface import print_search_ids_from_
 from core.interface import ready_to_start_
 from core.interface import reset_search_state_at_active_section_for_
 from core.interface import search_has_yielded_required_results_for_
-from core.interface import search_is_running_with_
-from core.interface import search_is_stopped_with_
+from core.interface import search_is_running_in_
+from core.interface import search_is_stopped_in_
 from core.interface import search_started_for_
 from core.interface import set_active_section_to_
 from core.interface import set_search_ranks
@@ -83,9 +83,9 @@ class QbitStateManager:
                     increment_search_state_at_active_section_for_(self)  # search should be running, status is None.. requeue
                     return
                 print_search_ids_from_(self.active_search_ids)
-                if search_is_running_with_(search_properties, self):  # FIXME might want to wrapper this
+                if search_is_running_in_(search_properties, self):  # FIXME might want to wrapper this
                     pass  # search ongoing, do nothing
-                elif search_is_stopped_with_(search_properties):
+                elif search_is_stopped_in_(search_properties):
                     increment_search_state_at_active_section_for_(self)  # mark search as stopped (finished)
                 else:
                     increment_search_state_at_active_section_for_(self)  # unexpected state, re-queue
