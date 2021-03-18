@@ -59,6 +59,8 @@ class QbitStateManager:
                 set_active_section_to_(section, self)
                 search_state = get_search_states_for_(section)
                 self.manage_state_updates(search_state)
+            if all_searches_concluded():
+                exit_program()
             write_parsers_to_disk()  # FIXME p3, consider location of this line
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
@@ -69,8 +71,6 @@ class QbitStateManager:
         try:
             search_queued, search_running, search_stopped, search_concluded = search_state
             search_id = get_search_id_from_(self)
-            if all_searches_concluded():
-                exit_program()
             if ready_to_start_(search_queued, self):
                 start_search_with_(self)  # FIXME p0, when this increments to RUNNING, search_id is always empty
             elif search_running:
