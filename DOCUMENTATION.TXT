@@ -21,3 +21,21 @@
 		when to go to 4? if the thresholds set in searches.cfg are met for that search header
         4. concluded
 		once entered, never leave this state without manual intervention
+
+[SEARCH ID MANAGEMENT]
+	each search id contains three search properties
+		1. count
+		2. search id
+		3. search status
+	search id generation
+		search ids are generated when a new search is created
+		search ids are then stored in the state machine under their header value
+	search id management
+		search ids are used to check back in on a search that was left to run
+		as mentioned, search ids are keyed by their search parser section header
+		search ids are updated when a search changes state
+			from Running to Stopped
+		search ids are stored in the state machine..
+		..count and search status are stored in the same structure
+	search id destruction
+		search ids are destroyed when a search has finished processing
