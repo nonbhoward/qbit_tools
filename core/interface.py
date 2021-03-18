@@ -4,16 +4,16 @@ from minimalog.minimal_log import MinimalLog
 from qbit_interface.api_comm import QbitApiCaller as QApi
 from string import digits
 from user_configuration.settings_io import QbitConfig as QConf
-
-digits_or_sign = digits + '-'
+digits_or_sign = f'-{digits}'
 m_key, s_key, u_key = QConf.get_keyrings()
 ma_parser, mf_parser, s_parser, u_parser = QConf.get_parsers()
 ml = MinimalLog(__name__)
 q_api = QApi()
-u_parser_at_default = u_parser[u_key.DEFAULT]
-unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
 default = 'DEFAULT'
 empty = ''
+
+u_parser_at_default = u_parser[u_key.DEFAULT]
+unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
 
 
 def add_results_from_(section_and_id: tuple, results: list):
