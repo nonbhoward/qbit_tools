@@ -339,6 +339,7 @@ def get_search_id_from_(state_machine) -> str:
     try:  # FIXME label arg QbitStateMachine without recursion import?
         search_id = ''
         if section in state_machine.active_search_ids:
+            # FIXME p0, this points at wrong object.. or being written wrong
             search_id = state_machine.active_search_ids[section]['id']
             ml.log_event(f'search id \'{search_id}\' successfully fetched')
         return search_id
