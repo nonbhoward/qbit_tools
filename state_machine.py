@@ -8,7 +8,7 @@ from core.interface import get_connection_time_start
 from core.interface import get_search_id_from_
 from core.interface import get_search_results_for_
 from core.interface import get_search_states_for_
-from core.interface import get_search_properties_from_
+from core.interface import sm_if_get_search_properties_from_
 from core.interface import increment_search_state_at_active_section_for_
 from core.interface import pause_on_event
 from core.interface import print_search_ids_from_
@@ -17,10 +17,8 @@ from core.interface import reset_search_state_at_active_section_for_
 from core.interface import search_has_yielded_required_results_for_
 from core.interface import search_is_running_in_
 from core.interface import search_is_stopped_in_
-from core.interface import search_started_for_
 from core.interface import set_active_section_to_
 from core.interface import set_search_ranks
-from core.interface import get_search_id_activity_for_
 from core.interface import start_search_with_
 from core.interface import u_key  # FIXME refactor this out, no keys belong in the state machine
 from core.interface import write_parsers_to_disk
@@ -77,15 +75,15 @@ class QbitStateManager:
                 if empty_(search_id):
                     reset_search_state_at_active_section_for_(self)
                     return
-                search_properties = get_search_properties_from_(self)
+                search_properties = sm_if_get_search_properties_from_(self)
                 if search_properties is None:
                     ml.log_event(f'bad search id \'{search_id}\', ignored and re-queued', level=ml.WARNING)
                     increment_search_state_at_active_section_for_(self)  # search should be running, status is None.. requeue
                     return
                 print_search_ids_from_(self.active_search_ids)
-                if search_is_running_in_(search_properties, self):  # FIXME might want to wrapper this
+                if search_is_running_in_(self):  # FIXME might want to wrapper this
                     pass  # search ongoing, do nothing
-                elif search_is_stopped_in_(search_properties):
+                elif search_is_stopped_in_(self):
                     increment_search_state_at_active_section_for_(self)  # mark search as stopped (finished)
                 else:
                     increment_search_state_at_active_section_for_(self)  # unexpected state, re-queue
@@ -98,7 +96,6 @@ class QbitStateManager:
                     ml.log_event(f'search \'{self.active_section}\' is stale, re-queued', level=ml.WARNING)
                 else:
                     add_results_from_(section_and_id, results)  # FIXME p0, this is the source of most bugs rn
-                    get_search_id_activity_for_(self, search_id, active=False)
                     if search_has_yielded_required_results_for_(self.active_section):
                         increment_search_state_at_active_section_for_(self)
                         return
