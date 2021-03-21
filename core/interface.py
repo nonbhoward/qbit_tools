@@ -304,11 +304,13 @@ def get_search_id_activity_for_(state_machine, search_properties: tuple, active=
     event = 'setting search id activity'
     action = 'creating' if active else 'destroying'
     state = 'active' if active else 'inactive'
-    try:
+    try:  # FIXME p0, arg 2, search_properties is a string instead of a tuple
         section = state_machine.active_section
-        search_count = search_properties[0]
-        search_id = search_properties[1]
-        search_status = search_properties[2]
+        search_count, search_id, search_status = 0, '', None
+        if section in state_machine.active_search_ids:
+            search_count = state_machine.active_search_ids[section]['count']
+            search_id = state_machine.active_search_ids[section]['id']
+            search_status = state_machine.active_search_ids[section]['status']
         active_search_ids = state_machine.active_search_ids
         event = f'{action} {state} search id entry for state machine at \'{section}\' with id \'{search_id}\''
         if not active:
@@ -368,7 +370,7 @@ def get_search_states_for_(section) -> tuple:
 
 def get_search_properties_from_(state_machine) -> tuple:
     search_id = ''
-    event = f'getting search id for active section'
+    event = f'getting search properties for active section'
     try:
         section = state_machine.active_section
         search_id = state_machine.active_search_ids[section]['id']
@@ -541,9 +543,12 @@ def set_active_section_to_(section: str, state_machine):
 def set_search_id_for_(state_machine) -> None:
     section = state_machine.active_section
     search_id = state_machine.active_search_ids[section]['id']
+    # FIXME p0 \/
+    search_properties = search_id  # FIXME p0, this is representation of bug
+    # FIXME p0 /\
     event = f'setting search id \'{search_id}\' for \'{section}\''
     try:  # FIXME is this function redundant or should it be defined as a meta-function?
-        state_machine.active_search_ids = get_search_id_activity_for_(state_machine, search_id, active=True)
+        state_machine.active_search_ids = get_search_id_activity_for_(state_machine, search_properties, active=True)
         sp_if_set_search_id_for_(section, search_id)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
