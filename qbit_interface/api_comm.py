@@ -21,7 +21,7 @@ class QbitApiCaller:
             ml.log_event(event, announce=True, event_completed=True)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
     def add_result_from_(self, url: str, is_paused: bool):
         event = f'adding result as paused from \'{url}\'' if is_paused else f'adding result from \'{url}\''
@@ -29,7 +29,7 @@ class QbitApiCaller:
             self.qbit_client.torrents.add(urls=url, is_paused=is_paused)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
     def client_is_connected(self) -> bool:
         event = f'checking if connected to client'
@@ -43,7 +43,7 @@ class QbitApiCaller:
             return False
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
     def create_search_job(self, pattern, plugins, category) -> tuple:
         try:
@@ -79,7 +79,7 @@ class QbitApiCaller:
                 ml.log_event(f'\'{surface_key}\' : \'{surface_attr}\'')
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
     def get_connection_time_start(self):
         try:
@@ -105,7 +105,7 @@ class QbitApiCaller:
             return results
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
     @classmethod
     def get_search_info_from_(cls, job) -> tuple:
@@ -118,7 +118,7 @@ class QbitApiCaller:
             return search_found_count, search_id, search_status
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
     def get_search_results(self, search_id, filename_regex,
                            metadata_filename_key, use_filename_regex_filter=False) -> list:
@@ -140,7 +140,7 @@ class QbitApiCaller:
             return results
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
     def get_search_properties_for_(self, search_id) -> tuple:
         event = f'getting search status for \'{search_id}\''
@@ -159,7 +159,7 @@ class QbitApiCaller:
             return search_properties
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
     @classmethod
     def pause_for_(cls, delay):
@@ -168,7 +168,7 @@ class QbitApiCaller:
             sleep(delay)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
     @staticmethod
     def regex_matches(filename_regex, filename) -> bool:
@@ -182,7 +182,7 @@ class QbitApiCaller:
             return False
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
 
 if __name__ == '__main__':
