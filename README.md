@@ -1,3 +1,5 @@
+# current status of main branch is broken, do-not-use
+
 # a brief project summary follows
 ### core.interface.py
 module handling transactions between other modules such as..
