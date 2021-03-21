@@ -8,7 +8,7 @@ from core.interface import get_connection_time_start
 from core.interface import get_search_id_from_
 from core.interface import get_search_results_for_
 from core.interface import get_search_states_for_
-from core.interface import sm_if_get_search_properties_from_
+from core.interface import get_search_properties_from_
 from core.interface import increment_search_state_at_active_section_for_
 from core.interface import pause_on_event
 from core.interface import print_search_ids_from_
@@ -30,12 +30,12 @@ class QbitStateManager:
         try:
             ml.log_event(event, announce=True)
             self.main_loop_count, self.active_section = 0, ''
-            self.active_search_ids = dict()
+            self.active_sections = dict()
             self.verbose = verbose
             pause_on_event(u_key.WAIT_FOR_USER)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
     def increment_main_loop_count(self):
         event = f'incrementing main loop count'
@@ -45,7 +45,7 @@ class QbitStateManager:
             ml.log_event(f'connection to client was started at \'{get_connection_time_start()}\'')
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
     def initiate_and_monitor_searches(self):
         event = f'initiating and monitoring searches'
@@ -62,7 +62,7 @@ class QbitStateManager:
             write_parsers_to_disk()  # FIXME p3, consider location of this line
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
     def manage_state_updates(self, search_state):
         event = f'managing state updates'
@@ -75,12 +75,12 @@ class QbitStateManager:
                 if empty_(search_id):
                     reset_search_state_at_active_section_for_(self)
                     return
-                search_properties = sm_if_get_search_properties_from_(self)
+                search_properties = get_search_properties_from_(self)
                 if search_properties is None:
                     ml.log_event(f'bad search id \'{search_id}\', ignored and re-queued', level=ml.WARNING)
                     increment_search_state_at_active_section_for_(self)  # search should be running, status is None.. requeue
                     return
-                print_search_ids_from_(self.active_search_ids)
+                print_search_ids_from_(self.active_sections)
                 if search_is_running_in_(self):  # FIXME might want to wrapper this
                     pass  # search ongoing, do nothing
                 elif search_is_stopped_in_(self):
@@ -89,10 +89,10 @@ class QbitStateManager:
                     increment_search_state_at_active_section_for_(self)  # unexpected state, re-queue
             elif search_stopped:
                 results, section_and_id = None, None
-                if self.active_section in self.active_search_ids:
-                    section_and_id = (self.active_section, self.active_search_ids[self.active_section])
+                if self.active_section in self.active_sections:
+                    section_and_id = (self.active_section, self.active_sections[self.active_section])
                     results = get_search_results_for_(active_kv=section_and_id)
-                if results is None or self.active_section not in self.active_search_ids:
+                if results is None or self.active_section not in self.active_sections:
                     ml.log_event(f'search \'{self.active_section}\' is stale, re-queued', level=ml.WARNING)
                 else:
                     add_results_from_(section_and_id, results)  # FIXME p0, this is the source of most bugs rn
@@ -109,7 +109,7 @@ class QbitStateManager:
             pause_on_event(u_key.WAIT_FOR_SEARCH_STATUS_CHECK)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error ' + event)
+            ml.log_event(f'error {event}')
 
 
 if __name__ == '__main__':
