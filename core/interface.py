@@ -35,14 +35,14 @@ def add_results_from_(section_and_id: tuple, results: list):
                 if enough_results_added_for_(section):
                     ml.log_event(f'enough results added for \'{section}\'')
                     return  # desired result count added, stop adding
-                cfg_if_write_parsers_to_disk()  # FIXME p0, debug line, consider removing
+                write_parsers_to_disk()  # FIXME p0, debug line, consider removing
                 continue  # result added, go to next
             result_name = mp_if_get_result_metadata_at_key_(m_key.NAME, result)
             ml.log_event(f'client failed to add \'{result_name}\'', level=ml.WARNING)
-            cfg_if_write_parsers_to_disk()  # FIXME p0, debug line, consider removing
+            write_parsers_to_disk()  # FIXME p0, debug line, consider removing
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def add_search_properties_to_(state_machine, search_properties):
@@ -70,7 +70,7 @@ def add_successful_for_(section: str, result: dict) -> bool:
         return successfully_added
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def all_searches_concluded() -> bool:
@@ -87,7 +87,7 @@ def all_searches_concluded() -> bool:
         return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def build_metadata_section_from_(result: dict) -> str:
@@ -103,7 +103,7 @@ def build_metadata_section_from_(result: dict) -> str:
         return hashed_name
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def check_for_empty_string_to_replace_with_no_data_in_(value: str) -> str:
@@ -112,7 +112,7 @@ def check_for_empty_string_to_replace_with_no_data_in_(value: str) -> str:
         return 'NO DATA' if empty_(value) else value
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def create_search_job_for_(pattern: str, plugins: str, category: str):
@@ -121,7 +121,7 @@ def create_search_job_for_(pattern: str, plugins: str, category: str):
         return api_if_create_search_job_for_(pattern, plugins, category)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def empty_(test_string: str) -> bool:
@@ -130,7 +130,7 @@ def empty_(test_string: str) -> bool:
         return True if test_string == '' else False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def enough_results_added_for_(section: str) -> bool:
@@ -143,7 +143,7 @@ def enough_results_added_for_(section: str) -> bool:
         return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def enough_results_found_in_(section: str, filtered_results: list) -> bool:
@@ -161,7 +161,7 @@ def enough_results_found_in_(section: str, filtered_results: list) -> bool:
         return True
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def evaluate_filtered_results_for_(section: str, filtered_results: list) -> None:
@@ -171,19 +171,19 @@ def evaluate_filtered_results_for_(section: str, filtered_results: list) -> None
             sp_if_reduce_search_expectations_for_(section)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def exit_program():
     event = f'exiting program'
     try:
         ml.log_event(f'writing all parsers to disk')
-        cfg_if_write_parsers_to_disk()
+        write_parsers_to_disk()
         ml.log_event(f'exiting program')
         exit()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def filter_(section: str, results: list, found=True, sort=True):
@@ -241,7 +241,7 @@ def filter_(section: str, results: list, found=True, sort=True):
         return results
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def filter_provided_for_(parser_val) -> bool:
@@ -250,7 +250,7 @@ def filter_provided_for_(parser_val) -> bool:
         return False if parser_val == -1 or parser_val == 0 else True
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def get_all_sections_from_parser_(meta_add=False, meta_find=False, search=False, settings=False):
@@ -260,7 +260,7 @@ def get_all_sections_from_parser_(meta_add=False, meta_find=False, search=False,
         return cfg_if_get_all_sections_from_parser_(meta_add, meta_find, search, settings)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def get_all_sections_from_metadata_parsers() -> tuple:
@@ -269,7 +269,7 @@ def get_all_sections_from_metadata_parsers() -> tuple:
         return *metadata_added_parser().sections(), *metadata_failed_parser().sections()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def get_all_sections_from_user_config_parser() -> list:
@@ -278,7 +278,7 @@ def get_all_sections_from_user_config_parser() -> list:
         return user_configuration().sections()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def get_all_sections_from_search_parser() -> list:
@@ -287,7 +287,7 @@ def get_all_sections_from_search_parser() -> list:
         return search_parser().sections()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def get_connection_time_start():
@@ -296,7 +296,7 @@ def get_connection_time_start():
         return api_if_get_connection_time_start()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def get_hashed_(attribute: str, detail: str, offset: int) -> tuple:
@@ -305,7 +305,7 @@ def get_hashed_(attribute: str, detail: str, offset: int) -> tuple:
         return hash_metadata(attribute, offset), hash_metadata(detail, offset)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def get_search_id_from_(state_machine) -> str:
@@ -313,14 +313,23 @@ def get_search_id_from_(state_machine) -> str:
     section = state_machine.active_section
     try:  # FIXME label arg QbitStateMachine without recursion import?
         search_id = ''
-        if section in state_machine.active_search_ids:
+        if section in state_machine.active_sections:
             # FIXME p0, this points at wrong object.. or being written wrong
-            search_id = state_machine.active_search_ids[section]['id']
+            search_id = sm_if_get_active_section_search_id_from_(state_machine)
             ml.log_event(f'search id \'{search_id}\' successfully fetched')
         return search_id
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
+
+
+def get_search_properties_from_(state_machine) -> tuple:
+    event = f'getting search properties from state machine'
+    try:  # machine surface abstraction depth = 1
+        return sm_if_get_search_properties_from_(state_machine)
+    except Exception as e_err:
+        ml.log_event(f'error {event}')
+        ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
 def get_search_results_for_(active_kv: tuple) -> list:
@@ -329,7 +338,7 @@ def get_search_results_for_(active_kv: tuple) -> list:
         return api_if_get_search_results_for_(active_kv)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def get_search_states_for_(section) -> tuple:
@@ -338,7 +347,7 @@ def get_search_states_for_(section) -> tuple:
         return sp_if_get_search_states_for_(section)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def get_search_term_for_(section: str) -> str:
@@ -347,7 +356,7 @@ def get_search_term_for_(section: str) -> str:
         return sp_if_get_search_term_for_(section)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def hash_metadata(x: str, offset=0, undo=False) -> str:
@@ -359,7 +368,7 @@ def hash_metadata(x: str, offset=0, undo=False) -> str:
         return _hash
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def increment_search_state_at_active_section_for_(state_machine):
@@ -368,7 +377,7 @@ def increment_search_state_at_active_section_for_(state_machine):
         sp_if_increment_search_state_for_(state_machine)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def mega(bytes_: int) -> int:
@@ -378,7 +387,7 @@ def mega(bytes_: int) -> int:
         return megabytes_
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def pause_on_event(pause_type: str):
@@ -390,7 +399,7 @@ def pause_on_event(pause_type: str):
         q_api.pause_for_(delay)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def print_search_ids_from_(active_search_ids: dict):
@@ -401,7 +410,7 @@ def print_search_ids_from_(active_search_ids: dict):
             ml.log_event(f'\tsearch header : \'{active_search_header_name}\'')
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def ready_to_start_(queued: bool, state_machine) -> bool:
@@ -411,7 +420,7 @@ def ready_to_start_(queued: bool, state_machine) -> bool:
         return sp_if_ready_to_start_(queued, state_machine)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def reset_search_state_at_active_section_for_(state_machine) -> None:
@@ -423,7 +432,7 @@ def reset_search_state_at_active_section_for_(state_machine) -> None:
         sp_if_set_search_states_for_(section, *search_states)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def result_has_enough_seeds() -> bool:
@@ -433,7 +442,7 @@ def result_has_enough_seeds() -> bool:
         return True
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def search_has_yielded_required_results_for_(section: str) -> bool:
@@ -442,7 +451,7 @@ def search_has_yielded_required_results_for_(section: str) -> bool:
         return sp_if_search_has_yielded_required_results_for_(section)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def search_is_concluded_in_(section) -> bool:
@@ -452,7 +461,7 @@ def search_is_concluded_in_(section) -> bool:
         return sp_if_get_bool_from_(section, s_key.CONCLUDED)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def search_is_running_in_(state_machine) -> bool:
@@ -461,7 +470,7 @@ def search_is_running_in_(state_machine) -> bool:
         return sm_if_search_is_running_in_(state_machine)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def search_is_stopped_in_(state_machine) -> bool:
@@ -473,13 +482,13 @@ def search_is_stopped_in_(state_machine) -> bool:
         return sm_if_search_is_stopped_in_(properties, state_machine)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def search_queue_is_full_in_(state_machine) -> bool:
     event = f'checking if search queue full'
     try:
-        active_search_ids = state_machine.active_search_ids
+        active_search_ids = state_machine.active_sections
         section = sm_if_get_active_section_from_(state_machine)
         active_search_count = len(active_search_ids)
         if active_search_count < 5:  # maximum simultaneous searches allowed by api
@@ -491,19 +500,19 @@ def search_queue_is_full_in_(state_machine) -> bool:
         return True
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def search_started_for_(state_machine) -> bool:
     section = state_machine.active_section
     event = f'checking if search started for \'{section}\''
     try:
-        if section in state_machine.active_search_ids:
+        if section in state_machine.active_sections:
             return True
         return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def set_active_section_to_(section: str, state_machine):
@@ -512,7 +521,7 @@ def set_active_section_to_(section: str, state_machine):
         state_machine.active_section = section
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def set_search_id_activity_for_(state_machine, active=False) -> dict:
@@ -524,11 +533,11 @@ def set_search_id_activity_for_(state_machine, active=False) -> dict:
         section = state_machine.active_section
         # init vars before fetch attempt
         search_count, search_id, search_status = 0, '', None
-        if section in state_machine.active_search_ids:
-            search_count = state_machine.active_search_ids[section]['count']
-            search_id = state_machine.active_search_ids[section]['id']
-            search_status = state_machine.active_search_ids[section]['status']
-        active_search_ids = state_machine.active_search_ids
+        if section in state_machine.active_sections:
+            search_count = state_machine.active_sections[section]['count']
+            search_id = state_machine.active_sections[section]['id']
+            search_status = state_machine.active_sections[section]['status']
+        active_search_ids = state_machine.active_sections
         event = f'{action} {state} search id entry for state machine at \'{section}\' with id \'{search_id}\''
         if not active:
             ml.log_event(f'checking if \'{section}\' exists as active key')
@@ -549,7 +558,7 @@ def set_search_id_activity_for_(state_machine, active=False) -> dict:
         return active_search_ids
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def set_search_ranks() -> None:
@@ -558,7 +567,7 @@ def set_search_ranks() -> None:
         sp_if_set_search_ranks()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def set_time_last_read_for_(section: str) -> None:
@@ -567,7 +576,7 @@ def set_time_last_read_for_(section: str) -> None:
         sp_if_set_time_last_read_for_(section)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def set_time_last_searched_for_(section: str) -> None:
@@ -576,7 +585,7 @@ def set_time_last_searched_for_(section: str) -> None:
         sp_if_set_time_last_searched_for_(section)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sort_(results: list) -> list:
@@ -585,7 +594,7 @@ def sort_(results: list) -> list:
         return sorted(results, key=lambda k: k['nbSeeders'], reverse=True)  # FIXME remove hardcode
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def start_search_with_(state_machine):
@@ -616,19 +625,19 @@ def start_search_with_(state_machine):
             reset_search_state_at_active_section_for_(state_machine)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def update_search_properties_for_(state_machine, search_properties):
     event = f'updating search properties for state machine'
     section = state_machine.active_section
     try:
-        state_machine.active_search_ids[section]['count'] = search_properties[0]
-        state_machine.active_search_ids[section]['id'] = search_properties[1]
-        state_machine.active_search_ids[section]['status'] = search_properties[2]
+        state_machine.active_sections[section]['count'] = search_properties[0]
+        state_machine.active_sections[section]['id'] = search_properties[1]
+        state_machine.active_sections[section]['status'] = search_properties[2]
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def validate_metadata_type_for_(metadata_kv: tuple) -> tuple:
@@ -651,7 +660,7 @@ def validate_metadata_type_for_(metadata_kv: tuple) -> tuple:
         return parser_key, value
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def value_provided_for_(value_to_check) -> bool:
@@ -660,16 +669,16 @@ def value_provided_for_(value_to_check) -> bool:
         return False if value_to_check == '0' else True
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def write_parsers_to_disk():
     event = f'writing parsers to disk'
-    try:
+    try:  # parser surface abstraction depth = 1
         cfg_if_write_parsers_to_disk()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 #### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
@@ -679,19 +688,23 @@ def write_parsers_to_disk():
 #### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
 def sm_if_add_search_properties_to_(state_machine, search_properties: tuple) -> None:
     section = sm_if_get_active_section_from_(state_machine)
-    try:
+    try:  # machine surface abstraction depth = 0
         sm_if_init_active_search_id_for_(state_machine, section)
-        state_machine.active_search_ids[section]['count'] = search_properties[0]
-        state_machine.active_search_ids[section]['id'] = search_properties[1]
-        state_machine.active_search_ids[section]['status'] = search_properties[2]
+        state_machine.active_sections[section]['count'] = search_properties[0]
+        state_machine.active_sections[section]['id'] = search_properties[1]
+        state_machine.active_sections[section]['status'] = search_properties[2]
     except Exception as e_err:
         ml.log_event(e_err.args[0])
 
 
-def sm_if_get_active_search_id_values_from_(state_machine) -> dict:
+def sm_if_get_active_search_id_values_from_(state_machine) -> list:
     event = f'getting active search id values from state machine'
-    try:
-        return state_machine.active_search_ids.values()
+    try:  # machine surface abstraction depth = 1
+        active_search_ids = list()
+        for section in state_machine.active_sections:
+            section_id = sm_if_get_id_from_(state_machine, section)
+            active_search_ids.append(section_id)
+        return active_search_ids
     except Exception as e_err:
         ml.log_event(f'error {event}')
         ml.log_event(e_err.args[0])
@@ -699,7 +712,7 @@ def sm_if_get_active_search_id_values_from_(state_machine) -> dict:
 
 def sm_if_get_active_search_ids_from_(state_machine) -> list:
     try:
-        search_ids = state_machine.active_search_ids
+        search_ids = state_machine.active_sections
         return search_ids
     except Exception as e_err:
         ml.log_event(e_err.args[0])
@@ -715,14 +728,23 @@ def sm_if_get_active_section_from_(state_machine) -> str:
 def sm_if_get_active_section_search_id_from_(state_machine) -> str:
     try:  # machine surface abstraction depth = 1
         section = sm_if_get_active_section_from_(state_machine)
-        return state_machine.active_search_ids[section]['id']
+        return state_machine.active_sections[section]['id']
     except Exception as e_err:
+        ml.log_event(e_err.args[0])
+
+
+def sm_if_get_id_from_(state_machine, section) -> str:
+    event = f'getting search id from state machine at section'
+    try:  # machine surface abstraction depth = 0
+        return state_machine.active_sections[section]['id']
+    except Exception as e_err:
+        ml.log_event(f'error {event}')
         ml.log_event(e_err.args[0])
 
 
 def sm_if_get_search_properties_from_(state_machine) -> tuple:
     # TODO just noting this object has two surfaces, could be useful
-    try:  # machine surface abstraction depth = 0
+    try:  # api/machine surface abstraction depth = 1/1
         search_id = sm_if_get_active_section_search_id_from_(state_machine)
         search_properties = api_if_get_search_properties_for_(search_id)
         return search_properties
@@ -732,8 +754,8 @@ def sm_if_get_search_properties_from_(state_machine) -> tuple:
 
 def sm_if_init_active_search_id_for_(state_machine, section: str) -> None:
     event = f'initializing active search id for state machine at section'
-    try:
-        state_machine.active_search_ids[section] = dict()
+    try:  # machine surface abstraction depth = 0
+        state_machine.active_sections[section] = dict()
     except Exception as e_err:
         ml.log_event(f'error {event}')
         ml.log_event(e_err.args[0])
@@ -743,8 +765,8 @@ def sm_if_search_is_running_in_(state_machine) -> bool:
     # FIXME hierarchy status < search_id < section < state_machine could be reduced
     try:  # machine surface abstraction depth = 1
         search_count, search_id, search_status = sm_if_get_search_properties_from_(state_machine)
-        active_search_dict_values = sm_if_get_active_search_id_values_from_(state_machine)
-        return True if s_key.RUNNING in search_status and search_id in active_search_dict_values else False
+        active_search_ids = sm_if_get_active_search_id_values_from_(state_machine)
+        return True if s_key.RUNNING in search_status and search_id in active_search_ids else False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -753,7 +775,7 @@ def sm_if_search_is_stopped_in_(properties: tuple, state_machine) -> bool:
     try:  # FIXME hierarchy status < search_id < section < state_machine could be reduced
         search_count, search_id, search_status = properties
         return True if s_key.STOPPED in search_status and \
-                       search_id in state_machine.active_search_ids else False
+                       search_id in state_machine.active_sections else False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -898,7 +920,7 @@ def metadata_added_parser(section=empty) -> RawConfigParser:
         return ma_parser[section] if not empty_(section) else ma_parser
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def metadata_failed_parser(section=empty) -> RawConfigParser:
@@ -909,7 +931,7 @@ def metadata_failed_parser(section=empty) -> RawConfigParser:
         return mf_parser[section] if not empty_(section) else mf_parser
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def mp_if_add_section_to_(mp: RawConfigParser, hashed_section_name: str) -> None:
@@ -922,7 +944,7 @@ def mp_if_add_section_to_(mp: RawConfigParser, hashed_section_name: str) -> None
         mp.add_section(hashed_section_name)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def mp_if_create_section_for_(mp: RawConfigParser, result: dict) -> None:
@@ -947,7 +969,7 @@ def mp_if_create_section_for_(mp: RawConfigParser, result: dict) -> None:
         return
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def mp_if_get_metadata_from_(parser: RawConfigParser) -> dict:
@@ -963,7 +985,7 @@ def mp_if_get_metadata_from_(parser: RawConfigParser) -> dict:
         return result_data
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def mp_if_get_result_metadata_at_key_(key: str, result: dict) -> str:  # QConf
@@ -972,7 +994,7 @@ def mp_if_get_result_metadata_at_key_(key: str, result: dict) -> str:  # QConf
         return QConf.get_result_metadata_at_key_(key, result)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def mp_if_previously_found_(result: dict, verbose_log=True) -> bool:
@@ -988,7 +1010,7 @@ def mp_if_previously_found_(result: dict, verbose_log=True) -> bool:
         return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def mp_if_write_metadata_from_(result: dict, added=False) -> None:  # FIXME metadata debug entry
@@ -998,7 +1020,7 @@ def mp_if_write_metadata_from_(result: dict, added=False) -> None:  # FIXME meta
         mp_if_create_section_for_(ma_parser if added else mf_parser, result)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 ### ### ### ### ### ### ### ### # METADATA PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ####
@@ -1028,7 +1050,7 @@ def sp_if_get_add_mode_for_(section: str) -> bool:
         return sp_if_get_bool_from_(section, s_key.ADD_PAUSED)
     except Exception as e_err:
         ml.log_event(e_err.args[0])
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sp_if_get_bool_from_(section: str, key: str) -> bool:
@@ -1038,7 +1060,7 @@ def sp_if_get_bool_from_(section: str, key: str) -> bool:
         return val_bool
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sp_if_get_int_from_(section: str, key: str) -> int:
@@ -1052,7 +1074,7 @@ def sp_if_get_int_from_(section: str, key: str) -> int:
         return int(integer)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sp_if_get_parser_as_sortable() -> dict:
@@ -1061,7 +1083,7 @@ def sp_if_get_parser_as_sortable() -> dict:
         return QConf.get_search_parser_as_sortable()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sp_if_get_search_states_for_(section) -> tuple:
@@ -1095,7 +1117,7 @@ def sp_if_get_str_from_(section: str, key: str) -> str:
     try:  # parser surface abstraction depth = 1
         return str(search_parser(section)[key])
     except Exception as e_err:
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -1106,7 +1128,7 @@ def sp_if_increment_result_added_count_for_(section: str) -> None:
         search_parser(section)[key] = str(sp_if_get_int_from_(section, key) + 1)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sp_if_increment_search_attempt_count_for_(section: str) -> None:
@@ -1117,7 +1139,7 @@ def sp_if_increment_search_attempt_count_for_(section: str) -> None:
         sp_if_set_int_for_(section, s_key.SEARCH_ATTEMPT_COUNT, search_attempt_count + 1)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sp_if_increment_search_state_for_(state_machine):
@@ -1173,7 +1195,7 @@ def sp_if_reduce_search_expectations_for_(section: str) -> None:
         cfg_if_set_parser_value_at_(section, re_key, er_val)  # FIXME fix args
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sp_if_search_has_yielded_required_results_for_(section: str) -> bool:
@@ -1197,7 +1219,7 @@ def sp_if_search_has_yielded_required_results_for_(section: str) -> bool:
         return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sp_if_set_bool_for_(section: str, key: str, boolean: bool):
@@ -1207,7 +1229,7 @@ def sp_if_set_bool_for_(section: str, key: str, boolean: bool):
         search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())  # don't do it
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sp_if_set_end_reason_for_(section, reason_key):
@@ -1218,7 +1240,7 @@ def sp_if_set_end_reason_for_(section, reason_key):
             exit_program()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sp_if_set_int_for_(section: str, key: str, integer: int) -> None:
@@ -1228,7 +1250,7 @@ def sp_if_set_int_for_(section: str, key: str, integer: int) -> None:
         search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())  # don't do it
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sp_if_set_search_id_for_(section: str, search_id: str) -> None:
@@ -1272,7 +1294,7 @@ def sp_if_set_search_states_for_(section,
                      f'\n\tconcluded: {concluded}', announce=True)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sp_if_set_str_for_(section: str, key: str, string: str):
@@ -1282,7 +1304,7 @@ def sp_if_set_str_for_(section: str, key: str, string: str):
         search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())  # don't do it
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def sp_if_set_time_last_read_for_(section: str) -> None:
@@ -1320,7 +1342,7 @@ def user_configuration(section=empty):
         return u_parser[section] if not empty_(section) else u_parser
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def uc_if_get_int_for_key_(key: str) -> int:
@@ -1334,7 +1356,7 @@ def uc_if_get_int_for_key_(key: str) -> int:
         return int(val)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 def uc_if_get_str_for_key_(key: str) -> str:
@@ -1345,7 +1367,7 @@ def uc_if_get_str_for_key_(key: str) -> str:
         return str(val)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error ' + event)
+        ml.log_event(f'error {event}')
 
 
 ### ### ### ### ### ### ### ### USER CONFIG PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ###
