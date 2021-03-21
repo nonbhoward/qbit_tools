@@ -1,5 +1,5 @@
-# 2021-03-21
-# current status of main branch is broken, do-not-use
+# as of 2021-03-21
+## current status of main branch is broken, do-not-use
 
 # a brief project summary follows
 ### core.interface.py
