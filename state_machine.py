@@ -93,9 +93,6 @@ class QbitStateManager:
                 if active_section_is_in_memory_of_(self):
                     save_results_to_(self)
                 add_results_from_(self)  # FIXME p0, bad args, fixing in rework
-                if search_has_yielded_required_results_for_(self.active_section):
-                    increment_search_state_at_active_section_for_(self)
-                    return
                 increment_search_state_at_active_section_for_(self)
             elif search_concluded:
                 pass
