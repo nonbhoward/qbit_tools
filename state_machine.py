@@ -1,6 +1,6 @@
 from minimalog.minimal_log import MinimalLog
 from core.interface import active_section_is_in_memory_of_
-from core.interface import add_results_from_
+from core.interface import add_results_stored_in_
 from core.interface import all_searches_concluded
 from core.interface import empty_
 from core.interface import exit_program
@@ -94,7 +94,7 @@ class QbitStateManager:
                 # FIXME move this to interface
                 if active_section_is_in_memory_of_(self):
                     save_results_to_(self)
-                add_results_from_(self)  # FIXME p0, bad args, fixing in rework
+                add_results_stored_in_(self)  # FIXME p0, bad args, fixing in rework
                 increment_search_state_at_active_section_for_(self)
             elif search_concluded:
                 pass
