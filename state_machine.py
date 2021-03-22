@@ -1,19 +1,20 @@
 from minimalog.minimal_log import MinimalLog
+from core.interface import active_section_is_in_memory_of_
 from core.interface import add_results_from_
 from core.interface import all_searches_concluded
 from core.interface import empty_
 from core.interface import exit_program
 from core.interface import get_all_sections_from_search_parser
 from core.interface import get_connection_time_start
-from core.interface import get_search_id_from_
-from core.interface import get_search_results_for_
-from core.interface import get_search_states_for_
+from core.interface import get_search_id_from_active_section_in_
 from core.interface import get_search_properties_from_
+from core.interface import get_search_states_for_
 from core.interface import increment_search_state_at_active_section_for_
 from core.interface import pause_on_event
 from core.interface import print_search_ids_from_
 from core.interface import ready_to_start_
 from core.interface import reset_search_state_at_active_section_for_
+from core.interface import save_results_to_
 from core.interface import search_has_yielded_required_results_for_
 from core.interface import search_is_running_in_
 from core.interface import search_is_stopped_in_
@@ -68,7 +69,7 @@ class QbitStateManager:
         event = f'managing state updates'
         try:
             search_queued, search_running, search_stopped, search_concluded = search_state
-            search_id = get_search_id_from_(self)
+            search_id = get_search_id_from_active_section_in_(self)
             if ready_to_start_(search_queued, self):
                 start_search_with_(self)  # FIXME p0, when this increments to RUNNING, search_id is always empty
             elif search_running:
@@ -88,17 +89,13 @@ class QbitStateManager:
                 else:
                     increment_search_state_at_active_section_for_(self)  # unexpected state, re-queue
             elif search_stopped:
-                results, section_and_id = None, None
-                if self.active_section in self.active_sections:
-                    section_and_id = (self.active_section, self.active_sections[self.active_section])
-                    results = get_search_results_for_(active_kv=section_and_id)
-                if results is None or self.active_section not in self.active_sections:
-                    ml.log_event(f'search \'{self.active_section}\' is stale, re-queued', level=ml.WARNING)
-                else:
-                    add_results_from_(section_and_id, results)  # FIXME p0, this is the source of most bugs rn
-                    if search_has_yielded_required_results_for_(self.active_section):
-                        increment_search_state_at_active_section_for_(self)
-                        return
+                # FIXME move this to interface
+                if active_section_is_in_memory_of_(self):
+                    save_results_to_(self)
+                add_results_from_(self)  # FIXME p0, bad args, fixing in rework
+                if search_has_yielded_required_results_for_(self.active_section):
+                    increment_search_state_at_active_section_for_(self)
+                    return
                 increment_search_state_at_active_section_for_(self)
             elif search_concluded:
                 pass
