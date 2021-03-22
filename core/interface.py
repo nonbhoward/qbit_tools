@@ -32,10 +32,10 @@ def add_results_stored_in_(state_machine):
     filtered_results = get_filtered_results_from_(state_machine)
     event = f'adding results from state machine'
     try:
-        results_required_count = get_int_from_section_at_key_(section, s_key.RESULTS_REQUIRED_COUNT)
+        results_required_count = get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT)
         ml.log_event(f'add most popular \'{results_required_count}\' count results')
         for result in filtered_results:
-            results_added_count = get_int_from_section_at_key_(section, s_key.RESULTS_ADDED_COUNT)
+            results_added_count = get_int_from_search_parser_at_(section, s_key.RESULTS_ADDED_COUNT)
             if results_added_count > results_required_count:  # FIXME p2, shouldn't this use the conclusion check func?
                 ml.log_event(f'the search for \'{section}\' can be concluded', announce=True)
                 _sp_if_set_bool_for_(section, s_key.CONCLUDED, True)
@@ -146,8 +146,8 @@ def empty_(test_string: str) -> bool:
 def enough_results_added_for_(section: str) -> bool:
     event = f'checking if enough results added for \'{section}\''
     try:
-        results_added = get_int_from_section_at_key_(section, s_key.RESULTS_ADDED_COUNT)
-        results_required = get_int_from_section_at_key_(section, s_key.RESULTS_REQUIRED_COUNT)
+        results_added = get_int_from_search_parser_at_(section, s_key.RESULTS_ADDED_COUNT)
+        results_required = get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT)
         if results_added >= results_required:  # TODO check that indexing is perfect
             return True
         return False
@@ -159,7 +159,7 @@ def enough_results_added_for_(section: str) -> bool:
 def enough_results_found_in_(section: str, filtered_results: list) -> bool:
     event = f'checking if enough results found in \'{section}\''
     try:
-        expected_results_count = get_int_from_section_at_key_(section, s_key.RESULTS_REQUIRED_COUNT)
+        expected_results_count = get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT)
         filtered_results_count = 0
         if filtered_results is not None:
             filtered_results_count = len(filtered_results)
@@ -201,12 +201,12 @@ def filter_results_in_(state_machine, found=True, sort=True):
     results_unfiltered = _sm_if_get_unfiltered_results_from_(state_machine)
     event = f'filtering results for \'{section}\''
     try:
-        seeds_min = get_int_from_section_at_key_(section, s_key.MIN_SEED)
-        bytes_min = get_int_from_section_at_key_(section, s_key.SIZE_MIN_BYTES)
-        bytes_max = get_int_from_section_at_key_(section, s_key.SIZE_MAX_BYTES)
+        seeds_min = get_int_from_search_parser_at_(section, s_key.MIN_SEED)
+        bytes_min = get_int_from_search_parser_at_(section, s_key.SIZE_MIN_BYTES)
+        bytes_max = get_int_from_search_parser_at_(section, s_key.SIZE_MAX_BYTES)
         megabytes_min = mega(bytes_min)
         megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
-        filename_regex = _sp_if_get_str_from_(section, s_key.REGEX_FILENAME)  # FIXME check this return
+        filename_regex = _sp_if_get_str_at_key_(section, s_key.REGEX_FILENAME)  # FIXME check this return
         results_filtered = list()
         for result_unfiltered in results_unfiltered:
             result_name = _mp_if_get_result_metadata_at_key_(m_key.NAME, result_unfiltered)
@@ -361,10 +361,28 @@ def get_filtered_results_from_(state_machine) -> list:
         ml.log_event(e_err.args[0])
 
 
-def get_int_from_section_at_key_(section, key) -> int:
+def get_bool_from_search_parser_at_(section, key) -> bool:
+    event = f'getting bool at key \'{key}\''
+    try:
+        return _sp_if_get_bool_at_key_(section, key)
+    except Exception as e_err:
+        ml.log_event(f'error {event}')
+        ml.log_event(e_err.args[0])
+
+
+def get_int_from_search_parser_at_(section, key) -> int:
     event = f'getting int at key \'{key}\''
     try:
-        return _sp_if_get_int_from_section_at_key_(section, key)
+        return _sp_if_get_int_at_key_(section, key)
+    except Exception as e_err:
+        ml.log_event(f'error {event}')
+        ml.log_event(e_err.args[0])
+
+
+def get_str_from_search_parser_at_(section, key) -> str:
+    event = f'getting str at key \'{key}\''
+    try:
+        return _sp_if_get_str_at_key_(section, key)
     except Exception as e_err:
         ml.log_event(f'error {event}')
         ml.log_event(e_err.args[0])
@@ -570,10 +588,10 @@ def save_search_results_unfiltered_to_(state_machine):
         ml.log_event(e_err.args[0])
 
 
-def search_has_yielded_required_results_for_(section: str) -> bool:
-    event = f'checking if search has yielded required results for \'{section}\''
+def search_has_yielded_required_results_for_(state_machine) -> bool:
+    event = f'checking if search has yielded required results'
     try:
-        return _sp_if_search_has_yielded_required_results_for_(section)
+        return _sp_if_search_has_yielded_required_results_for_(state_machine)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error {event}')
@@ -1297,15 +1315,36 @@ def _sp_if_get_bool_from_(section: str, key: str) -> bool:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
-def _sp_if_get_int_from_section_at_key_(section: str, key: str) -> int:
+def _sp_if_get_bool_at_key_(section: str, key: str) -> bool:
+    event = f'getting bool value for search parser at \'{key}\''
+    try:  # parser surface abstraction depth = 1
+        boolean = _search_parser(section).getboolean(key)
+        ml.log_event(event)
+        return boolean
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error {event}')
+
+
+def _sp_if_get_int_at_key_(section: str, key: str) -> int:
     event = f'getting int value for search parser at \'{key}\''
     try:  # parser surface abstraction depth = 1
-        integer = _search_parser(section)[key]
+        integer_as_str = _sp_if_get_str_at_key_(section, key)
         ml.log_event(event)
-        for char in integer:  # FIXME this would allow values like -79 but also 7-9 which would error
+        for char in integer_as_str:  # FIXME this would allow values like -79 but also 7-9 which would error
             if char not in digits_or_sign:
                 raise TypeError(f'unexpected character while ' + event)
-        return int(integer)
+        return int(integer_as_str)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error {event}')
+
+
+def _sp_if_get_str_at_key_(section: str, key: str) -> str:
+    event = f'getting str value for search parser at \'{key}\''
+    try:  # parser surface abstraction depth = 1
+        string = str(_search_parser(section)[key])
+        return string
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error {event}')
@@ -1340,18 +1379,9 @@ def _sp_if_get_search_states_for_(section) -> tuple:
 
 def _sp_if_get_search_term_for_(section: str) -> str:
     try:
-        search_term = _sp_if_get_str_from_(section, s_key.TERM)
+        search_term = _sp_if_get_str_at_key_(section, s_key.TERM)
         return search_term if value_provided_for_(search_term) else section
     except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
-
-
-def _sp_if_get_str_from_(section: str, key: str) -> str:
-    event = f'getting str value for search parser at \'{key}\''
-    try:  # parser surface abstraction depth = 1
-        return str(_search_parser(section)[key])
-    except Exception as e_err:
-        ml.log_event(f'error {event}')
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
 
@@ -1359,7 +1389,7 @@ def _sp_if_increment_result_added_count_for_(section: str) -> None:
     event = f'incrementing result added count for \'{section}\''
     key = s_key.RESULTS_ADDED_COUNT
     try:  # parser surface abstraction depth = 1
-        _search_parser(section)[key] = str(get_int_from_section_at_key_(section, key) + 1)
+        _search_parser(section)[key] = str(get_int_from_search_parser_at_(section, key) + 1)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error {event}')
@@ -1368,7 +1398,7 @@ def _sp_if_increment_result_added_count_for_(section: str) -> None:
 def _sp_if_increment_search_attempt_count_for_(section: str) -> None:
     event = f'incrementing search attempt count for \'{section}\''
     try:  # FIXME bring into compliance with standard interface functions
-        search_attempt_count = get_int_from_section_at_key_(section, s_key.SEARCH_ATTEMPT_COUNT)
+        search_attempt_count = get_int_from_search_parser_at_(section, s_key.SEARCH_ATTEMPT_COUNT)
         ml.log_event(f'search try counter at \'{search_attempt_count}\', incrementing..')
         _sp_if_set_int_for_(section, s_key.SEARCH_ATTEMPT_COUNT, search_attempt_count + 1)
     except Exception as e_err:
@@ -1405,7 +1435,7 @@ def _sp_if_increment_search_state_for_(state_machine):
 
 def _sp_if_ready_to_start_(queued: bool, state_machine) -> bool:
     try:  # FIXME label arg QbitStateMachine without recursive import?
-        search_rank = get_int_from_section_at_key_(state_machine.active_section, s_key.RANK)
+        search_rank = get_int_from_search_parser_at_(state_machine.active_section, s_key.RANK)
         search_rank_required_to_start = _uc_if_get_int_for_key_(u_key.RANK_REQUIRED)
         queue_has_room = not search_queue_is_full_in_(state_machine)
         search_rank_allowed = search_rank <= search_rank_required_to_start
@@ -1433,22 +1463,18 @@ def _sp_if_reduce_search_expectations_for_(section: str) -> None:
         ml.log_event(f'error {event}')
 
 
-def _sp_if_search_has_yielded_required_results_for_(section: str) -> bool:
+def _sp_if_search_has_yielded_required_results_for_(state_machine) -> bool:
+    section = _sm_if_get_active_section_from_(state_machine)
     event = f'checking if search has yielded required results for \'{section}\''
     try:  # TODO refactor value fetches into parser interface calls
-        s_parser_at_active = s_parser[section]
-        attempted_searches = int(s_parser_at_active[s_key.SEARCH_ATTEMPT_COUNT])
-        max_search_attempt_count = int(s_parser_at_active[s_key.MAX_SEARCH_COUNT])
-        results_added = int(s_parser_at_active[s_key.RESULTS_ADDED_COUNT])
-        results_required = int(s_parser_at_active[s_key.RESULTS_REQUIRED_COUNT])
+        attempted_searches = get_int_from_search_parser_at_(section, s_key.SEARCH_ATTEMPT_COUNT)
+        max_search_attempt_count = get_int_from_search_parser_at_(section, s_key.MAX_SEARCH_COUNT)
+        results_added = get_int_from_search_parser_at_(section, s_key.RESULTS_ADDED_COUNT)
+        results_required = get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT)
         if results_added >= results_required:
-            ml.log_event(f'search \'{section}\' can be concluded, '
-                         'requested result count has been added')
             _sp_if_set_end_reason_for_(section, s_key.REQUIRED_RESULT_COUNT_FOUND)  # enough results, concluded
             return True
-        elif attempted_searches >= max_search_attempt_count:
-            ml.log_event(f'search \'{section}\' can be concluded, too many '
-                         f'search attempts w/o meeting requested result count')
+        if attempted_searches >= max_search_attempt_count:
             _sp_if_set_end_reason_for_(section, s_key.TIMED_OUT)  # too many search attempts, conclude
             return True
         return False
@@ -1468,6 +1494,7 @@ def _sp_if_set_bool_for_(section: str, key: str, boolean: bool):
 def _sp_if_set_end_reason_for_(section, reason_key):
     event = f'setting end reason for \'{section}\' with reason \'{reason_key}\''
     try:  # parser surface abstraction depth = 2
+        ml.log_event(f'search \'{section}\' can be concluded, \'{reason_key}\'')
         _sp_if_set_str_for_(section, s_key.SEARCH_STOPPED_REASON, reason_key)
         if all_searches_concluded():
             exit_program()
