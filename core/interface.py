@@ -27,7 +27,7 @@ def active_section_is_in_memory_of_(state_machine):
         ml.log_event(e_err.args[0])
 
 
-def add_results_from_(state_machine):
+def add_results_stored_in_(state_machine):
     section = get_active_section_from_(state_machine)
     filtered_results = get_filtered_results_from_(state_machine)
     event = f'adding results from state machine'
@@ -647,6 +647,15 @@ def set_active_section_to_(section: str, state_machine):
         ml.log_event(f'error {event}')
 
 
+def set_bool_for_(section: str, key: str, boolean: bool):
+    event = f'setting boolean value \'{boolean}\' for \'{section}\' at \'{key}\''
+    try:
+        _sp_if_set_bool_for_(section, key, boolean)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error {event}')
+
+
 def set_search_id_activity_for_(state_machine, active=False) -> dict:
     # FIXME p3, this function is scrap metal, has good ideas but defunct, strip it then delete it
     event = 'setting search id activity'
@@ -1160,9 +1169,10 @@ def _mp_if_add_section_to_(mp: RawConfigParser, hashed_section_name: str) -> Non
 
 
 def _mp_if_create_section_for_(mp: RawConfigParser, result: dict) -> None:
+    # FIXME p3, this could be wrapped to reduce api interface clutter
     event = f'creating metadata parser section for \'{result}\''
     try:
-        offset = int(u_parser[u_key.DEFAULT][u_key.UNI_SHIFT])
+        offset = _uc_if_get_int_for_key_(u_key.UNI_SHIFT)
         result_name = _mp_if_get_result_metadata_at_key_(m_key.NAME, result)
         ml.log_event(f'save metadata result to parser \'{result_name}\'')
         m_section = hash_metadata(build_metadata_section_from_(result), offset=offset)
