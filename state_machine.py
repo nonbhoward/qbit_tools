@@ -12,7 +12,7 @@ from core.interface import get_search_states_for_
 from core.interface import increment_search_state_at_active_section_for_
 from core.interface import pause_on_event
 from core.interface import print_search_ids_from_
-from core.interface import ready_to_start_
+from core.interface import ready_to_start_at_
 from core.interface import reset_search_state_at_active_section_for_
 from core.interface import save_results_to_
 from core.interface import search_has_yielded_required_results_for_
@@ -29,16 +29,17 @@ class QbitStateManager:
     def __init__(self, verbose=True):
         event = f'initializing \'{self.__class__.__name__}\''
         try:
-            ml.log_event(event, announce=True)
+            ml.log_event(event, announce=True, event_completed=False)
             self.main_loop_count, self.active_section = 0, ''
             self.active_sections = dict()
-            self.verbose = verbose
+            self.verbose = verbose  # FIXME p3, this is not used
+            ml.log_event(event, announce=True, event_completed=True)
             pause_on_event(u_key.WAIT_FOR_USER)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
             ml.log_event(f'error {event}')
 
-    def increment_main_loop_count(self):
+    def increment_main_loop_count(self) -> None:
         event = f'incrementing main loop count'
         try:  # FIXME is this a better place to put a pause vs main_loop?
             self.main_loop_count += 1
@@ -48,7 +49,7 @@ class QbitStateManager:
             ml.log_event(e_err.args[0], level=ml.ERROR)
             ml.log_event(f'error {event}')
 
-    def initiate_and_monitor_searches(self):
+    def initiate_and_monitor_searches(self) -> None:
         event = f'initiating and monitoring searches'
         try:  # note, this is the entry point for state machine
             search_parser_sections = get_all_sections_from_search_parser()
@@ -65,13 +66,14 @@ class QbitStateManager:
             ml.log_event(e_err.args[0], level=ml.ERROR)
             ml.log_event(f'error {event}')
 
-    def manage_state_updates(self, search_state):
+    def manage_state_updates(self, search_state) -> None:
         event = f'managing state updates'
         try:
             search_queued, search_running, search_stopped, search_concluded = search_state
             search_id = get_search_id_from_active_section_in_(self)
-            if ready_to_start_(search_queued, self):
-                start_search_with_(self)  # FIXME p0, when this increments to RUNNING, search_id is always empty
+            section = self.active_section
+            if ready_to_start_at_(section, self):
+                start_search_with_(self)
             elif search_running:
                 if empty_(search_id):
                     reset_search_state_at_active_section_for_(self)
