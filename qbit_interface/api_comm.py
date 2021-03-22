@@ -98,11 +98,10 @@ class QbitApiCaller:
             ml.log_event(e_err.args[0], level=ml.ERROR)
             ml.log_event(f'error getting local result count')
 
-    def get_result_object_from_(self, search_id) -> list:
-        event = f'getting result object from \'{search_id}\''
+    def get_result_object_at_(self, search_id) -> list:
+        event = f'getting result object at \'{search_id}\''
         try:
-            results = self.qbit_client.search_results(search_id)
-            return results
+            return self.qbit_client.search_results(search_id)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
             ml.log_event(f'error {event}')
