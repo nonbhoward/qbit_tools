@@ -28,11 +28,10 @@ def active_section_is_in_memory_of_(state_machine):
 
 
 def add_results_from_(state_machine):
-    section = _sm_if_get_active_section_from_(state_machine)
+    section = get_active_section_from_(state_machine)
+    filtered_results = get_filtered_results_from_(state_machine)
     event = f'adding results from state machine'
     try:
-        filtered_results = get_filtered_results_from_(state_machine)
-        reduce_search_expectations_if_not_enough_results_found_in_(section, filtered_results)
         results_required_count = get_int_from_section_at_key_(section, s_key.RESULTS_REQUIRED_COUNT)
         ml.log_event(f'add most popular \'{results_required_count}\' count results')
         for result in filtered_results:
@@ -197,7 +196,7 @@ def filter_provided_for_(parser_val) -> bool:
 
 def filter_results_in_(state_machine, found=True, sort=True):
     # FIXME p1, this function needs a lot of work offloading to level 0 abstraction interfaces..
-    results = list()
+    results_filtered_and_sorted = list()
     section = _sm_if_get_active_section_from_(state_machine)
     results_unfiltered = _sm_if_get_unfiltered_results_from_(state_machine)
     event = f'filtering results for \'{section}\''
@@ -249,9 +248,10 @@ def filter_results_in_(state_machine, found=True, sort=True):
             ml.log_event(f'result \'{result_name}\' meets all requirements')
             results_filtered.append(result_unfiltered)
         if sort:
-            ml.log_event(f'results sorted for {section} # TODO dynamic sort values')
-            results = sort_(results_filtered)
-        return results
+            ml.log_event(f'sorting results for \'{section}\'')
+            results_filtered_and_sorted = sort_(results_filtered)
+        reduce_search_expectations_if_not_enough_results_found_in_(section, results_filtered_and_sorted)
+        return results_filtered_and_sorted
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error {event}')
@@ -727,9 +727,10 @@ def set_time_last_searched_for_(section: str) -> None:
 
 
 def sort_(results: list) -> list:
+    # TODO dynamic sort values
     event = f'sorting results'
     try:
-        return sorted(results, key=lambda k: k['nbSeeders'], reverse=True)  # FIXME remove hardcode
+        return sorted(results, key=lambda k: k['nbSeeders'], reverse=True)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error {event}')
