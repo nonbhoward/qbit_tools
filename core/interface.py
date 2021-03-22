@@ -32,7 +32,7 @@ def add_results_from_(state_machine):
     event = f'adding results from state machine'
     try:
         filtered_results = get_filtered_results_from_(state_machine)
-        evaluate_filtered_results_for_(section, filtered_results)
+        reduce_search_expectations_if_not_enough_results_found_in_(section, filtered_results)
         results_required_count = get_int_from_section_at_key_(section, s_key.RESULTS_REQUIRED_COUNT)
         ml.log_event(f'add most popular \'{results_required_count}\' count results')
         for result in filtered_results:
@@ -175,16 +175,6 @@ def enough_results_found_in_(section: str, filtered_results: list) -> bool:
         ml.log_event(f'error {event}')
 
 
-def evaluate_filtered_results_for_(section: str, filtered_results: list) -> None:
-    event = f'evaluating filtered results for \'{section}\''
-    try:
-        if not enough_results_found_in_(section, filtered_results):
-            _sp_if_reduce_search_expectations_for_(section)
-    except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error {event}')
-
-
 def exit_program():
     event = f'exiting program'
     try:
@@ -199,7 +189,7 @@ def exit_program():
 def filter_results_in_(state_machine, found=True, sort=True):
     # FIXME p1, this function needs a lot of work offloading to level 0 abstraction interfaces..
     section = _sm_if_get_active_section_from_(state_machine)
-    unfiltered_results = _sm_if_get_unfiltered_results_from_(state_machine)
+    results_unfiltered = _sm_if_get_unfiltered_results_from_(state_machine)
     event = f'filtering results for \'{section}\''
     try:
         seeds_min = get_int_from_section_at_key_(section, s_key.MIN_SEED)
@@ -209,22 +199,22 @@ def filter_results_in_(state_machine, found=True, sort=True):
         megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
         filename_regex = _sp_if_get_str_from_(section, s_key.REGEX_FILENAME)  # FIXME check this return
         results_filtered = list()
-        for unfiltered_result in unfiltered_results:
-            result_name = _mp_if_get_result_metadata_at_key_(m_key.NAME, unfiltered_result)
-            if found and _mp_if_previously_found_(unfiltered_result):
+        for result_unfiltered in results_unfiltered:
+            result_name = _mp_if_get_result_metadata_at_key_(m_key.NAME, result_unfiltered)
+            if found and _mp_if_previously_found_(result_unfiltered):
                 continue
             if filter_provided_for_(seeds_min):
-                result_seeds = int(_mp_if_get_result_metadata_at_key_(m_key.SUPPLY, unfiltered_result))  # FIXME int
+                result_seeds = int(_mp_if_get_result_metadata_at_key_(m_key.SUPPLY, result_unfiltered))  # FIXME int
                 enough_seeds = True if result_seeds > seeds_min else False
                 if not enough_seeds:
                     ml.log_event(f'required seeds \'{seeds_min}\' not met by result with '
                                  f'\'{result_seeds}\' seeds, result : \'{result_name}\'',
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
-                    _mp_if_write_metadata_from_(unfiltered_result)
+                    _mp_if_write_metadata_from_(result_unfiltered)
                     continue
             if filter_provided_for_(megabytes_min) or filter_provided_for_(megabytes_max):
-                bytes_result = int(_mp_if_get_result_metadata_at_key_(m_key.SIZE, unfiltered_result))  # FIXME int
+                bytes_result = int(_mp_if_get_result_metadata_at_key_(m_key.SIZE, result_unfiltered))  # FIXME int
                 megabytes_result = mega(bytes_result)
                 if filter_provided_for_(megabytes_min) and filter_provided_for_(megabytes_max):
                     file_size_in_range = True if bytes_max > bytes_result > bytes_min else False
@@ -237,17 +227,17 @@ def filter_results_in_(state_machine, found=True, sort=True):
                                  f'result with size \'{megabytes_result}\'MiB, result: \'{result_name}\'',
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
-                    _mp_if_write_metadata_from_(unfiltered_result)
+                    _mp_if_write_metadata_from_(result_unfiltered)
                     continue
             if filter_provided_for_(filename_regex):
                 ml.log_event(f'filtering results using filename regex \'{filename_regex}\'')
-                filename = _mp_if_get_result_metadata_at_key_(m_key.NAME, unfiltered_result)
+                filename = _mp_if_get_result_metadata_at_key_(m_key.NAME, result_unfiltered)
                 if not q_api.regex_matches(filename_regex, filename):
                     ml.log_event(f'regex \'{filename_regex}\' does not match for \'{filename}\'', level=ml.WARNING)
-                    _mp_if_write_metadata_from_(unfiltered_result)
+                    _mp_if_write_metadata_from_(result_unfiltered)
                     continue
             ml.log_event(f'result \'{result_name}\' meets all requirements')
-            results_filtered.append(unfiltered_result)
+            results_filtered.append(result_unfiltered)
         if sort:
             ml.log_event(f'results sorted for {section} # TODO dynamic sort values')
             results = sort_(results_filtered)
@@ -309,7 +299,7 @@ def get_filtered_results_from_(state_machine) -> list:
 def get_int_from_section_at_key_(section, key) -> int:
     event = f'getting int at key \'{key}\''
     try:
-        return _sp_if_get_int_from_section_at_key_(section, s_key.MIN_SEED)
+        return _sp_if_get_int_from_section_at_key_(section, key)
     except Exception as e_err:
         ml.log_event(f'error {event}')
         ml.log_event(e_err.args[0])
@@ -346,7 +336,7 @@ def get_all_sections_from_metadata_parsers() -> tuple:
 def get_all_sections_from_user_config_parser() -> list:
     event = f'getting all sections from user config parser'
     try:
-        return user_configuration().sections()
+        _uc_if_get_all_sections_from_user_config_parser()
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error {event}')
@@ -479,6 +469,16 @@ def ready_to_start_(queued: bool, state_machine) -> bool:
         ml.log_event(f'error {event}')
 
 
+def reduce_search_expectations_if_not_enough_results_found_in_(section: str, filtered_results: list) -> None:
+    event = f'evaluating filtered results for \'{section}\''
+    try:
+        if not enough_results_found_in_(section, filtered_results):
+            _sp_if_reduce_search_expectations_for_(section)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error {event}')
+
+
 def reset_search_state_at_active_section_for_(state_machine) -> None:
     section = get_active_section_from_(state_machine)
     event = f'resetting search state at \'{section}\''
@@ -588,10 +588,11 @@ def search_queue_is_full_in_(state_machine) -> bool:
 
 
 def search_started_for_(state_machine) -> bool:
-    section = state_machine.active_section
+    section = get_active_section_from_(state_machine)
+    active_sections = get_active_sections_from_(state_machine)
     event = f'checking if search started for \'{section}\''
     try:
-        if section in state_machine.active_sections:
+        if section in active_sections:
             return True
         return False
     except Exception as e_err:
@@ -654,7 +655,7 @@ def set_search_ranks() -> None:
         ml.log_event(f'error {event}')
 
 
-def set_search_states_for_(section, search_states) -> None:
+def set_search_states_for_(section, *search_states) -> None:
     event = f'setting search states for \'{section}\''
     try:
         _sp_if_set_search_states_for_(section, search_states)
@@ -1312,7 +1313,7 @@ def _sp_if_increment_search_attempt_count_for_(section: str) -> None:
 
 
 def _sp_if_increment_search_state_for_(state_machine):
-    section = state_machine.active_section
+    section = get_active_section_from_(state_machine)
     event = f'incrementing search state for \'{section}\''
     try:  # FIXME p0, working out bugs.. stripped down for now
         search_state = _sp_if_get_search_states_for_(section)
@@ -1341,7 +1342,7 @@ def _sp_if_increment_search_state_for_(state_machine):
 def _sp_if_ready_to_start_(queued: bool, state_machine) -> bool:
     try:  # FIXME label arg QbitStateMachine without recursive import?
         search_rank = get_int_from_section_at_key_(state_machine.active_section, s_key.RANK)
-        search_rank_required_to_start = uc_if_get_int_for_key_(u_key.RANK_REQUIRED)
+        search_rank_required_to_start = _uc_if_get_int_for_key_(u_key.RANK_REQUIRED)
         queue_has_room = not search_queue_is_full_in_(state_machine)
         search_rank_allowed = search_rank <= search_rank_required_to_start
         # FIXME p0, this allows searches to start if they are already running!
@@ -1489,7 +1490,7 @@ def _sp_if_set_time_last_searched_for_(section: str) -> None:
 #                            USER CONFIG PARSER INTERFACE BELOW                                      #
 #                                                                                                    #
 ### ### ### ### ### ### ### ### USER CONFIG PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ###
-def user_configuration(section=empty):
+def _user_configuration(section=empty):
     event = f'getting user config parser at \'{section}\'' if not empty_(section) else f'getting user config parser'
     try:
         if section:
@@ -1503,25 +1504,32 @@ def user_configuration(section=empty):
         ml.log_event(f'error {event}')
 
 
-def uc_if_get_int_for_key_(key: str) -> int:
+def _uc_if_get_all_sections_from_user_config_parser() -> list:
+    event = f'getting all sections from user config parser'
+    try:
+        return _user_configuration().sections()
+    except Exception as e_err:
+        ml.log_event(e_err.args[0])
+        ml.log_event(f'error {event}')
+
+
+def _uc_if_get_int_for_key_(key: str) -> int:
     event = f'getting int from user configuration parser with key \'{key}\''
     try:
-        val = user_configuration(default)[key]
+        val = _user_configuration(default)[key]
         for char in val:  # FIXME this would allow values like -79 but also 7-9 which would error
             if char not in digits_or_sign:
                 raise TypeError(f'unexpected character in value for key \'{key}\'')
-        ml.log_event(f'returning int({val}) from search parser')
         return int(val)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error {event}')
 
 
-def uc_if_get_str_for_key_(key: str) -> str:
+def _uc_if_get_str_for_key_(key: str) -> str:
     event = f'getting str from user configuration parser with key \'{key}\''
     try:
-        val = user_configuration(default)[key]
-        ml.log_event(f'returning str({val}) from search parser')
+        val = _user_configuration(default)[key]
         return str(val)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
