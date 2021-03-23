@@ -27,7 +27,7 @@ def active_section_is_in_memory_of_(state_machine):
         ml.log_event(e_err.args[0])
 
 
-def add_results_stored_in_(state_machine):
+def add_filtered_results_stored_in_(state_machine):
     section = get_active_section_from_(state_machine)
     filtered_results = get_filtered_results_from_(state_machine)
     event = f'adding results from state machine'
@@ -125,6 +125,16 @@ def check_for_empty_string_to_replace_with_no_data_in_(value: str) -> str:
         ml.log_event(f'error {event}')
 
 
+def conclude_search_for_active_section_in_(state_machine) -> None:
+    section = get_active_section_from_(state_machine)
+    event = f'concluding search for active section \'{section}\''
+    try:
+        set_bool_for_(section, s_key.CONCLUDED, True)
+    except Exception as e_err:
+        ml.log_event(f'error {event}')
+        ml.log_event(e_err.args[0])
+
+
 def create_search_job_for_(pattern: str, plugins: str, category: str):
     event = f'creating search job for \'{pattern}\''
     try:
@@ -206,7 +216,7 @@ def filter_results_in_(state_machine, found=True, sort=True):
         bytes_max = get_int_from_search_parser_at_(section, s_key.SIZE_MAX_BYTES)
         megabytes_min = mega(bytes_min)
         megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
-        filename_regex = _sp_if_get_str_at_key_(section, s_key.REGEX_FILENAME)  # FIXME check this return
+        filename_regex = get_str_from_search_parser_at_(section, s_key.REGEX_FILENAME)
         results_filtered = list()
         for result_unfiltered in results_unfiltered:
             result_name = _mp_if_get_result_metadata_at_key_(m_key.NAME, result_unfiltered)
@@ -322,7 +332,7 @@ def get_bool_from_(section: str, key: str) -> bool:
 def get_concluded_state_for_(section) -> bool:
     event = f'getting concluded state for \'{section}\''
     try:
-        return get_search_states_for_(section)[3]
+        return get_search_state_for_(section)[3]
     except Exception as e_err:
         ml.log_event(f'error {event}')
         ml.log_event(e_err.args[0])
@@ -391,7 +401,7 @@ def get_str_from_search_parser_at_(section, key) -> str:
 def get_queued_state_for_(section) -> bool:
     event = f'getting queued state for \'{section}\''
     try:
-        return get_search_states_for_(section)[0]
+        return get_search_state_for_(section)[0]
     except Exception as e_err:
         ml.log_event(f'error {event}')
         ml.log_event(e_err.args[0])
@@ -400,7 +410,7 @@ def get_queued_state_for_(section) -> bool:
 def get_running_state_for_(section) -> bool:
     event = f'getting running state for \'{section}\''
     try:
-        return get_search_states_for_(section)[1]
+        return get_search_state_for_(section)[1]
     except Exception as e_err:
         ml.log_event(f'error {event}')
         ml.log_event(e_err.args[0])
@@ -433,10 +443,20 @@ def get_search_results_for_(state_machine) -> list:
         ml.log_event(f'error {event}')
 
 
-def get_search_states_for_(section) -> tuple:
+def get_search_state_for_(section) -> tuple:
     event = f'getting search state for \'{section}\''
     try:
         return _sp_if_get_search_states_for_(section)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error {event}')
+
+
+def get_search_state_for_active_section_in_(state_machine) -> tuple:
+    section = get_active_section_from_(state_machine)
+    event = f'getting search state for active section'
+    try:
+        return get_search_state_for_(section)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error {event}')
@@ -451,10 +471,20 @@ def get_search_term_for_(section: str) -> str:
         ml.log_event(f'error {event}')
 
 
+def get_search_term_for_active_section_in_(state_machine) -> str:
+    section = get_active_section_from_(state_machine)
+    event = f'getting search term for active section'
+    try:
+        return get_search_term_for_(section)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error {event}')
+
+
 def get_stopped_state_for_(section) -> bool:
     event = f'getting stopped state for \'{section}\''
     try:
-        return get_search_states_for_(section)[2]
+        return get_search_state_for_(section)[2]
     except Exception as e_err:
         ml.log_event(f'error {event}')
         ml.log_event(e_err.args[0])
@@ -491,6 +521,15 @@ def mega(bytes_: int) -> int:
         ml.log_event(f'error {event}')
 
 
+def none_value_(test_value) -> bool:
+    event = f'checking if \'{test_value}\' is None'
+    try:
+        return True if test_value is None else False
+    except Exception as e_err:
+        ml.log_event(f'error {event}')
+        ml.log_event(e_err.args[0])
+
+
 def pause_on_event(pause_type: str):
     event = f'pausing on event \'{pause_type}\''
     try:  # FIXME p0, doesn't work with new architecture, re-think
@@ -514,12 +553,25 @@ def print_search_ids_from_(active_search_ids: dict):
         ml.log_event(f'error {event}')
 
 
-def ready_to_start_at_(section: str, state_machine) -> bool:
+def ready_to_start_at_(section: str) -> bool:
     event = f'checking if search is ready to start'
     try:
         ml.log_event(event)
-        queued = get_queued_state_for_(section)
-        return _sp_if_ready_to_start_(queued, state_machine)
+        return _sp_if_ready_to_start_at_(section)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error {event}')
+
+
+def ready_to_start_at_active_section_in_(state_machine) -> bool:
+    section = get_active_section_from_(state_machine)
+    event = f'checking if search is ready to start'
+    try:
+        ml.log_event(event)
+        queue_has_room = not search_queue_is_full_in_(state_machine)
+        if queue_has_room:
+            return ready_to_start_at_(section)
+        return False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error {event}')
@@ -588,10 +640,10 @@ def save_search_results_unfiltered_to_(state_machine):
         ml.log_event(e_err.args[0])
 
 
-def search_has_yielded_required_results_for_(state_machine) -> bool:
-    event = f'checking if search has yielded required results'
+def search_at_active_section_has_completed_in_(state_machine) -> bool:
+    event = f'checking if search at active section has completed'
     try:
-        return _sp_if_search_has_yielded_required_results_for_(state_machine)
+        return _sp_if_search_at_active_section_has_completed_in_(state_machine)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error {event}')
@@ -607,10 +659,48 @@ def search_is_concluded_in_(state_machine) -> bool:
         ml.log_event(f'error {event}')
 
 
-def search_is_running_in_(state_machine) -> bool:
+def search_is_running_at_(section) -> bool:
+    event = f'checking if search is running in \'{section}\''
+    try:  # machine surface abstraction depth = 1
+        return _sm_if_search_is_running_at_(section)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error {event}')
+
+
+def search_is_running_at_active_section_in_(state_machine) -> bool:
+    section = get_active_section_from_(state_machine)
+    event = f'checking if search is running at active section'
+    try:  # machine surface abstraction depth = 1
+        return search_is_running_at_(section)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error {event}')
+
+
+def search_is_stored_in_(state_machine) -> bool:
     event = f'checking if search is running in state machine'
     try:  # machine surface abstraction depth = 1
-        return _sm_if_search_is_running_in_(state_machine)
+        return _sm_if_search_is_stored_in_(state_machine)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error {event}')
+
+
+def search_is_stopped_at_(section) -> bool:
+    event = f'checking if search is stopped at \'{section}\''
+    try:  # machine surface abstraction depth = 1
+        return _sm_if_search_is_stopped_at_(section)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error {event}')
+
+
+def search_is_stopped_at_active_section_in_(state_machine) -> bool:
+    section = get_active_section_from_(state_machine)
+    event = f'checking if search is stopped at active section'
+    try:  # machine surface abstraction depth = 1
+        return search_is_stopped_at_(section)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error {event}')
@@ -753,6 +843,16 @@ def set_time_last_searched_for_(section: str) -> None:
         ml.log_event(f'error {event}')
 
 
+def set_time_last_searched_for_active_section_in_(state_machine) -> None:
+    section = get_active_section_from_(state_machine)
+    event = f'setting time last searched for active section'
+    try:
+        set_time_last_searched_for_(section)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log_event(f'error {event}')
+
+
 def sort_(results: list) -> list:
     # TODO dynamic sort values
     event = f'sorting results'
@@ -765,33 +865,22 @@ def sort_(results: list) -> list:
 
 def start_search_with_(state_machine):
     section = state_machine.active_section
-    event = f'starting search with \'{section}\''
+    search_term = get_search_term_for_active_section_in_(state_machine)
+    search_properties = create_search_job_for_(search_term, 'all', 'all')
+    add_search_properties_to_(state_machine, search_properties)
     try:
-        search_term = get_search_term_for_(section)
-        # FIXME instead of returning properties, just add them to the state machine
-        search_properties = create_search_job_for_(search_term, 'all', 'all')
-        add_search_properties_to_(state_machine, search_properties)
         search_count, search_id, search_status = search_properties
-        if search_id is None or empty_(search_id):
-            event = f'invalid search id, empty or none'
-            ml.log_event(event)
-            raise Exception(event)
-        if search_is_running_in_(state_machine):
-            ml.log_event(f'search \'{search_term}\' successfully started for \'{section}\' with id \'{search_id}\'')
-            set_time_last_searched_for_(section)
-            increment_search_state_at_active_section_for_(state_machine)
-            return
-        elif search_is_stopped_in_(state_machine):
-            event = f'search stopped immediately after starting at \'{section}\''
-            ml.log_event(event, level=ml.WARNING)
-            increment_search_state_at_active_section_for_(state_machine)  # FIXME do this yes or no?
-        else:
-            event = f'stale search, bad search status and/or bad search id, re-queueing \'{section}\''
-            ml.log_event(event, level=ml.WARNING)
-            reset_search_state_at_active_section_for_(state_machine)
-    except Exception as e_err:
-        ml.log_event(e_err.args[0], level=ml.ERROR)
-        ml.log_event(f'error {event}')
+        write_search_id_to_search_parser_at_(section, search_id)
+    except Exception as tuple_exc:
+        for arg in tuple_exc.args:
+            ml.log_event(arg)
+    if search_is_stored_in_(state_machine):
+        ml.log_event(f'search \'{search_term}\' successfully started for \'{section}\' with id \'{search_id}\'')
+        set_time_last_searched_for_active_section_in_(state_machine)
+        increment_search_state_at_active_section_for_(state_machine)
+        return
+    ml.log_event(f'stale search, bad search status and/or bad search id, re-queueing \'{section}\'', level=ml.WARNING)
+    reset_search_state_at_active_section_for_(state_machine)
 
 
 def update_search_properties_for_(state_machine):
@@ -843,6 +932,15 @@ def write_parsers_to_disk():
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error {event}')
+
+
+def write_search_id_to_search_parser_at_(section, search_id) -> None:
+    event = f'writing search id \'{search_id}\' to search parser at section \'{section}\''
+    try:
+        _sp_if_set_str_for_(section, s_key.ID, search_id)
+    except Exception as e_err:
+        ml.log_event(f'error {event}')
+        ml.log_event(e_err.args[0])
 
 
 #### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
@@ -922,6 +1020,16 @@ def _sm_if_get_search_id_from_active_section_in_(state_machine) -> str:
         ml.log_event(e_err.args[0])
 
 
+def _sm_if_get_search_properties_at_(section: str) -> tuple:
+    search_id = _sp_if_get_search_id_for_(section)
+    try:
+        if empty_(search_id):
+            return None, None, None
+        return _api_if_get_search_properties_for_(search_id)
+    except Exception as e_err:
+        ml.log_event(e_err.args[0])
+
+
 def _sm_if_get_search_properties_from_(state_machine) -> tuple:
     # TODO just noting this object has two surfaces, could be useful
     try:  # api/machine surface abstraction depth = 1/1
@@ -968,12 +1076,32 @@ def _sm_if_save_unfiltered_search_results_to_(state_machine):
         ml.log_event(e_err.args[0])
 
 
-def _sm_if_search_is_running_in_(state_machine) -> bool:
+def _sm_if_search_is_running_at_(section) -> bool:
+    try:  # machine surface abstraction depth = 1
+        search_count, search_id, search_status = _sm_if_get_search_properties_at_(section)
+        if none_value_(search_id):
+            return False
+        return True if s_key.RUNNING in search_status else False
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def _sm_if_search_is_stored_in_(state_machine) -> bool:
     # FIXME hierarchy status < search_id < section < state_machine could be reduced
     try:  # machine surface abstraction depth = 1
         search_count, search_id, search_status = _sm_if_get_search_properties_from_(state_machine)
         active_search_ids = _sm_if_get_active_search_ids_from_(state_machine)
-        return True if s_key.RUNNING in search_status and search_id in active_search_ids else False
+        return True if search_id in active_search_ids else False
+    except Exception as e_err:
+        ml.log_event(e_err.args[0], level=ml.ERROR)
+
+
+def _sm_if_search_is_stopped_at_(section) -> bool:
+    try:  # machine surface abstraction depth = 1
+        search_count, search_id, search_status = _sm_if_get_search_properties_at_(section)
+        if none_value_(search_id):
+            return False
+        return True if s_key.STOPPED in search_status else False
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
 
@@ -1359,6 +1487,14 @@ def _sp_if_get_parser_as_sortable() -> dict:
         ml.log_event(f'error {event}')
 
 
+def _sp_if_get_search_id_for_(section: str) -> str:
+    try:
+        search_id = _sp_if_get_str_at_key_(section, s_key.ID)
+        return search_id
+    except Exception as e_err:
+        ml.log_event(e_err.args[0])
+
+
 def _sp_if_get_search_states_for_(section) -> tuple:
     try:  # parser surface abstraction depth = 2
         _sp_if_set_str_for_(section, s_key.TIME_LAST_READ, str(dt.now()))  # FIXME move to function
@@ -1433,14 +1569,15 @@ def _sp_if_increment_search_state_for_(state_machine):
         ml.log_event('error ' + event)
 
 
-def _sp_if_ready_to_start_(queued: bool, state_machine) -> bool:
+def _sp_if_ready_to_start_at_(section) -> bool:
     try:  # FIXME label arg QbitStateMachine without recursive import?
-        search_rank = get_int_from_search_parser_at_(state_machine.active_section, s_key.RANK)
-        search_rank_required_to_start = _uc_if_get_int_for_key_(u_key.RANK_REQUIRED)
-        queue_has_room = not search_queue_is_full_in_(state_machine)
-        search_rank_allowed = search_rank <= search_rank_required_to_start
         # FIXME p0, this allows searches to start if they are already running!
-        if queued and queue_has_room and search_rank_allowed:
+        search_rank = get_int_from_search_parser_at_(section, s_key.RANK)  # TODO delete me
+        search_rank = _sp_if_get_int_at_key_(section, s_key.RANK)
+        search_rank_required_to_start = _uc_if_get_int_for_key_(u_key.RANK_REQUIRED)
+        search_rank_allowed = search_rank <= search_rank_required_to_start
+        queued = _sp_if_get_search_states_for_(section)[0]
+        if queued and search_rank_allowed:
             return True
         return False
     except Exception as e_err:
@@ -1463,18 +1600,18 @@ def _sp_if_reduce_search_expectations_for_(section: str) -> None:
         ml.log_event(f'error {event}')
 
 
-def _sp_if_search_has_yielded_required_results_for_(state_machine) -> bool:
+def _sp_if_search_at_active_section_has_completed_in_(state_machine) -> bool:
     section = _sm_if_get_active_section_from_(state_machine)
     event = f'checking if search has yielded required results for \'{section}\''
-    try:  # TODO refactor value fetches into parser interface calls
-        attempted_searches = get_int_from_search_parser_at_(section, s_key.SEARCH_ATTEMPT_COUNT)
-        max_search_attempt_count = get_int_from_search_parser_at_(section, s_key.MAX_SEARCH_COUNT)
-        results_added = get_int_from_search_parser_at_(section, s_key.RESULTS_ADDED_COUNT)
-        results_required = get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT)
+    try:
+        search_attempt_count = _sp_if_get_int_at_key_(section, s_key.SEARCH_ATTEMPT_COUNT)
+        search_attempt_count_max = _sp_if_get_int_at_key_(section, s_key.MAX_SEARCH_COUNT)
+        results_added = _sp_if_get_int_at_key_(section, s_key.RESULTS_ADDED_COUNT)
+        results_required = _sp_if_get_int_at_key_(section, s_key.RESULTS_REQUIRED_COUNT)
         if results_added >= results_required:
             _sp_if_set_end_reason_for_(section, s_key.REQUIRED_RESULT_COUNT_FOUND)  # enough results, concluded
             return True
-        if attempted_searches >= max_search_attempt_count:
+        if search_attempt_count >= search_attempt_count_max:
             _sp_if_set_end_reason_for_(section, s_key.TIMED_OUT)  # too many search attempts, conclude
             return True
         return False
