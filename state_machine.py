@@ -1,23 +1,20 @@
 from minimalog.minimal_log import MinimalLog
 from core.interface import active_section_is_in_memory_of_
-from core.interface import add_results_stored_in_
+from core.interface import add_filtered_results_stored_in_
 from core.interface import all_searches_concluded
-from core.interface import empty_
+from core.interface import conclude_search_for_active_section_in_
 from core.interface import exit_program
 from core.interface import get_all_sections_from_search_parser
 from core.interface import get_connection_time_start
-from core.interface import get_search_id_from_active_section_in_
-from core.interface import get_search_properties_from_
-from core.interface import get_search_states_for_
+from core.interface import get_search_state_for_active_section_in_
 from core.interface import increment_search_state_at_active_section_for_
 from core.interface import pause_on_event
-from core.interface import print_search_ids_from_
-from core.interface import ready_to_start_at_
+from core.interface import ready_to_start_at_active_section_in_
 from core.interface import reset_search_state_at_active_section_for_
 from core.interface import save_results_to_
-from core.interface import search_has_yielded_required_results_for_
-from core.interface import search_is_running_in_
-from core.interface import search_is_stopped_in_
+from core.interface import search_at_active_section_has_completed_in_
+from core.interface import search_is_running_at_active_section_in_
+from core.interface import search_is_stopped_at_active_section_in_
 from core.interface import set_active_section_to_
 from core.interface import set_search_ranks
 from core.interface import start_search_with_
@@ -52,55 +49,36 @@ class QbitStateManager:
     def initiate_and_monitor_searches(self) -> None:
         event = f'initiating and monitoring searches'
         try:  # note, this is the entry point for state machine
-            search_parser_sections = get_all_sections_from_search_parser()
             set_search_ranks()
-            pause_on_event(u_key.WAIT_FOR_USER)
+            search_parser_sections = get_all_sections_from_search_parser()
             for section in search_parser_sections:
                 set_active_section_to_(section, self)
-                search_state = get_search_states_for_(section)
-                self.manage_state_updates(search_state)
+                self.manage_state_updates_at_active_section()
             if all_searches_concluded():
                 exit_program()
-            write_parsers_to_disk()  # FIXME p3, consider location of this line
+            write_parsers_to_disk()
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
             ml.log_event(f'error {event}')
 
-    def manage_state_updates(self, search_state) -> None:
-        event = f'managing state updates'
+    def manage_state_updates_at_active_section(self) -> None:
+        event = f'managing state updates at active section : \'{self.active_section}\''
         try:
-            search_queued, search_running, search_stopped, search_concluded = search_state
-            search_id = get_search_id_from_active_section_in_(self)
-            section = self.active_section
-            if ready_to_start_at_(section, self):
+            search_queued, search_running, search_stopped, search_concluded = \
+                get_search_state_for_active_section_in_(self)
+            if ready_to_start_at_active_section_in_(self):
                 start_search_with_(self)
-            elif search_running:
-                if empty_(search_id):
-                    reset_search_state_at_active_section_for_(self)
-                    return
-                search_properties = get_search_properties_from_(self)
-                if search_properties is None:
-                    ml.log_event(f'bad search id \'{search_id}\', ignored and re-queued', level=ml.WARNING)
-                    increment_search_state_at_active_section_for_(self)  # search should be running, status is None.. requeue
-                    return
-                print_search_ids_from_(self.active_sections)
-                if search_is_running_in_(self):  # FIXME might want to wrapper this
-                    pass  # search ongoing, do nothing
-                elif search_is_stopped_in_(self):
-                    increment_search_state_at_active_section_for_(self)  # mark search as stopped (finished)
-                else:
-                    increment_search_state_at_active_section_for_(self)  # unexpected state, re-queue
-            elif search_stopped:
-                # FIXME move this to interface
+            elif search_is_running_at_active_section_in_(self):
+                pass  # if running, do nothing til stopped
+            elif search_is_stopped_at_active_section_in_(self):
                 if active_section_is_in_memory_of_(self):
                     save_results_to_(self)
-                add_results_stored_in_(self)  # FIXME p0, bad args, fixing in rework
-                if search_has_yielded_required_results_for_(self):
-                    # FIXME p0, set search section to concluded..
-                    pass
-                increment_search_state_at_active_section_for_(self)
+                    add_filtered_results_stored_in_(self)
+                if search_at_active_section_has_completed_in_(self):
+                    conclude_search_for_active_section_in_(self)
+                reset_search_state_at_active_section_for_(self)
             elif search_concluded:
-                pass
+                pass  # if concluded, do nothing forever
             else:
                 ml.log_event(f'header \'{self.active_section}\' is restricted from starting by search '
                              f'rank and/or search queue, this is by design', level=ml.WARNING)
