@@ -155,6 +155,8 @@ class QbitApiCaller:
                     search_status = search_status_list_data.status
                     break
             search_properties = search_count, search_id, search_status
+            if search_properties is None:
+                raise Exception(f'bad search properties for search id \'{search_id}\'')
             return search_properties
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
