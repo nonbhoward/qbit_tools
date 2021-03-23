@@ -1,11 +1,11 @@
-### as of 2021-03-22 current status of main branch is functional with minor bugs
+### as of 2021-03-23 current status of main branch is functional with minor bugs
 
 # a brief project summary follows
 ### core.interface.py
 module handling transactions between other modules such as..
 1. state machine uses core.interface to fetch, save, and process data
 2. settings_io uses core.interface to communicate parser data to other modules
-3. api_comm uses core.interface to communicate api data to other modules
+3. qbit_api_wrapper uses core.interface to communicate api data to other modules
 
 ### data_meta
 this is a data directory that contains configuration files related to result metadata
@@ -32,16 +32,15 @@ all calls to it could be removed without affecting program function
 ### network
 TODO, i have started to work on a few modules, but nothing here matters yet
 
-### qbit_interface.api_comm
-this are functions that directly perform api calls to qbittorrent
+### qbit_api_interface.qbit_api_wrapper
+the interface to the qbittorrent api via wrapper functions  
+all api calls should be found or moved to here  
 
 ### user_configuration
 1. EDIT_SETTINGS_HERE.cfg is program globals, right now mostly determines program delays  
 2. settings_io.py is the interface to the configuration parsers and keys  
 3. settings_wrapper.py is a hierarchy of classes that allows "easy" access to parsers structure
 
-### api_comm.py  
-the interface to the qbittorrent api, all api calls should be found or moved to here  
   
 ### DOCUMENTATION.txt is similar to README.md, usually contains more info if updated recently
 
