@@ -26,11 +26,11 @@ class QbitStateManager:
     def __init__(self, verbose=True):
         event = f'initializing \'{self.__class__.__name__}\''
         try:
-            ml.log_event(event, announce=True, event_completed=False)
+            ml.log_event(event, announcement=True, event_completed=False)
             self.main_loop_count, self.active_section = 0, ''
             self.active_sections = dict()
             self.verbose = verbose  # FIXME p3, this is not used
-            ml.log_event(event, announce=True, event_completed=True)
+            ml.log_event(event, announcement=True, event_completed=True)
             pause_on_event(u_key.WAIT_FOR_USER)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
