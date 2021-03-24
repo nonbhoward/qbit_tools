@@ -37,7 +37,7 @@ def add_filtered_results_stored_in_(state_machine):
         for result in filtered_results:
             results_added_count = get_int_from_search_parser_at_(section, s_key.RESULTS_ADDED_COUNT)
             if results_added_count > results_required_count:  # FIXME p2, shouldn't this use the conclusion check func?
-                ml.log_event(f'the search for \'{section}\' can be concluded', announce=True)
+                ml.log_event(f'the search for \'{section}\' can be concluded', announcement=True)
                 _sp_if_set_bool_for_(section, s_key.CONCLUDED, True)
                 return  # enough results have been added for this header, stop
             if add_successful_for_(section, result):  # FIXME p0, sometimes this adds two values
@@ -819,7 +819,7 @@ def set_search_states_for_(section, *search_states) -> None:
                      f'\n\tqueued: {search_states[0]}'
                      f'\n\trunning: {search_states[1]}'
                      f'\n\tstopped: {search_states[2]}'
-                     f'\n\tconcluded: {search_states[3]}', announce=True)
+                     f'\n\tconcluded: {search_states[3]}', announcement=True)
     except Exception as e_err:
         ml.log_event(e_err.args[0], level=ml.ERROR)
         ml.log_event(f'error {event}')
@@ -1327,7 +1327,7 @@ def _mp_if_create_section_for_(mp: RawConfigParser, result: dict) -> None:
             return
         mp.add_section(m_section)
         result_name = _mp_if_get_result_metadata_at_key_(m_key.NAME, result)
-        ml.log_event(f'section for header \'{m_section}\' added to metadata @ \'{result_name}\'', announce=True)
+        ml.log_event(f'section for header \'{m_section}\' added to metadata @ \'{result_name}\'', announcement=True)
         for metadata_kv in result.items():
             attribute, detail = validate_metadata_type_for_(metadata_kv)
             h_attr, h_dtl = get_hashed_(attribute, detail, offset)
@@ -1506,7 +1506,7 @@ def _sp_if_get_search_states_for_(section) -> tuple:
                      f'\n\tqueued: {search_queued}'
                      f'\n\trunning: {search_running}'
                      f'\n\tstopped: {search_stopped}'
-                     f'\n\tconcluded: {search_concluded}', announce=True)
+                     f'\n\tconcluded: {search_concluded}', announcement=True)
         return search_queued, search_running, search_stopped, search_concluded
         pass
     except Exception as e_err:
