@@ -13,10 +13,10 @@ u_key = QConf.get_keyring_for_(settings=True)
 
 
 def main_loop():
-    ml.log_event('\n\nmain loop has started..', announce=True)
+    ml.log_event('\n\nmain loop has started..', announcement=True)
     qsm = start_application_and_return_state_machine()
     while True:
-        ml.log_event(event=f'new loop starting at {datetime.now()}', announce=True)
+        ml.log_event(event=f'new loop starting at {datetime.now()}', announcement=True)
         qsm.initiate_and_monitor_searches()
         qsm.increment_main_loop_count()
         pause_on_event(u_key.WAIT_FOR_MAIN_LOOP)
