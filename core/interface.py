@@ -1,7 +1,7 @@
 from configparser import RawConfigParser
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
-from qbit_interface.api_comm import QbitApiCaller as QApi
+from qbit_api_interface.qbit_api_wrapper import QbitApiCaller as QApi
 from string import digits
 from user_configuration.settings_io import QbitConfig as QConf
 digits_or_sign = f'-{digits}'
