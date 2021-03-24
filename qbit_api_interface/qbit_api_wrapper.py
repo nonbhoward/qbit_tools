@@ -12,13 +12,13 @@ class QbitApiCaller:
     def __init__(self):
         event = f'initializing \'{self.__class__.__name__}\''
         try:
-            ml.log_event(event, announce=True, event_completed=False)
+            ml.log_event(event, announcement=True, event_completed=False)
             self.qbit_client = qbittorrentapi.Client('', None, None, None)
             self.qbit_client_connected = True if self.client_is_connected() else False
             if self.qbit_client_connected:
                 self.dump_surface_client()
                 self.connection_time_start = dt.now()
-            ml.log_event(event, announce=True, event_completed=True)
+            ml.log_event(event, announcement=True, event_completed=True)
         except Exception as e_err:
             ml.log_event(e_err.args[0], level=ml.ERROR)
             ml.log_event(f'error {event}')
