@@ -10,7 +10,7 @@ class LocalClient:
         try:
             print(f'request queue \'{self.todo}\'')
         except Exception as e_err:
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 if __name__ == '__main__':

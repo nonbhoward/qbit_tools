@@ -26,25 +26,25 @@ class QbitStateManager:
     def __init__(self, verbose=True):
         event = f'initializing \'{self.__class__.__name__}\''
         try:
-            ml.log_event(event, announcement=True, event_completed=False)
+            ml.log(event, announcement=True, event_completed=False)
             self.main_loop_count, self.active_section = 0, ''
             self.active_sections = dict()
             self.verbose = verbose  # FIXME p3, this is not used
-            ml.log_event(event, announcement=True, event_completed=True)
+            ml.log(event, announcement=True, event_completed=True)
             pause_on_event(u_key.WAIT_FOR_USER)
         except Exception as e_err:
-            ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error {event}')
+            ml.log(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error {event}')
 
     def increment_main_loop_count(self) -> None:
         event = f'incrementing main loop count'
         try:  # FIXME is this a better place to put a pause vs main_loop?
             self.main_loop_count += 1
-            ml.log_event(f'main loop has ended, {self.main_loop_count} total loops..')
-            ml.log_event(f'connection to client was started at \'{get_connection_time_start()}\'')
+            ml.log(f'main loop has ended, {self.main_loop_count} total loops..')
+            ml.log(f'connection to client was started at \'{get_connection_time_start()}\'')
         except Exception as e_err:
-            ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error {event}')
+            ml.log(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error {event}')
 
     def initiate_and_monitor_searches(self) -> None:
         event = f'initiating and monitoring searches'
@@ -58,8 +58,8 @@ class QbitStateManager:
                 exit_program()
             write_parsers_to_disk()
         except Exception as e_err:
-            ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error {event}')
+            ml.log(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error {event}')
 
     def manage_state_updates_at_active_section(self) -> None:
         event = f'managing state updates at active section : \'{self.active_section}\''
@@ -80,18 +80,18 @@ class QbitStateManager:
             elif search_concluded:
                 pass  # if concluded, do nothing forever
             else:
-                ml.log_event(f'header \'{self.active_section}\' is restricted from starting by search '
+                ml.log(f'header \'{self.active_section}\' is restricted from starting by search '
                              f'rank and/or search queue, this is by design', level=ml.WARNING)
                 increment_search_state_at_active_section_for_(self)
             pause_on_event(u_key.WAIT_FOR_SEARCH_STATUS_CHECK)
         except Exception as e_err:
-            ml.log_event(e_err.args[0], level=ml.ERROR)
-            ml.log_event(f'error {event}')
+            ml.log(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error {event}')
 
 
 if __name__ == '__main__':
     ml = MinimalLog()
     this_module = __file__.split('/')[-1]
-    ml.log_event(f'do not run \'{this_module}\' directly, use main loop', level=ml.WARNING)
+    ml.log(f'do not run \'{this_module}\' directly, use main loop', level=ml.WARNING)
 else:
     ml = MinimalLog(__name__)

@@ -14,8 +14,8 @@ class ConfigParserPathNames:  # Configuration.HardCoded.DirectoryNames.ConfigPar
             self.metadata_path_name = 'data_meta'
             self.search_data_path_name = 'data_search'
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 class ConfigParserFileNames:  # Configuration.HardCoded.FileNames.ConfigParserFileNames
@@ -27,8 +27,8 @@ class ConfigParserFileNames:  # Configuration.HardCoded.FileNames.ConfigParserFi
             self.search = 'search.cfg'
             self.user_settings = 'EDIT_SETTINGS_HERE.cfg'
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 class MetadataParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
@@ -51,8 +51,8 @@ class MetadataParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
             self.URL = 'fileUrl'
             # translations to api
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
@@ -93,8 +93,8 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
             self.REQUIRED_RESULT_COUNT_FOUND = 'required results found!'
             self.TIMED_OUT = 'search timed out!'
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 class UserConfigParserKeys:  # Configuration.HardCoded.KeyRing.UserConfigKeys
@@ -111,8 +111,8 @@ class UserConfigParserKeys:  # Configuration.HardCoded.KeyRing.UserConfigKeys
             self.WAIT_FOR_SEARCH_STATUS_CHECK = 'seconds_to_wait_after_each_search_status_check'
             self.WAIT_FOR_USER = 'seconds_to_wait_to_allow_user_to_read_log'
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### TIER 2 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
@@ -121,8 +121,8 @@ class DirectoryNames:  # Configuration.HardCoded.DirectoryNames
         try:
             self.config_parser_path_names = ConfigParserPathNames()
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 class Extensions:  # Configuration.HardCoded.Extensions
@@ -130,8 +130,8 @@ class Extensions:  # Configuration.HardCoded.Extensions
         try:
             self.cfg = '.cfg'  # FIXME, reminder that delimiter in string could cause issues, test this
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 class FileNames:  # Configuration.HardCoded.FileNames
@@ -139,8 +139,8 @@ class FileNames:  # Configuration.HardCoded.FileNames
         try:
             self.config_parser = ConfigParserFileNames()
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 class KeyRing:  # Configuration.HardCoded.KeyRing
@@ -150,8 +150,8 @@ class KeyRing:  # Configuration.HardCoded.KeyRing
             self.search_parser_keyring = SearchParserKeys()
             self.user_config_parser_keyring = UserConfigParserKeys()
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 class ParserPaths:  # Configuration.Parser.ParserPaths
@@ -159,16 +159,16 @@ class ParserPaths:  # Configuration.Parser.ParserPaths
         try:
             self.metadata_parser_path = self.get_parser_paths_from_(configuration)
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def get_parser_paths_from_(configuration):
         try:
             print('todo? : ParserPaths().get_parser_paths_from_()')
         except Exception as e_err:
-            ml.log_event(f'error getting parser paths from \'{configuration}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error getting parser paths from \'{configuration}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 class Parsers:  # Configuration.Parser.Parsers
@@ -182,8 +182,8 @@ class Parsers:  # Configuration.Parser.Parsers
             self.search_parser = self.parsers_keyed_by_file_path[parser_paths[2]]
             self.user_settings_parser = self.parsers_keyed_by_file_path[parser_paths[3]]
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def get_parsers_from_(parser_paths) -> dict:
@@ -194,12 +194,12 @@ class Parsers:  # Configuration.Parser.Parsers
                 rcp = RawConfigParser()
                 rcp.read(parser_path)
                 # TODO check to be sure this statement works as expected
-                assert _parser_has_sections(rcp), ml.log_event('fatal exception {} has no sections'.format(rcp))
+                assert _parser_has_sections(rcp), ml.log('fatal exception {} has no sections'.format(rcp))
                 parsers[parser_path] = rcp
             return parsers
         except Exception as e_err:
-            ml.log_event(f'error getting parsers from \'{parser_path}\'')
-            ml.log_event(e_err.args[0], ml.ERROR)
+            ml.log(f'error getting parsers from \'{parser_path}\'')
+            ml.log(e_err.args[0], ml.ERROR)
 
 
 ##### ##### ##### ##### ##### ##### ##### ##### TIER 1 CLASSES ##### ##### ##### ##### ##### ##### ##### ######
@@ -212,8 +212,8 @@ class HardCoded:  # Configuration.HardCoded
             self.extensions = Extensions()
             self.keys = KeyRing()
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 class Parser:  # Configuration.Parser
@@ -222,8 +222,8 @@ class Parser:  # Configuration.Parser
             self.parser_paths = ParserPaths(configuration)
             self.parsers = Parsers(configuration)
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 class Paths:  # Configuration.Paths
@@ -237,8 +237,8 @@ class Paths:  # Configuration.Paths
                 self.search_parser, self.user_config_parser = \
                 self._get_parser_paths_from_(configuration)
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
     def _get_meta_path_from(path, configuration) -> Path:
         """
@@ -246,11 +246,11 @@ class Paths:  # Configuration.Paths
         """
         try:
             meta_directory_name = configuration.hardcoded.directory_names.config_parser_path_names.metadata_path_name
-            ml.log_event(f'get metadata path for {meta_directory_name}')
+            ml.log(f'get metadata path for {meta_directory_name}')
             return Path(path.project, meta_directory_name)
         except Exception as e_err:
-            ml.log_event(f'error getting meta path from \'{configuration}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error getting meta path from \'{configuration}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
     def _get_search_path_from(path, configuration) -> Path:
         """
@@ -258,11 +258,11 @@ class Paths:  # Configuration.Paths
         """
         try:
             search_directory_name = configuration.hardcoded.directory_names.config_parser_path_names.search_data_path_name
-            ml.log_event(f'get data path for {search_directory_name}..')
+            ml.log(f'get data path for {search_directory_name}..')
             return Path(path.project, search_directory_name)
         except OSError as o_err:
-            ml.log_event(f'error getting search path from \'{configuration}\'')
-            ml.log_event(o_err, level=ml.ERROR)
+            ml.log(f'error getting search path from \'{configuration}\'')
+            ml.log(o_err, level=ml.ERROR)
 
     def _get_parser_paths_from_(path, configuration) -> tuple:
         # TODO this is basically hardcoded, do this better but lower priority than bugs
@@ -278,21 +278,21 @@ class Paths:  # Configuration.Paths
             parser_paths = [meta_added_parser_path, meta_failed_parser_path, search_details_path, user_config_path]
             return * parser_paths,
         except Exception as e_err:
-            ml.log_event(f'error getting parser paths from \'{configuration}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error getting parser paths from \'{configuration}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
     def _get_user_config_path_from_(path, configuration) -> Path:
         """
         :return: data path as path object
         """
         try:
-            ml.log_event('get data path', event_completed=True)
+            ml.log('get data path', event_completed=True)
             user_config_directory_name = \
                 configuration.hardcoded.directory_names.config_parser_path_names.user_config_path_name
             return Path(path.project, user_config_directory_name)
         except OSError as o_err:
-            ml.log_event(f'error getting user config path from \'{configuration}\'')
-            ml.log_event(o_err, level=ml.ERROR)
+            ml.log(f'error getting user config path from \'{configuration}\'')
+            ml.log(o_err, level=ml.ERROR)
 
 
 class ProjectFiles:  # Configuration.ProjectFiles
@@ -301,8 +301,8 @@ class ProjectFiles:  # Configuration.ProjectFiles
             # TODO could be nice to have a dict of files by extension instead of a list
             self.all_project_file_paths = self._get_all_files_in_project_path_using_(configuration)
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def _get_all_files_in_project_path_using_(configuration):
@@ -313,8 +313,8 @@ class ProjectFiles:  # Configuration.ProjectFiles
                     all_files.append(Path(root, file))
             return all_files
         except Exception as e_err:
-            ml.log_event(f'error getting all files in project path using \'{configuration}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error getting all files in project path using \'{configuration}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 ##### ##### ##### ##### ##### ##### ##### ###### TIER 0 CLASS ###### ##### ##### ##### ##### ##### ##### ######
@@ -327,16 +327,16 @@ class ConfigurationManager:  # ROOT @ Configuration
                 self.files = ProjectFiles(self)  # a list of the Path object for every project file
             self.parser = Parser(self)  # all parsers containing parsed .cfg file data
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def _get_project_path() -> Path:
         try:
             return Path(getcwd())
         except OSError as o_err:
-            ml.log_event(f'error getting project path from \'{getcwd()}\'')
-            ml.log_event(o_err.args[0], level=ml.ERROR)
+            ml.log(f'error getting project path from \'{getcwd()}\'')
+            ml.log(o_err.args[0], level=ml.ERROR)
 
 
 def get_user_configuration(parse_all_project_files=False) -> ConfigurationManager:  # this is the only export required?
@@ -344,8 +344,8 @@ def get_user_configuration(parse_all_project_files=False) -> ConfigurationManage
         configuration = ConfigurationManager(parse_all_project_files)
         return configuration
     except Exception as e_err:
-        ml.log_event(f'error getting user configuration', level=ml.ERROR)
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error getting user configuration', level=ml.ERROR)
+        ml.log(e_err.args[0], level=ml.ERROR)
 
 
 def _parser_has_sections(raw_config_parser: RawConfigParser) -> bool:
@@ -353,27 +353,27 @@ def _parser_has_sections(raw_config_parser: RawConfigParser) -> bool:
         if _parser_has_defaults(raw_config_parser):
             return True
         section_count = len(raw_config_parser.sections())
-        ml.log_event(f'configparser {raw_config_parser} has {section_count} sections')
+        ml.log(f'configparser {raw_config_parser} has {section_count} sections')
         if section_count < 1:
             if _parser_able_to_read_write_(raw_config_parser):
                 return True
             return False
         return True
     except Exception as e_err:
-        ml.log_event(f'error checking if parser \'{raw_config_parser}\' has sections', level=ml.ERROR)
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error checking if parser \'{raw_config_parser}\' has sections', level=ml.ERROR)
+        ml.log(e_err.args[0], level=ml.ERROR)
 
 
 def _parser_able_to_read_write_(raw_config_parser: RawConfigParser) -> bool:
     try:
         parser_modified_test_sections = _parser_modify_test_sections(raw_config_parser)
         if parser_modified_test_sections:
-            ml.log_event(f'parser {raw_config_parser} is able tod modify sections, parser is valid')
+            ml.log(f'parser {raw_config_parser} is able tod modify sections, parser is valid')
             return True
         return False
     except Exception as e_err:
-        ml.log_event(f'error checking if parser able to read/write to \'{raw_config_parser}\'', level=ml.ERROR)
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error checking if parser able to read/write to \'{raw_config_parser}\'', level=ml.ERROR)
+        ml.log(e_err.args[0], level=ml.ERROR)
 
 
 def _parser_has_defaults(raw_config_parser: RawConfigParser) -> bool:
@@ -382,8 +382,8 @@ def _parser_has_defaults(raw_config_parser: RawConfigParser) -> bool:
             return True
         return False
     except Exception as e_err:
-        ml.log_event(f'error checking if parser \'{raw_config_parser}\' has defaults', level=ml.ERROR)
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error checking if parser \'{raw_config_parser}\' has defaults', level=ml.ERROR)
+        ml.log(e_err.args[0], level=ml.ERROR)
 
 
 def _parser_modify_test_sections(raw_config_parser: RawConfigParser) -> bool:
@@ -401,8 +401,8 @@ def _parser_modify_test_sections(raw_config_parser: RawConfigParser) -> bool:
                 return True
         return False
     except Exception as e_err:
-        ml.log_event(f'error checking if parser \'{raw_config_parser}\' sections can be modified', level=ml.ERROR)
-        ml.log_event(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error checking if parser \'{raw_config_parser}\' sections can be modified', level=ml.ERROR)
+        ml.log(e_err.args[0], level=ml.ERROR)
 
 
 if __name__ == '__main__':

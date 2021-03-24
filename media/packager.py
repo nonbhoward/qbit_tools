@@ -8,16 +8,16 @@ class MediaBox:
         try:
             self.contents = {}
         except Exception as e_err:
-            ml.log_event(f'error initializing \'{self.__class__.__name__}\'')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error initializing \'{self.__class__.__name__}\'')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
     def get_content_from_sender():
         try:
             pass
         except Exception as e_err:
-            ml.log_event(f'error getting content from sender')
-            ml.log_event(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error getting content from sender')
+            ml.log(e_err.args[0], level=ml.ERROR)
 
 
 if __name__ == '__main__':
