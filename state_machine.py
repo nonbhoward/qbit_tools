@@ -81,7 +81,7 @@ class QbitStateManager:
                 pass  # if concluded, do nothing forever
             else:
                 ml.log(f'header \'{self.active_section}\' is restricted from starting by search '
-                             f'rank and/or search queue, this is by design', level=ml.WARNING)
+                       f'rank and/or search queue, this is by design', level=ml.WARNING)
                 increment_search_state_at_active_section_for_(self)
             pause_on_event(u_key.WAIT_FOR_SEARCH_STATUS_CHECK)
         except Exception as e_err:
