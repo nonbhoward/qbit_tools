@@ -678,15 +678,6 @@ def search_is_running_at_active_section_in_(state_machine) -> bool:
         ml.log(f'error {event}')
 
 
-def search_is_stored_in_(state_machine) -> bool:
-    event = f'checking if search is running in state machine'
-    try:  # machine surface abstraction depth = 1
-        return _sm_if_search_is_stored_in_(state_machine)
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
-
-
 def search_is_stopped_at_(section) -> bool:
     event = f'checking if search is stopped at \'{section}\''
     try:  # machine surface abstraction depth = 1
@@ -710,6 +701,15 @@ def search_is_stopped_in_(state_machine) -> bool:
     event = f'checking if search is stopped in state machine'
     try:  # FIXME hierarchy status < search_id < section < state_machine could be reduced
         return _sm_if_search_is_stopped_in_(state_machine)
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+
+
+def search_is_stored_in_(state_machine) -> bool:
+    event = f'checking if search is running in state machine'
+    try:  # machine surface abstraction depth = 1
+        return _sm_if_search_is_stored_in_(state_machine)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
@@ -942,203 +942,6 @@ def write_search_id_to_search_parser_at_(section, search_id) -> None:
         ml.log(f'error {event}')
         ml.log(e_err.args[0])
 
-
-#### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
-#                                                                                                    #
-#                                STATE MACHINE INTERFACE BELOW                                       #
-#                                                                                                    #
-#### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
-
-
-def _sm_if_add_search_properties_to_(state_machine, search_properties: tuple) -> None:
-    section = _sm_if_get_active_section_from_(state_machine)
-    try:  # machine surface abstraction depth = 0
-        _sm_if_init_active_search_id_for_(state_machine, section)
-        state_machine.active_sections[section]['count'] = search_properties[0]
-        state_machine.active_sections[section]['id'] = search_properties[1]
-        state_machine.active_sections[section]['status'] = search_properties[2]
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-def _sm_if_get_active_search_ids_from_(state_machine) -> list:
-    event = f'getting active search id values from state machine'
-    try:  # machine surface abstraction depth = 1
-        active_search_ids = list()
-        for section in state_machine.active_sections:
-            section_id = _sm_if_get_search_id_from_(state_machine, section)
-            active_search_ids.append(section_id)
-        return active_search_ids
-    except Exception as e_err:
-        ml.log(f'error {event}')
-        ml.log(e_err.args[0])
-
-
-def _sm_if_get_active_section_from_(state_machine) -> str:
-    try:  # machine surface abstraction depth = 0
-        return state_machine.active_section
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-def _sm_if_get_active_sections_from_(state_machine) -> list:
-    # FIXME this returns dict or list? it works as-is but.. need to be sure
-    try:  # machine surface abstraction depth = 0
-        return state_machine.active_sections
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-def _sm_if_get_active_section_search_id_from_(state_machine) -> str:
-    try:  # machine surface abstraction depth = 1
-        section = _sm_if_get_active_section_from_(state_machine)
-        return state_machine.active_sections[section]['id']
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-def _sm_if_get_filtered_results_from_(state_machine):
-    section = _sm_if_get_active_section_from_(state_machine)
-    try:
-        return state_machine.active_sections[section]['filtered_results']
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-def _sm_if_get_search_id_from_(state_machine, section) -> str:
-    try:  # machine surface abstraction depth = 0
-        return state_machine.active_sections[section]['id']
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-def _sm_if_get_search_id_from_active_section_in_(state_machine) -> str:
-    try:
-        section = state_machine.active_section
-        return _sm_if_get_search_id_from_(state_machine, section)
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-def _sm_if_get_search_properties_at_(section: str) -> tuple:
-    search_id = _sp_if_get_search_id_for_(section)
-    try:
-        if empty_(search_id):
-            return None, None, None
-        return _api_if_get_search_properties_for_(search_id)
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-def _sm_if_get_search_properties_from_(state_machine) -> tuple:
-    # TODO just noting this object has two surfaces, could be useful
-    try:  # api/machine surface abstraction depth = 1/1
-        search_id = _sm_if_get_active_section_search_id_from_(state_machine)
-        search_properties = _api_if_get_search_properties_for_(search_id)
-        return search_properties
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-
-
-def _sm_if_get_unfiltered_results_from_(state_machine):
-    section = _sm_if_get_active_section_from_(state_machine)
-    try:
-        return state_machine.active_sections[section]['unfiltered_results']
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-def _sm_if_init_active_search_id_for_(state_machine, section: str) -> None:
-    try:  # machine surface abstraction depth = 0
-        state_machine.active_sections[section] = dict()
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-def _sm_if_save_filtered_search_results_to_(state_machine):
-    # FIXME p0, interface function relies on wrapper function, should be opposite
-    section = _sm_if_get_active_section_from_(state_machine)
-    try:  # machine surface abstraction depth = 0
-        filtered_results = filter_results_in_(state_machine)
-        # sm_if_update_search_properties_for_(state_machine)  # TODO delete me
-        state_machine.active_sections[section]['filtered_results'] = filtered_results
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-def _sm_if_save_unfiltered_search_results_to_(state_machine):
-    section = _sm_if_get_active_section_from_(state_machine)
-    try:  # machine surface abstraction depth = 0
-        unfiltered_results = _api_if_get_search_results_for_(state_machine)
-        _sm_if_update_search_properties_for_(state_machine)
-        state_machine.active_sections[section]['unfiltered_results'] = unfiltered_results
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-def _sm_if_search_is_running_at_(section) -> bool:
-    try:  # machine surface abstraction depth = 1
-        search_count, search_id, search_status = _sm_if_get_search_properties_at_(section)
-        if none_value_(search_id):
-            return False
-        return True if s_key.RUNNING in search_status else False
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-
-
-def _sm_if_search_is_stored_in_(state_machine) -> bool:
-    # FIXME hierarchy status < search_id < section < state_machine could be reduced
-    try:  # machine surface abstraction depth = 1
-        search_count, search_id, search_status = _sm_if_get_search_properties_from_(state_machine)
-        active_search_ids = _sm_if_get_active_search_ids_from_(state_machine)
-        return True if search_id in active_search_ids else False
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-
-
-def _sm_if_search_is_stopped_at_(section) -> bool:
-    try:  # machine surface abstraction depth = 1
-        search_count, search_id, search_status = _sm_if_get_search_properties_at_(section)
-        if none_value_(search_id):
-            return False
-        return True if s_key.STOPPED in search_status else False
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-
-
-def _sm_if_search_is_stopped_in_(state_machine) -> bool:
-    try:  # FIXME hierarchy status < search_id < section < state_machine could be reduced
-        key = s_key.STOPPED
-        search_count, search_id, search_status = _sm_if_get_search_properties_from_(state_machine)
-        active_sections = state_machine.active_sections
-        return True if key in search_status and search_id in active_sections else False
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-
-
-def _sm_if_set_active_section_to_(section: str, state_machine):
-    try:
-        state_machine.active_section = section
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-def _sm_if_update_search_properties_for_(state_machine):
-    section = _sm_if_get_active_section_from_(state_machine)
-    search_properties = _sm_if_get_search_properties_from_(state_machine)
-    try:
-        state_machine.active_sections[section]['count'] = search_properties[0]
-        state_machine.active_sections[section]['id'] = search_properties[1]
-        state_machine.active_sections[section]['status'] = search_properties[2]
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-
-
-#### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
-#                                                                                                    #
-#                                STATE MACHINE INTERFACE ABOVE                                       #
-#                                                                                                    #
-#### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
 
 #### ### ### ### ### ### ### ### ### ### API INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
 #                                                                                                    #
@@ -1713,6 +1516,203 @@ def _sp_if_set_time_last_searched_for_(section: str) -> None:
 #                               SEARCH PARSER INTERFACE ABOVE                                        #
 #                                                                                                    #
 ### ### ### ### ### ### ### ### ## SEARCH PARSER INTERFACE ## ### ### ### ### ### ### ### ### ### ####
+
+#### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                STATE MACHINE INTERFACE BELOW                                       #
+#                                                                                                    #
+#### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
+
+
+def _sm_if_add_search_properties_to_(state_machine, search_properties: tuple) -> None:
+    section = _sm_if_get_active_section_from_(state_machine)
+    try:  # machine surface abstraction depth = 0
+        _sm_if_init_active_search_id_for_(state_machine, section)
+        state_machine.active_sections[section]['count'] = search_properties[0]
+        state_machine.active_sections[section]['id'] = search_properties[1]
+        state_machine.active_sections[section]['status'] = search_properties[2]
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+def _sm_if_get_active_search_ids_from_(state_machine) -> list:
+    event = f'getting active search id values from state machine'
+    try:  # machine surface abstraction depth = 1
+        active_search_ids = list()
+        for section in state_machine.active_sections:
+            section_id = _sm_if_get_search_id_from_(state_machine, section)
+            active_search_ids.append(section_id)
+        return active_search_ids
+    except Exception as e_err:
+        ml.log(f'error {event}')
+        ml.log(e_err.args[0])
+
+
+def _sm_if_get_active_section_from_(state_machine) -> str:
+    try:  # machine surface abstraction depth = 0
+        return state_machine.active_section
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+def _sm_if_get_active_sections_from_(state_machine) -> list:
+    # FIXME this returns dict or list? it works as-is but.. need to be sure
+    try:  # machine surface abstraction depth = 0
+        return state_machine.active_sections
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+def _sm_if_get_active_section_search_id_from_(state_machine) -> str:
+    try:  # machine surface abstraction depth = 1
+        section = _sm_if_get_active_section_from_(state_machine)
+        return state_machine.active_sections[section]['id']
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+def _sm_if_get_filtered_results_from_(state_machine):
+    section = _sm_if_get_active_section_from_(state_machine)
+    try:
+        return state_machine.active_sections[section]['filtered_results']
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+def _sm_if_get_search_id_from_(state_machine, section) -> str:
+    try:  # machine surface abstraction depth = 0
+        return state_machine.active_sections[section]['id']
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+def _sm_if_get_search_id_from_active_section_in_(state_machine) -> str:
+    try:
+        section = state_machine.active_section
+        return _sm_if_get_search_id_from_(state_machine, section)
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+def _sm_if_get_search_properties_at_(section: str) -> tuple:
+    search_id = _sp_if_get_search_id_for_(section)
+    try:
+        if empty_(search_id):
+            return None, None, None
+        return _api_if_get_search_properties_for_(search_id)
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+def _sm_if_get_search_properties_from_(state_machine) -> tuple:
+    # TODO just noting this object has two surfaces, could be useful
+    try:  # api/machine surface abstraction depth = 1/1
+        search_id = _sm_if_get_active_section_search_id_from_(state_machine)
+        search_properties = _api_if_get_search_properties_for_(search_id)
+        return search_properties
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+
+
+def _sm_if_get_unfiltered_results_from_(state_machine):
+    section = _sm_if_get_active_section_from_(state_machine)
+    try:
+        return state_machine.active_sections[section]['unfiltered_results']
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+def _sm_if_init_active_search_id_for_(state_machine, section: str) -> None:
+    try:  # machine surface abstraction depth = 0
+        state_machine.active_sections[section] = dict()
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+def _sm_if_save_filtered_search_results_to_(state_machine):
+    # FIXME p0, interface function relies on wrapper function, should be opposite
+    section = _sm_if_get_active_section_from_(state_machine)
+    try:  # machine surface abstraction depth = 0
+        filtered_results = filter_results_in_(state_machine)
+        # sm_if_update_search_properties_for_(state_machine)  # TODO delete me
+        state_machine.active_sections[section]['filtered_results'] = filtered_results
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+def _sm_if_save_unfiltered_search_results_to_(state_machine):
+    section = _sm_if_get_active_section_from_(state_machine)
+    try:  # machine surface abstraction depth = 0
+        unfiltered_results = _api_if_get_search_results_for_(state_machine)
+        _sm_if_update_search_properties_for_(state_machine)
+        state_machine.active_sections[section]['unfiltered_results'] = unfiltered_results
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+def _sm_if_search_is_running_at_(section) -> bool:
+    try:  # machine surface abstraction depth = 1
+        search_count, search_id, search_status = _sm_if_get_search_properties_at_(section)
+        if none_value_(search_id):
+            return False
+        return True if s_key.RUNNING in search_status else False
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+
+
+def _sm_if_search_is_stored_in_(state_machine) -> bool:
+    # FIXME hierarchy status < search_id < section < state_machine could be reduced
+    try:  # machine surface abstraction depth = 1
+        search_count, search_id, search_status = _sm_if_get_search_properties_from_(state_machine)
+        active_search_ids = _sm_if_get_active_search_ids_from_(state_machine)
+        return True if search_id in active_search_ids else False
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+
+
+def _sm_if_search_is_stopped_at_(section) -> bool:
+    try:  # machine surface abstraction depth = 1
+        search_count, search_id, search_status = _sm_if_get_search_properties_at_(section)
+        if none_value_(search_id):
+            return False
+        return True if s_key.STOPPED in search_status else False
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+
+
+def _sm_if_search_is_stopped_in_(state_machine) -> bool:
+    try:  # FIXME hierarchy status < search_id < section < state_machine could be reduced
+        key = s_key.STOPPED
+        search_count, search_id, search_status = _sm_if_get_search_properties_from_(state_machine)
+        active_sections = state_machine.active_sections
+        return True if key in search_status and search_id in active_sections else False
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+
+
+def _sm_if_set_active_section_to_(section: str, state_machine):
+    try:
+        state_machine.active_section = section
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+def _sm_if_update_search_properties_for_(state_machine):
+    section = _sm_if_get_active_section_from_(state_machine)
+    search_properties = _sm_if_get_search_properties_from_(state_machine)
+    try:
+        state_machine.active_sections[section]['count'] = search_properties[0]
+        state_machine.active_sections[section]['id'] = search_properties[1]
+        state_machine.active_sections[section]['status'] = search_properties[2]
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+
+
+#### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                STATE MACHINE INTERFACE ABOVE                                       #
+#                                                                                                    #
+#### ### ### ### ### ### ### ### ### ### STM INTERFACE ### ### ### ### ### ### ### ### ### ### ### ###
 
 ### ### ### ### ### ### ### ### USER CONFIG PARSER INTERFACE # ### ### ### ### ### ### ### ### ### ###
 #                                                                                                    #
