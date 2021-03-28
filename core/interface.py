@@ -18,10 +18,8 @@ unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
 
 def active_section_is_in_memory_of_(state_machine):
     event = f'checking if active section is in memory of state machine'
-    section = get_active_section_from_(state_machine)
-    active_sections = get_active_sections_from_(state_machine)
     try:
-        return True if section in active_sections else False
+        return _stm_if_active_section_is_in_memory_of_(state_machine)
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
@@ -1468,14 +1466,13 @@ def _scp_if_set_search_ranks() -> None:
     # FIXME top bug is the soft-lock this function could resolve
     try:  # parser surface abstraction depth = 2
         sort_key = s_key.TIME_LAST_SEARCHED
-        sdp_as_dict = _scp_if_get_parser_as_sortable()
-        sdp_as_dict_sorted = sorted(sdp_as_dict.items(), key=lambda k: k[1][sort_key])
-        number_of_sections = len(sdp_as_dict_sorted)
-        for search_rank in range(number_of_sections):
-            # TODO this is a bit lazy, could use some refining
-            section = sdp_as_dict_sorted[search_rank][0]
-            _scp_if_set_str_for_(section, s_key.RANK, str(search_rank))
-            ml.log(f'search rank \'{search_rank}\' assigned to \'{section}\'')
+        scp_as_dict = _scp_if_get_parser_as_sortable()
+        scp_as_sorted_list_of_tuples = sorted(scp_as_dict.items(), key=lambda k: k[1][sort_key])
+        number_of_sections = len(scp_as_sorted_list_of_tuples)
+        for ranked_search_index in range(number_of_sections):
+            section = scp_as_sorted_list_of_tuples[ranked_search_index][0]
+            _scp_if_set_str_for_(section, s_key.RANK, str(ranked_search_index))
+            ml.log(f'search rank \'{ranked_search_index}\' assigned to \'{section}\'')
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
 
@@ -1526,6 +1523,15 @@ def _scp_if_set_time_last_searched_for_(section: str) -> None:
 #                                    STATE MACHINE INTERFACE BELOW                                   #
 #                                                                                                    #
 ### ### ### ### ### ### ### ### ### ### ### ### stm if ### ### ### ### ### ### ### ### ### ### ### ###
+
+
+def _stm_if_active_section_is_in_memory_of_(state_machine):
+    section = _stm_if_get_active_section_from_(state_machine)
+    active_sections = _stm_if_get_active_sections_from_(state_machine)
+    try:
+        return True if section in active_sections else False
+    except Exception as e_err:
+        ml.log(e_err.args[0])
 
 
 def _stm_if_add_search_properties_to_(state_machine, search_properties: tuple) -> None:
