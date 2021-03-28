@@ -11,21 +11,6 @@ keyrings = uconf.hardcoded.keys
 
 class QbitConfig:
     @staticmethod
-    def get_all_sections_from_parser_(meta_add=False, meta_find=False, search=False, settings=False) -> SectionProxy:
-        try:
-            if meta_add:
-                return parsers.metadata_added_parser.sections()
-            if meta_find:
-                return parsers.metadata_failed_parser.sections()
-            if search:
-                return parsers.search_parser.sections()
-            if settings:
-                return parsers.user_settings_parser.sections()
-            pass
-        except Exception as e_err:
-            ml.log(e_err.args[0], level=ml.ERROR)
-
-    @staticmethod
     def get_keyring_for_(metadata=False, search=False, settings=False):
         try:  # FIXME p3, assign return type
             if metadata:
