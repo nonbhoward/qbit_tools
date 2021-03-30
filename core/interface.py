@@ -262,7 +262,7 @@ def filter_results_in_(state_machine, found=True, sort=True):
                     continue
             # FIXME p0, entry point for continued implementation of add/skip keyword paradigm
             if filter_provided_for_(keywords_to_add):
-                ml.log(f'filtering results using filename regex \'{keywords_to_add}\'')
+                ml.log(f'filtering results using add keywords \'{keywords_to_add}\'')
                 filename = _mdp_if_get_result_metadata_at_key_(m_key.NAME, result_unfiltered)
                 if not q_api.regex_matches(keywords_to_add, filename):
                     ml.log(f'regex \'{keywords_to_add}\' does not match for \'{filename}\'', level=ml.WARNING)
