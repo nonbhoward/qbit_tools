@@ -222,7 +222,11 @@ def filter_results_in_(state_machine, found=True, sort=True):
     bytes_max = get_int_from_search_parser_at_(section, s_key.SIZE_MAX_BYTES)
     megabytes_min = mega(bytes_min)
     megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
-    filename_regex = get_keywords_to_add_from_(section)
+    # FIXME p0, reimplement this
+    # FIXME p0, reimplement this
+    keywords_to_add = get_keywords_to_add_from_(section)
+    # FIXME p0, reimplement this
+    # FIXME p0, reimplement this
     event = f'filtering results for \'{section}\''
     try:
         results_filtered = list()
@@ -256,11 +260,12 @@ def filter_results_in_(state_machine, found=True, sort=True):
                     pause_on_event(u_key.WAIT_FOR_USER)
                     write_new_metadata_section_from_(result_unfiltered)
                     continue
-            if filter_provided_for_(filename_regex):
-                ml.log(f'filtering results using filename regex \'{filename_regex}\'')
+            # FIXME p0, entry point for continued implementation of add/skip keyword paradigm
+            if filter_provided_for_(keywords_to_add):
+                ml.log(f'filtering results using filename regex \'{keywords_to_add}\'')
                 filename = _mdp_if_get_result_metadata_at_key_(m_key.NAME, result_unfiltered)
-                if not q_api.regex_matches(filename_regex, filename):
-                    ml.log(f'regex \'{filename_regex}\' does not match for \'{filename}\'', level=ml.WARNING)
+                if not q_api.regex_matches(keywords_to_add, filename):
+                    ml.log(f'regex \'{keywords_to_add}\' does not match for \'{filename}\'', level=ml.WARNING)
                     write_new_metadata_section_from_(result_unfiltered)
                     continue
             ml.log(f'result \'{result_name}\' meets all requirements')
