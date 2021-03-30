@@ -30,22 +30,16 @@ def add_filtered_results_stored_in_(state_machine):
     section = get_active_section_from_(state_machine)
     filtered_results = get_results_filtered_from_(state_machine)
     try:
-        results_required_count = get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT)
-        ml.log(f'add most popular \'{results_required_count}\' count results')
         for result in filtered_results:
-            results_added_count = get_int_from_search_parser_at_(section, s_key.RESULTS_ADDED_COUNT)
-            if results_added_count > results_required_count:  # FIXME p2, shouldn't this use the conclusion check func?
-                ml.log(f'the search for \'{section}\' can be concluded', announcement=True)
-                set_bool_for_(section, s_key.CONCLUDED, True)
-                return  # enough results have been added for this header, stop
+            result_name = get_name_from_(result)
+            if search_is_concluded_in_(state_machine):
+                return
             if add_successful_for_(section, result):  # FIXME p0, sometimes this adds two values
-                _mdp_if_write_metadata_from_(result, added=True)
+                write_new_metadata_section_from_(result, added=True)
                 if enough_results_added_for_(section):
                     ml.log(f'enough results added for \'{section}\'')
                     return  # desired result count added, stop adding
-                write_parsers_to_disk()  # FIXME p0, debug line, consider removing
                 continue  # result added, go to next
-            result_name = _mdp_if_get_result_metadata_at_key_(m_key.NAME, result)
             ml.log(f'client failed to add \'{result_name}\'', level=ml.WARNING)
             write_parsers_to_disk()  # FIXME p0, debug line, consider removing
     except Exception as e_err:
@@ -58,8 +52,8 @@ def add_search_properties_to_(state_machine, search_properties):
     try:
         _stm_if_add_search_properties_to_(state_machine, search_properties)
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def add_successful_for_(section: str, result: dict) -> bool:
@@ -98,9 +92,9 @@ def all_searches_concluded() -> bool:
         ml.log(f'error {event}')
 
 
-def build_metadata_section_from_(result: dict) -> str:
+def build_metadata_guid_from_(result: dict) -> str:
     event = f'building metadata section from \'{result}\''
-    try:
+    try:  # FIXME p1, deprecated, refactor this into convert_to_hashed_metadata_from_()
         name, url = \
             _mdp_if_get_result_metadata_at_key_(m_key.NAME, result), \
             _mdp_if_get_result_metadata_at_key_(m_key.URL, result)
@@ -128,6 +122,22 @@ def conclude_search_for_active_section_in_(state_machine) -> None:
     event = f'concluding search for active section \'{section}\''
     try:  # TODO is this a pipe?
         set_bool_for_(section, s_key.CONCLUDED, True)
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+        ml.log(f'error {event}')
+
+
+def convert_to_hashed_metadata_from_(result: dict) -> dict:
+    hashed_result = dict()
+    offset = get_user_preference_for_(u_key.UNI_SHIFT)
+    hashed_result['guid'] = hash_metadata(build_metadata_guid_from_(result), offset=offset)
+    event = f'building hashed metadata from result'
+    try:
+        for attr, dtl in result.items():
+            attribute, detail = validate_metadata_and_type_for_(attr, dtl)
+            h_attr, h_dtl = get_hashed_(attribute, detail, offset)
+            hashed_result[h_attr] = h_dtl
+        return hashed_result
     except Exception as e_err:
         ml.log(f'error {event}')
         ml.log(e_err.args[0])
@@ -228,7 +238,7 @@ def filter_results_in_(state_machine, found=True, sort=True):
                            f'\'{result_seeds}\' seeds, result : \'{result_name}\'',
                            level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
-                    _mdp_if_write_metadata_from_(result_unfiltered)
+                    write_new_metadata_section_from_(result_unfiltered)
                     continue
             if filter_provided_for_(megabytes_min) or filter_provided_for_(megabytes_max):
                 bytes_result = int(_mdp_if_get_result_metadata_at_key_(m_key.SIZE, result_unfiltered))  # FIXME int
@@ -244,14 +254,14 @@ def filter_results_in_(state_machine, found=True, sort=True):
                                  f'result with size \'{megabytes_result}\'MiB, result: \'{result_name}\'',
                                  level=ml.WARNING)
                     pause_on_event(u_key.WAIT_FOR_USER)
-                    _mdp_if_write_metadata_from_(result_unfiltered)
+                    write_new_metadata_section_from_(result_unfiltered)
                     continue
             if filter_provided_for_(filename_regex):
                 ml.log(f'filtering results using filename regex \'{filename_regex}\'')
                 filename = _mdp_if_get_result_metadata_at_key_(m_key.NAME, result_unfiltered)
                 if not q_api.regex_matches(filename_regex, filename):
                     ml.log(f'regex \'{filename_regex}\' does not match for \'{filename}\'', level=ml.WARNING)
-                    _mdp_if_write_metadata_from_(result_unfiltered)
+                    write_new_metadata_section_from_(result_unfiltered)
                     continue
             ml.log(f'result \'{result_name}\' meets all requirements')
             results_filtered.append(result_unfiltered)
@@ -270,8 +280,8 @@ def get_active_section_from_(state_machine) -> str:
     try:
         return _stm_if_get_active_section_from_(state_machine)
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def get_active_sections_from_(state_machine) -> list:
@@ -279,8 +289,8 @@ def get_active_sections_from_(state_machine) -> list:
     try:
         return _stm_if_get_active_sections_from_(state_machine)
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def get_all_sections_from_metadata_parsers() -> tuple:
@@ -311,10 +321,12 @@ def get_all_sections_from_search_parser() -> list:
 
 
 def get_bool_from_(section: str, key: str) -> bool:
+    event = f'getting bool from \'{section}\' at \'{key}\''
     try:  # parser surface abstraction depth = 1
         return _scp_if_get_bool_from_(section, key)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
 
 
 def get_concluded_state_for_(section) -> bool:
@@ -322,8 +334,8 @@ def get_concluded_state_for_(section) -> bool:
     try:  # FIXME not used
         return get_search_state_for_(section)[3]
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def get_connection_time_start():
@@ -349,8 +361,8 @@ def get_bool_from_search_parser_at_(section, key) -> bool:
     try:  # FIXME not used
         return _scp_if_get_bool_at_key_(section, key)
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def get_int_from_search_parser_at_(section, key) -> int:
@@ -358,8 +370,17 @@ def get_int_from_search_parser_at_(section, key) -> int:
     try:
         return _scp_if_get_int_at_key_(section, key)
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
+
+
+def get_name_from_(result) -> str:
+    event = f'getting name from result'
+    try:
+        return _mdp_if_get_result_metadata_at_key_(m_key.NAME, result)
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def get_queued_state_for_(section) -> bool:
@@ -367,8 +388,8 @@ def get_queued_state_for_(section) -> bool:
     try:  # FIXME not used
         return get_search_state_for_(section)[0]
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def get_results_filtered_from_(state_machine) -> list:
@@ -382,15 +403,26 @@ def get_results_filtered_from_(state_machine) -> list:
             return list()
         return filtered_results
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def get_results_unfiltered_from_(state_machine):
+    event = f'getting results unfiltered from state machine'
     try:
         return _stm_if_get_results_unfiltered_from_(state_machine)
     except Exception as e_err:
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
+
+
+def get_user_preference_for_(key):
+    event = f'getting user preference for \'{key}\''
+    try:  # FIXME handle diff return types, str/int/etc
+        return _ucp_if_get_int_for_key_(key)
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def get_str_from_search_parser_at_(section, key) -> str:
@@ -398,8 +430,8 @@ def get_str_from_search_parser_at_(section, key) -> str:
     try:
         return _scp_if_get_str_at_key_(section, key)
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def get_running_state_for_(section) -> bool:
@@ -407,8 +439,8 @@ def get_running_state_for_(section) -> bool:
     try:  # FIXME not used
         return get_search_state_for_(section)[1]
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def get_search_id_from_active_section_in_(state_machine) -> str:
@@ -425,8 +457,8 @@ def get_search_properties_from_(state_machine) -> tuple:
     try:  # machine surface abstraction depth = 1
         return _stm_if_get_search_properties_from_(state_machine)
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
 
 
 def get_search_results_for_(state_machine) -> list:
@@ -441,6 +473,7 @@ def get_search_results_for_(state_machine) -> list:
 def get_search_state_for_(section) -> tuple:
     event = f'getting search state for \'{section}\''
     try:
+        # TODO print_search_state_for_(section) here
         return _scp_if_get_search_states_for_(section)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
@@ -481,8 +514,8 @@ def get_stopped_state_for_(section) -> bool:
     try:  # FIXME not used
         return get_search_state_for_(section)[2]
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def hash_metadata(x: str, offset=0, undo=False) -> str:
@@ -521,8 +554,8 @@ def none_value_(test_value) -> bool:
     try:
         return True if test_value is None else False
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def pause_on_event(pause_type: str):
@@ -545,6 +578,20 @@ def print_search_ids_from_(active_search_ids: dict):
             ml.log(f'\tsearch header : \'{active_search_header_name}\'')
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+
+
+def print_search_state_for_(section):
+    event = f'printing search state for \'{section}\''
+    search_queued, search_running, search_stopped, search_concluded = get_search_state_for_(section)
+    try:
+        ml.log(f'search state for \'{section}\': '
+               f'\n\tqueued: {search_queued}'
+               f'\n\trunning: {search_running}'
+               f'\n\tstopped: {search_stopped}'
+               f'\n\tconcluded: {search_concluded}', announcement=True)
+    except Exception as e_err:
+        ml.log(e_err.args[0])
         ml.log(f'error {event}')
 
 
@@ -612,8 +659,8 @@ def save_results_to_(state_machine, save_results_filtered=True):
         if save_results_filtered:
             save_search_results_filtered_to_(state_machine)
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def save_search_results_filtered_to_(state_machine):
@@ -621,8 +668,8 @@ def save_search_results_filtered_to_(state_machine):
     try:
         _stm_if_save_filtered_search_results_to_(state_machine)
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def save_search_results_unfiltered_to_(state_machine):
@@ -630,8 +677,8 @@ def save_search_results_unfiltered_to_(state_machine):
     try:
         _stm_if_save_unfiltered_search_results_to_(state_machine)
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def search_at_active_section_has_completed_in_(state_machine) -> bool:
@@ -645,8 +692,13 @@ def search_at_active_section_has_completed_in_(state_machine) -> bool:
 
 def search_is_concluded_in_(state_machine) -> bool:
     section = get_active_section_from_(state_machine)
+    results_required_count = get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT)
+    results_added_count = get_int_from_search_parser_at_(section, s_key.RESULTS_ADDED_COUNT)
     event = f'checking if search concluded for \'{section}\''
     try:
+        if results_added_count > results_required_count:
+            ml.log(f'the search for \'{section}\' can be concluded', announcement=True)
+            set_bool_for_(section, s_key.CONCLUDED, True)
         return get_bool_from_(section, s_key.CONCLUDED)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
@@ -858,16 +910,19 @@ def sort_(results: list) -> list:
 
 
 def start_search_with_(state_machine):
-    section = state_machine.active_section
+    section = get_active_section_from_(state_machine)
     search_term = get_search_term_for_active_section_in_(state_machine)
     search_properties = create_search_job_for_(search_term, 'all', 'all')
     add_search_properties_to_(state_machine, search_properties)
+    event = f'starting search with \'{section}\''
+    search_id = ''
     try:
         search_count, search_id, search_status = search_properties
         write_search_id_to_search_parser_at_(section, search_id)
     except Exception as tuple_exc:
         for arg in tuple_exc.args:
             ml.log(arg)
+        ml.log(f'error {event}')
     if search_is_stored_in_(state_machine):
         ml.log(f'search \'{search_term}\' successfully started for \'{section}\' with id \'{search_id}\'')
         set_time_last_searched_for_active_section_in_(state_machine)
@@ -886,10 +941,10 @@ def update_search_properties_for_(state_machine):
         ml.log(f'error {event}')
 
 
-def validate_metadata_and_type_for_(metadata_kv: tuple) -> tuple:
+def validate_metadata_and_type_for_(attr: str, dtl: str) -> tuple:
     expected_value_types = [int, str]
-    parser_key, parser_value = metadata_kv
-    event = f'validating metadata and type for \'{metadata_kv}\''
+    parser_key, parser_value = attr, dtl
+    event = f'validating metadata and type for \'{parser_value}\' at \'{parser_key}\''
     try:
         parser_value_type = type(parser_value)
         if parser_value_type not in expected_value_types:
@@ -919,6 +974,17 @@ def value_provided_for_(value_to_check) -> bool:
         ml.log(f'error {event}')
 
 
+def write_new_metadata_section_from_(result: dict, added=False) -> None:
+    parser = 'added' if added else 'failed'
+    event = f'writing metadata to \'{parser} from \'{result}\''
+    try:
+        result_hashed = convert_to_hashed_metadata_from_(result)
+        _mdp_if_create_section_for_(ma_parser if added else mf_parser, result_hashed)
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+
+
 def write_parsers_to_disk():
     event = f'writing parsers to disk'
     try:  # parser surface abstraction depth = 1
@@ -934,8 +1000,8 @@ def write_search_id_to_search_parser_at_(section, search_id) -> None:
     try:
         _scp_if_set_str_for_(section, s_key.ID, search_id)
     except Exception as e_err:
-        ml.log(f'error {event}')
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 ### ### ### ### ### ### ### ### ### ### ### ### api if ### ### ### ### ### ### ### ### ### ### ### ###
@@ -1008,26 +1074,10 @@ def _api_if_get_search_properties_for_(search_id: str) -> tuple:
 ### ### ### ### ### ### ### ### ### ### ### ### cfg if ### ### ### ### ### ### ### ### ### ### ### ###
 
 
-def _cfg_if_get_all_sections_from_parser_(meta_add=False, meta_find=False, search=False, settings=False):
-    # TODO deprecate cfg interface methods
-    try:  # parser surface abstraction depth = 0
-        if meta_add:
-            return QConf.get_all_sections_from_parser_(meta_add=True)
-        if meta_find:
-            return QConf.get_all_sections_from_parser_(meta_find=True)
-        if search:
-            return QConf.get_all_sections_from_parser_(search=True)
-        if settings:
-            return QConf.get_all_sections_from_parser_(settings=True)
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-
-
 def _cfg_if_get_parser_value_at_(section: str, key: str,
                                  meta_add=False, meta_find=False,
                                  search=True, settings=False):
-    # TODO deprecate cfg interface methods
-    try:  # parser surface abstraction depth = 0
+    try:  # TODO deprecate cfg interface methods
         if meta_add:
             return QConf.read_parser_value_with_(key, section, meta_add=meta_add)
         elif meta_find:
@@ -1042,8 +1092,7 @@ def _cfg_if_get_parser_value_at_(section: str, key: str,
 
 def _cfg_if_set_parser_value_at_(section: str, parser_key: str, value,
                                  mp=None, search=True, settings=False):
-    # TODO deprecate cfg interface methods
-    try:  # parser surface abstraction depth = 0
+    try:  # TODO deprecate cfg interface methods
         if mp:
             QConf.write_parser_section_with_key_(parser_key, value, section, mp)
         elif settings:
@@ -1055,8 +1104,7 @@ def _cfg_if_set_parser_value_at_(section: str, parser_key: str, value,
 
 
 def _cfg_if_write_parsers_to_disk():
-    # TODO deprecate cfg interface methods
-    try:  # parser surface abstraction depth = 0
+    try:  # TODO deprecate cfg interface methods
         QConf.write_config_to_disk()
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
@@ -1097,36 +1145,17 @@ def _metadata_failed_parser(section=empty) -> RawConfigParser:
         ml.log(f'error {event}')
 
 
-def _mdp_if_add_section_to_(mp: RawConfigParser, hashed_section_name: str) -> None:
-    event = f'adding to metadata parser, section \'{hashed_section_name}\''
-    try:
-        if hashed_section_name in mp.sections():
-            ml.log(f'section name already exists for \'{hashed_section_name}\'', level=ml.WARNING)
-            return
-        ml.log(f'adding section name for \'{hashed_section_name}\'')
-        mp.add_section(hashed_section_name)
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
-
-
-def _mdp_if_create_section_for_(mp: RawConfigParser, result: dict) -> None:
-    offset = _ucp_if_get_int_for_key_(u_key.UNI_SHIFT)
-    section_name = _mdp_if_get_result_metadata_at_key_(m_key.NAME, result)
-    section_name_hashed = hash_metadata(build_metadata_section_from_(result), offset=offset)
+def _mdp_if_create_section_for_(mp: RawConfigParser, hashed_result: dict) -> None:
+    hashed_result_guid = hashed_result['guid']
     event = f'creating metadata parser section'
-    try:  # FIXME p3, this could be wrapped to reduce api interface clutter
-        if mp.has_section(section_name_hashed):
-            ml.log(f'metadata parser already has section \'{section_name_hashed}\'', level=ml.ERROR)
+    try:
+        if mp.has_section(hashed_result_guid):
+            ml.log(f'metadata parser already has section \'{hashed_result_guid}\'', level=ml.ERROR)
             return
-        ml.log(f'{event} for \'{section_name}\'')
-        mp.add_section(section_name_hashed)
-        ml.log(f'section \'{section_name_hashed}\' added to metadata for \'{section_name}\'', announcement=True)
-        for metadata_kv in result.items():
-            attribute, detail = validate_metadata_and_type_for_(metadata_kv)
-            h_attr, h_dtl = get_hashed_(attribute, detail, offset)
-            _cfg_if_set_parser_value_at_(section_name_hashed, h_attr, h_dtl, mp)
-            pause_on_event(u_key.WAIT_FOR_USER)
+        mp.add_section(hashed_result_guid)
+        ml.log(f'section \'{hashed_result_guid}\' added to metadata', announcement=True)
+        for h_attr, h_dtl in hashed_result.items():
+            _cfg_if_set_parser_value_at_(hashed_result_guid, h_attr, h_dtl, mp)
         return
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
@@ -1168,7 +1197,7 @@ def _mdp_if_get_result_metadata_at_key_(key: str, result: dict) -> str:  # QConf
 def _mdp_if_previously_found_(result: dict, verbose_log=True) -> bool:
     event = f'checking if previously found result \'{result}\''
     try:
-        result_name = build_metadata_section_from_(result)
+        result_name = build_metadata_guid_from_(result)
         added_or_found = [*ma_parser.sections(), *mf_parser.sections()]
         if result_name in added_or_found:
             if verbose_log:
@@ -1181,24 +1210,11 @@ def _mdp_if_previously_found_(result: dict, verbose_log=True) -> bool:
         ml.log(f'error {event}')
 
 
-def write_metadata_from_(result: dict, added=False) -> None:
-    parser = 'added' if added else 'failed'
-    event = f'writing metadata to \'{parser} from \'{result}\''
-    try:  # FIXME finish this function as a wrapper_mdp_if_write_metadata_from_
-        _mdp_if_write_metadata_from_()
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
-
-
 def _mdp_if_write_metadata_from_(result: dict, added=False) -> None:
-    parser = 'added' if added else 'failed'
-    event = f'writing metadata to \'{parser} from \'{result}\''
-    try:  # FIXME metadata debug entry
-        _mdp_if_create_section_for_(ma_parser if added else mf_parser, result)
+    try:
+        pass
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
 
 
 ### ### ### ### ### ### ### ### ### ### ### ### mdp if ### ### ### ### ### ### ### ### ### ### ### ###
@@ -1305,13 +1321,7 @@ def _scp_if_get_search_states_for_(section) -> tuple:
         search_running = _scp_if_get_bool_from_(section, s_key.RUNNING)
         search_stopped = _scp_if_get_bool_from_(section, s_key.STOPPED)
         search_concluded = _scp_if_get_bool_from_(section, s_key.CONCLUDED)
-        ml.log(f'search state for \'{section}\': '
-                     f'\n\tqueued: {search_queued}'
-                     f'\n\trunning: {search_running}'
-                     f'\n\tstopped: {search_stopped}'
-                     f'\n\tconcluded: {search_concluded}', announcement=True)
         return search_queued, search_running, search_stopped, search_concluded
-        pass
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
 
