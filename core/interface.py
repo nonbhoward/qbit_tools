@@ -222,7 +222,7 @@ def filter_results_in_(state_machine, found=True, sort=True):
     bytes_max = get_int_from_search_parser_at_(section, s_key.SIZE_MAX_BYTES)
     megabytes_min = mega(bytes_min)
     megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
-    filename_regex = get_regex_iterable_from_(section)
+    filename_regex = get_keywords_to_add_from_(section)
     event = f'filtering results for \'{section}\''
     try:
         results_filtered = list()
@@ -392,11 +392,21 @@ def get_queued_state_for_(section) -> bool:
         ml.log(f'error {event}')
 
 
-def get_regex_iterable_from_(section: str) -> list:
-    event = f'getting regex iterable from \'{section}\''
+def get_keywords_to_add_from_(section: str) -> list:
+    event = f'getting keywords to add from \'{section}\''
     try:
-        regex_string = get_str_from_search_parser_at_(section, s_key.KEYWORDS_ADD)
-        return list()
+        kw_to_add_csv = get_str_from_search_parser_at_(section, s_key.KEYWORDS_ADD)
+        return kw_to_add_csv.split(sep=',')
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+        ml.log(f'error {event}')
+
+
+def get_keywords_to_skip_from_(section: str) -> list:
+    event = f'getting keywords to skip from \'{section}\''
+    try:  # FIXME p2, implement this function or merge with add
+        kw_to_skip_csv = get_str_from_search_parser_at_(section, s_key.KEYWORDS_SKIP)
+        return kw_to_skip_csv.split(sep=',')
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
