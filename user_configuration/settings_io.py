@@ -118,7 +118,7 @@ class QbitConfig:
             sp = self.get_parser_for_(search=True)[section]
             key = keyrings.search_parser_keyring
             if regex:
-                has_regex = True if key.REGEX_FILENAME in sp else False
+                has_regex = True if key.KEYWORDS_ADD in sp else False
                 return has_regex
             if seed:
                 has_seed = True if key.MIN_SEED in sp else False
