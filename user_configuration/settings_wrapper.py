@@ -286,7 +286,7 @@ class Paths:  # Configuration.Paths
         :return: data path as path object
         """
         try:
-            ml.log('get data path', event_completed=True)
+            ml.log('get data path')
             user_config_directory_name = \
                 configuration.hardcoded.directory_names.config_parser_path_names.user_config_path_name
             return Path(path.project, user_config_directory_name)
