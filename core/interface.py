@@ -978,14 +978,12 @@ def _api_if_get_local_results_count():
 
 
 def _api_if_get_search_results_for_(state_machine) -> list:
+    search_id = get_search_id_from_active_section_in_(state_machine)
+    results = q_api.get_result_object_at_(search_id)
     try:  # api surface abstraction level = 0
-        search_id = get_search_id_from_active_section_in_(state_machine)
-        results = q_api.get_result_object_at_(search_id)
-        # FIXME p2, replace assert
-        assert results is not None, 'bad results, fix it or handle it'
-        # TODO just noting that this is a pseudo-hardcode
-        results = results[m_key.RESULTS]
-        return results
+        if results is None:  # FYI this could cause permanent fatal errors depending on search id handling
+            raise ValueError('unexpected empty results')
+        return results[m_key.RESULTS]
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
 
