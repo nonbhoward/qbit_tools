@@ -217,14 +217,14 @@ def filter_results_in_(state_machine, found=True, sort=True):
     results_filtered_and_sorted = list()
     section = get_active_section_from_(state_machine)
     results_unfiltered = _stm_if_get_results_unfiltered_from_(state_machine)
+    seeds_min = get_int_from_search_parser_at_(section, s_key.MIN_SEED)
+    bytes_min = get_int_from_search_parser_at_(section, s_key.SIZE_MIN_BYTES)
+    bytes_max = get_int_from_search_parser_at_(section, s_key.SIZE_MAX_BYTES)
+    megabytes_min = mega(bytes_min)
+    megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
+    filename_regex = get_regex_iterable_from_(section)
     event = f'filtering results for \'{section}\''
     try:
-        seeds_min = get_int_from_search_parser_at_(section, s_key.MIN_SEED)
-        bytes_min = get_int_from_search_parser_at_(section, s_key.SIZE_MIN_BYTES)
-        bytes_max = get_int_from_search_parser_at_(section, s_key.SIZE_MAX_BYTES)
-        megabytes_min = mega(bytes_min)
-        megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
-        filename_regex = get_str_from_search_parser_at_(section, s_key.REGEX_FILENAME)
         results_filtered = list()
         for result_unfiltered in results_unfiltered:
             result_name = _mdp_if_get_result_metadata_at_key_(m_key.NAME, result_unfiltered)
@@ -387,6 +387,16 @@ def get_queued_state_for_(section) -> bool:
     event = f'getting queued state for \'{section}\''
     try:  # FIXME not used
         return get_search_state_for_(section)[0]
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+        ml.log(f'error {event}')
+
+
+def get_regex_iterable_from_(section: str) -> list:
+    event = f'getting regex iterable from \'{section}\''
+    try:
+        regex_string = get_str_from_search_parser_at_(section, s_key.KEYWORDS_ADD)
+        return list()
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
