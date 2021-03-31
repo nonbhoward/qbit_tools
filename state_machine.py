@@ -76,8 +76,9 @@ class QbitStateManager:
                     add_filtered_results_stored_in_(self)
                 if search_at_active_section_has_completed_in_(self):
                     conclude_search_for_active_section_in_(self)
+                    return  # don't reset the search
                 reset_search_state_at_active_section_for_(self)
-            elif search_concluded:
+            elif search_concluded:  # FIXME refactor to match
                 pass  # if concluded, do nothing forever
             else:
                 ml.log(f'header \'{self.active_section}\' is restricted from starting by search '
