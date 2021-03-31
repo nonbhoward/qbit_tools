@@ -263,9 +263,9 @@ def filter_results_in_(state_machine, found=True, sort=True):
             # FIXME p0, entry point for continued implementation of add/skip keyword paradigm
             if filter_provided_for_(keywords_to_add):
                 ml.log(f'filtering results using add keywords \'{keywords_to_add}\'')
-                filename = _mdp_if_get_result_metadata_at_key_(m_key.NAME, result_unfiltered)
-                if not q_api.regex_matches(keywords_to_add, filename):
-                    ml.log(f'regex \'{keywords_to_add}\' does not match for \'{filename}\'', level=ml.WARNING)
+                filename = get_result_metadata_filename_at_(result_unfiltered)
+                if keywords_not_present_in_(filename, keywords_to_add):
+                    ml.log(f'\'{keywords_to_add}\' has filtered filename : \'{filename}\'', level=ml.WARNING)
                     write_new_metadata_section_from_(result_unfiltered)
                     continue
             ml.log(f'result \'{result_name}\' meets all requirements')
@@ -417,6 +417,15 @@ def get_keywords_to_skip_from_(section: str) -> list:
         ml.log(f'error {event}')
 
 
+def get_result_metadata_filename_at_(result_unfiltered) -> str:
+    event = f'getting result metadata filename'
+    try:
+        return _mdp_if_get_result_metadata_at_key_(m_key.NAME, result_unfiltered)
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+        ml.log(f'error {event}')
+
+
 def get_results_filtered_from_(state_machine) -> list:
     section = state_machine.active_section
     event = f'getting filtered results from state machine'
@@ -561,6 +570,20 @@ def increment_search_state_at_active_section_for_(state_machine):
         _scp_if_increment_search_state_for_(state_machine)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+
+
+def keywords_not_present_in_(filename: str, kw_to_add: list) -> bool:
+    event = f'checking if keywords are present in filename'
+    try:
+        kw_found_indices = [kw in filename for kw in kw_to_add]
+        kw_found_indices = list()
+        for kw in kw_to_add:
+            kw_found_indices.append(kw in filename)
+        any_kw_found = any(kw_found_indices)
+        return any_kw_found
+    except Exception as e_err:
+        ml.log(e_err.args[0])
         ml.log(f'error {event}')
 
 
