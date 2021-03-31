@@ -128,16 +128,13 @@ def conclude_search_for_active_section_in_(state_machine) -> None:
 
 
 def convert_to_hashed_metadata_from_(result: dict) -> dict:
-    hashed_result = dict()
     offset = get_user_preference_for_(u_key.UNI_SHIFT)
-    hashed_result['guid'] = hash_metadata(build_metadata_guid_from_(result), offset=offset)
+    result[hash_metadata(u_key.GUID)] = hash_metadata(build_metadata_guid_from_(result))
     event = f'building hashed metadata from result'
     try:
-        for attr, dtl in result.items():
-            attribute, detail = validate_metadata_and_type_for_(attr, dtl)
-            h_attr, h_dtl = get_hashed_(attribute, detail, offset)
-            hashed_result[h_attr] = h_dtl
-        return hashed_result
+        return dict({get_hashed_(validate_metadata_and_type_for_(attr, dtl)[0],
+                                 validate_metadata_and_type_for_(attr, dtl)[1],
+                                 offset=offset) for attr, dtl in result.items()})
     except Exception as e_err:
         ml.log(f'error {event}')
         ml.log(e_err.args[0])
@@ -349,7 +346,7 @@ def get_connection_time_start():
 def get_hashed_(attribute: str, detail: str, offset: int) -> tuple:
     event = f'getting hashed value with offset \'{offset}\' for attribute \'{attribute}\' and detail \'{detail}\''
     try:
-        return hash_metadata(attribute, offset), hash_metadata(detail, offset)
+        return hash_metadata(attribute), hash_metadata(detail)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
@@ -546,7 +543,8 @@ def get_stopped_state_for_(section) -> bool:
         ml.log(f'error {event}')
 
 
-def hash_metadata(x: str, offset=0, undo=False) -> str:
+def hash_metadata(x: str, undo=False) -> str:
+    offset = get_user_preference_for_(u_key.UNI_SHIFT)
     event = f'hashing metadata with offset \'{offset}\' for \'{x}\''
     try:
         _undo = -1 if undo else 1
@@ -1193,7 +1191,7 @@ def _metadata_failed_parser(section=empty) -> RawConfigParser:
 
 
 def _mdp_if_create_section_for_(mp: RawConfigParser, hashed_result: dict) -> None:
-    hashed_result_guid = hashed_result['guid']
+    hashed_result_guid = hashed_result[hash_metadata(m_key.GUID, True)]
     event = f'creating metadata parser section'
     try:
         if mp.has_section(hashed_result_guid):
