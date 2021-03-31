@@ -395,7 +395,7 @@ def get_keywords_to_add_from_(section: str) -> list:
     event = f'getting keywords to add from \'{section}\''
     try:
         kw_to_add_csv = get_str_from_search_parser_at_(section, s_key.KEYWORDS_ADD)
-        return kw_to_add_csv.split(sep=',')
+        return [kw.strip() for kw in kw_to_add_csv.split(sep=',')]
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
@@ -403,9 +403,9 @@ def get_keywords_to_add_from_(section: str) -> list:
 
 def get_keywords_to_skip_from_(section: str) -> list:
     event = f'getting keywords to skip from \'{section}\''
-    try:  # FIXME p2, implement this function or merge with add
+    try:
         kw_to_skip_csv = get_str_from_search_parser_at_(section, s_key.KEYWORDS_SKIP)
-        return kw_to_skip_csv.split(sep=',')
+        return [kw.strip() for kw in kw_to_skip_csv.split(sep=',')]
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
