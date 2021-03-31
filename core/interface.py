@@ -128,13 +128,11 @@ def conclude_search_for_active_section_in_(state_machine) -> None:
 
 
 def convert_to_hashed_metadata_from_(result: dict) -> dict:
-    offset = get_user_preference_for_(u_key.UNI_SHIFT)
-    result[hash_metadata(u_key.GUID)] = hash_metadata(build_metadata_guid_from_(result))
+    result[hash_metadata(m_key.GUID)] = hash_metadata(build_metadata_guid_from_(result))
     event = f'building hashed metadata from result'
     try:
         return dict({get_hashed_(validate_metadata_and_type_for_(attr, dtl)[0],
-                                 validate_metadata_and_type_for_(attr, dtl)[1],
-                                 offset=offset) for attr, dtl in result.items()})
+                                 validate_metadata_and_type_for_(attr, dtl)[1]) for attr, dtl in result.items()})
     except Exception as e_err:
         ml.log(f'error {event}')
         ml.log(e_err.args[0])
@@ -343,7 +341,8 @@ def get_connection_time_start():
         ml.log(f'error {event}')
 
 
-def get_hashed_(attribute: str, detail: str, offset: int) -> tuple:
+def get_hashed_(attribute: str, detail: str) -> tuple:
+    offset = get_user_preference_for_(u_key.UNI_SHIFT)
     event = f'getting hashed value with offset \'{offset}\' for attribute \'{attribute}\' and detail \'{detail}\''
     try:
         return hash_metadata(attribute), hash_metadata(detail)
@@ -1191,7 +1190,7 @@ def _metadata_failed_parser(section=empty) -> RawConfigParser:
 
 
 def _mdp_if_create_section_for_(mp: RawConfigParser, hashed_result: dict) -> None:
-    hashed_result_guid = hashed_result[hash_metadata(m_key.GUID, True)]
+    hashed_result_guid = hashed_result[hash_metadata(m_key.GUID)]
     event = f'creating metadata parser section'
     try:
         if mp.has_section(hashed_result_guid):
