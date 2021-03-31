@@ -40,6 +40,8 @@ class MetadataParserKeys:  # Configuration.HardCoded.KeyRing.MetaDataKeys
         self.SITE = 'siteUrl'
         self.SUPPLY = 'nbSeeders'
         self.URL = 'fileUrl'
+        # extensions
+        self.GUID = 'guid'
 
 
 class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
