@@ -1,4 +1,5 @@
 ### as of 2021-03-31 current status of main branch is not-functional with severe bugs
+### use release version 0.1 for stable experience until new version is released
 
 # a brief project summary follows
 ### core.interface.py
