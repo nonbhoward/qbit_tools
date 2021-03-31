@@ -944,10 +944,9 @@ def set_time_last_searched_for_active_section_in_(state_machine) -> None:
 
 
 def sort_(results: list) -> list:
-    # TODO dynamic sort values
     event = f'sorting results'
-    try:
-        return sorted(results, key=lambda k: k['nbSeeders'], reverse=True)
+    try:  # TODO dynamic sort values
+        return sorted(results, key=lambda k: k[m_key.SUPPLY], reverse=True)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
