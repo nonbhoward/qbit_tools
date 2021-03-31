@@ -2,7 +2,7 @@ from configparser import RawConfigParser
 from datetime import datetime as dt
 from minimalog.minimal_log import MinimalLog
 from qbit_api_interface.qbit_api_wrapper import QbitApiCaller as QApi
-from string import digits
+from string import ascii_uppercase as upper, digits
 from user_configuration.settings_io import QbitConfig as QConf
 digits_or_sign = f'-{digits}'
 m_key, s_key, u_key = QConf.get_keyrings()
@@ -222,18 +222,15 @@ def filter_results_in_(state_machine, found=True, sort=True):
     bytes_max = get_int_from_search_parser_at_(section, s_key.SIZE_MAX_BYTES)
     megabytes_min = mega(bytes_min)
     megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
-    # FIXME p0, reimplement this
-    # FIXME p0, reimplement this
     keywords_to_add = get_keywords_to_add_from_(section)
-    # FIXME p0, reimplement this
-    # FIXME p0, reimplement this
+    keywords_to_skip = get_keywords_to_skip_from_(section)
     event = f'filtering results for \'{section}\''
     try:
         results_filtered = list()
         for result_unfiltered in results_unfiltered:
             result_name = _mdp_if_get_result_metadata_at_key_(m_key.NAME, result_unfiltered)
             if found and _mdp_if_previously_found_(result_unfiltered):
-                continue
+                continue  # filter this result
             if filter_provided_for_(seeds_min):
                 result_seeds = int(_mdp_if_get_result_metadata_at_key_(m_key.SUPPLY, result_unfiltered))  # FIXME int
                 enough_seeds = True if result_seeds > seeds_min else False
@@ -241,9 +238,8 @@ def filter_results_in_(state_machine, found=True, sort=True):
                     ml.log(f'required seeds \'{seeds_min}\' not met by result with '
                            f'\'{result_seeds}\' seeds, result : \'{result_name}\'',
                            level=ml.WARNING)
-                    pause_on_event(u_key.WAIT_FOR_USER)
-                    write_new_metadata_section_from_(result_unfiltered)
-                    continue
+                    write_new_metadata_section_from_(result_unfiltered)  # remember this result
+                    continue  # filter this result
             if filter_provided_for_(megabytes_min) or filter_provided_for_(megabytes_max):
                 bytes_result = int(_mdp_if_get_result_metadata_at_key_(m_key.SIZE, result_unfiltered))  # FIXME int
                 megabytes_result = mega(bytes_result)
@@ -255,19 +251,17 @@ def filter_results_in_(state_machine, found=True, sort=True):
                     file_size_in_range = True if bytes_result > bytes_min else False
                 if not file_size_in_range:
                     ml.log(f'size requirement \'{megabytes_min}\'MiB to \'{megabytes_max}\'MiB not met by '
-                                 f'result with size \'{megabytes_result}\'MiB, result: \'{result_name}\'',
-                                 level=ml.WARNING)
-                    pause_on_event(u_key.WAIT_FOR_USER)
-                    write_new_metadata_section_from_(result_unfiltered)
-                    continue
+                           f'result with size \'{megabytes_result}\'MiB, result: \'{result_name}\'',
+                           level=ml.WARNING)
+                    write_new_metadata_section_from_(result_unfiltered)  # remember this result
+                    continue  # filter this result
             # FIXME p0, entry point for continued implementation of add/skip keyword paradigm
             if filter_provided_for_(keywords_to_add):
                 ml.log(f'filtering results using add keywords \'{keywords_to_add}\'')
                 filename = get_result_metadata_filename_at_(result_unfiltered)
-                if keywords_not_present_in_(filename, keywords_to_add):
-                    ml.log(f'\'{keywords_to_add}\' has filtered filename : \'{filename}\'', level=ml.WARNING)
-                    write_new_metadata_section_from_(result_unfiltered)
-                    continue
+                if keyword_in_(filename, keywords_to_skip) or not keyword_in_(filename, keywords_to_add):
+                    write_new_metadata_section_from_(result_unfiltered)  # remember this result
+                    continue  # filter this result
             ml.log(f'result \'{result_name}\' meets all requirements')
             results_filtered.append(result_unfiltered)
         if sort:
@@ -573,15 +567,20 @@ def increment_search_state_at_active_section_for_(state_machine):
         ml.log(f'error {event}')
 
 
-def keywords_not_present_in_(filename: str, kw_to_add: list) -> bool:
-    event = f'checking if keywords are present in filename'
+def keyword_in_(filename: str, keywords: list, require_all_kw=False) -> bool:
+    event = f'checking if keywords in filename'
     try:
-        kw_found_indices = [kw in filename for kw in kw_to_add]
-        kw_found_indices = list()
-        for kw in kw_to_add:
-            kw_found_indices.append(kw in filename)
-        any_kw_found = any(kw_found_indices)
-        return any_kw_found
+        kw_found_indices = [kw in lower_(filename) for kw in keywords]
+        return all(kw_found_indices) if require_all_kw else any(kw_found_indices)
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+        ml.log(f'error {event}')
+
+
+def lower_(filename: str) -> str:
+    event = f'converting filename to lower'
+    try:
+        return ''.join([char.lower() if char in upper else char for char in filename])
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
