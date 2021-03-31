@@ -1,4 +1,4 @@
-### as of 2021-03-23 current status of main branch is functional with minor bugs
+### as of 2021-03-31 current status of main branch is not-functional with severe bugs
 
 # a brief project summary follows
 ### core.interface.py
