@@ -451,6 +451,7 @@ def search_started_for_(state_machine) -> bool:
 
 def set_search_states_for_(section, *search_states) -> None:
     _scp_if_set_search_states_for_(section, *search_states)
+    event = f'extracting search states from tuple'
     try:
         ml.log(f'search state for \'{section}\': '
                      f'\n\tqueued: {search_states[0]}'
@@ -459,6 +460,7 @@ def set_search_states_for_(section, *search_states) -> None:
                      f'\n\tconcluded: {search_states[3]}', announcement=True)
     except Exception as e_err:
         ml.log(e_err.args[0])
+        ml.log(f'error {event}')
 
 
 def set_time_last_searched_for_active_section_in_(state_machine) -> None:
