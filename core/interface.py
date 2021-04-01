@@ -135,9 +135,9 @@ def filter_provided_for_(parser_val) -> bool:
 def filter_results_in_(state_machine, found=True, sort=True):
     results_filtered_and_sorted = list()
     section = get_active_section_from_(state_machine)
-    seeds_min = get_int_from_search_parser_at_(section, s_key.min_seed)
-    bytes_min = get_int_from_search_parser_at_(section, s_key.size_min_bytes)
-    bytes_max = get_int_from_search_parser_at_(section, s_key.size_max_bytes)
+    seeds_min = get_int_from_search_parser_at_(section, s_key.MIN_SEED)
+    bytes_min = get_int_from_search_parser_at_(section, s_key.SIZE_MIN_BYTES)
+    bytes_max = get_int_from_search_parser_at_(section, s_key.SIZE_MAX_BYTES)
     megabytes_min = mega(bytes_min)
     megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
     keywords_to_add = get_keywords_to_add_from_(section)
@@ -200,7 +200,7 @@ def get_queued_state_for_(section) -> bool:
 
 
 def get_keywords_to_add_from_(section: str) -> list:
-    kw_to_add_csv = get_str_from_search_parser_at_(section, s_key.keywords_add)
+    kw_to_add_csv = get_str_from_search_parser_at_(section, s_key.KEYWORDS_ADD)
     event = f'building keywords to add from \'{section}\' into iterable'
     try:
         return [kw.strip() for kw in kw_to_add_csv.split(sep=',')]
@@ -210,7 +210,7 @@ def get_keywords_to_add_from_(section: str) -> list:
 
 
 def get_keywords_to_skip_from_(section: str) -> list:
-    kw_to_skip_csv = get_str_from_search_parser_at_(section, s_key.keywords_skip)
+    kw_to_skip_csv = get_str_from_search_parser_at_(section, s_key.KEYWORDS_SKIP)
     event = f'building keywords to skip from \'{section}\' into iterable'
     try:
         return [kw.strip() for kw in kw_to_skip_csv.split(sep=',')]
@@ -224,7 +224,7 @@ def get_running_state_for_(section) -> bool:
 
 
 def get_search_rank_required_to_start() -> int:
-    return get_int_from_user_preference_for_(u_key.rank_required)
+    return get_int_from_user_preference_for_(u_key.RANK_REQUIRED)
 
 
 def get_search_state_for_active_section_in_(state_machine) -> tuple:
@@ -240,7 +240,7 @@ def get_stopped_state_for_(section) -> bool:
 
 
 def hash_metadata(x: str, undo=False) -> str:
-    offset = get_int_from_user_preference_for_(u_key.uni_shift)
+    offset = get_int_from_user_preference_for_(u_key.UNI_SHIFT)
     event = f'hashing metadata with offset \'{offset}\' for \'{x}\''
     try:
         _undo = -1 if undo else 1
@@ -408,8 +408,8 @@ def search_is_concluded_in_(state_machine) -> bool:
         if get_int_from_search_parser_at_(section, s_key.RESULTS_ADDED_COUNT) >= \
                 get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT):
             ml.log(f'the search for \'{section}\' can be concluded', announcement=True)
-            set_bool_for_(section, s_key.concluded, True)
-        return get_bool_from_(section, s_key.concluded)
+            set_bool_for_(section, s_key.CONCLUDED, True)
+        return get_bool_from_(section, s_key.CONCLUDED)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
@@ -434,7 +434,8 @@ def search_queue_is_full_in_(state_machine) -> bool:
             ml.log(f'search queue is not full, '
                    f'\'{q_api.concurrent_searches_allowed - active_searches_running}\' '
                    f'spaces available')
-            print_search_ids_from_(active_search_ids)
+            if active_searches_running:
+                print_search_ids_from_(active_search_ids)
             return False
         ml.log(f'search queue is full, cannot add \'{section}\'', level=ml.WARNING)
         return True
@@ -449,12 +450,15 @@ def search_started_for_(state_machine) -> bool:
 
 
 def set_search_states_for_(section, *search_states) -> None:
-    _scp_if_set_search_states_for_(section, search_states)
-    ml.log(f'search state for \'{section}\': '
-                 f'\n\tqueued: {search_states[0]}'
-                 f'\n\trunning: {search_states[1]}'
-                 f'\n\tstopped: {search_states[2]}'
-                 f'\n\tconcluded: {search_states[3]}', announcement=True)
+    _scp_if_set_search_states_for_(section, *search_states)
+    try:
+        ml.log(f'search state for \'{section}\': '
+                     f'\n\tqueued: {search_states[0]}'
+                     f'\n\trunning: {search_states[1]}'
+                     f'\n\tstopped: {search_states[2]}'
+                     f'\n\tconcluded: {search_states[3]}', announcement=True)
+    except Exception as e_err:
+        ml.log(e_err.args[0])
 
 
 def set_time_last_searched_for_active_section_in_(state_machine) -> None:
@@ -464,7 +468,7 @@ def set_time_last_searched_for_active_section_in_(state_machine) -> None:
 def sort_(results: list) -> list:
     event = f'sorting results'
     try:  # TODO dynamic sort values
-        return sorted(results, key=lambda k: k[m_key.supply], reverse=True)
+        return sorted(results, key=lambda k: k[m_key.SUPPLY], reverse=True)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
@@ -639,7 +643,7 @@ def get_search_properties_from_(state_machine) -> tuple:
 
 
 def get_search_rank_for_(section: str) -> int:
-    return _scp_if_get_int_at_key_(section, s_key.rank)
+    return _scp_if_get_int_at_key_(section, s_key.RANK)
 
 
 def get_search_results_for_(state_machine) -> list:
@@ -719,7 +723,7 @@ def write_parsers_to_disk():
 
 
 def write_search_id_to_search_parser_at_(section, search_id) -> None:
-    _scp_if_set_str_for_(section, s_key.id, search_id)
+    _scp_if_set_str_for_(section, s_key.ID, search_id)
 
 
 ### ### ### ### ### ### ### ### ### ### ### ### wrp if ### ### ### ### ### ### ### ### ### ### ### ###
@@ -782,7 +786,7 @@ def _api_if_get_search_results_for_(state_machine) -> list:
     try:  # api surface abstraction level = 0
         if results is None:  # fyi this could cause permanent fatal errors depending on search id handling
             raise ValueError('unexpected empty results')
-        return results[m_key.results]
+        return results[m_key.RESULTS]
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
@@ -882,7 +886,7 @@ def _metadata_failed_parser(section=empty) -> RawConfigParser:
 
 
 def _mdp_if_create_section_for_(mp: RawConfigParser, hashed_result: dict) -> None:
-    hashed_result_guid = hashed_result[hash_metadata(m_key.guid)]  # FIXME p0, get this out of low lvl ifs
+    hashed_result_guid = hashed_result[hash_metadata(m_key.GUID)]  # FIXME p0, get this out of low lvl ifs
     event = f'creating metadata parser section'
     try:
         if mp.has_section(hashed_result_guid):
@@ -980,7 +984,7 @@ def _search_parser(section=empty):
 def _scp_if_get_add_mode_for_(section: str) -> bool:
     event = f'getting add mode for \'{section}\''
     try:  # parser surface abstraction depth = 0
-        return _scp_if_get_bool_from_(section, s_key.add_paused)
+        return _scp_if_get_bool_from_(section, s_key.ADD_PAUSED)
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
@@ -1045,7 +1049,7 @@ def _scp_if_get_parser_as_sortable() -> dict:
 
 def _scp_if_get_search_id_for_(section: str) -> str:
     try:
-        search_id = _scp_if_get_str_at_key_(section, s_key.id)
+        search_id = _scp_if_get_str_at_key_(section, s_key.ID)
         return search_id
     except Exception as e_err:
         ml.log(e_err.args[0])
@@ -1053,11 +1057,11 @@ def _scp_if_get_search_id_for_(section: str) -> str:
 
 def _scp_if_get_search_state_for_(section) -> tuple:
     try:  # parser surface abstraction depth = 2
-        _scp_if_set_str_for_(section, s_key.time_last_read, str(dt.now()))  # fixme move to function
-        search_queued = _scp_if_get_bool_from_(section, s_key.queued)
-        search_running = _scp_if_get_bool_from_(section, s_key.running)
-        search_stopped = _scp_if_get_bool_from_(section, s_key.stopped)
-        search_concluded = _scp_if_get_bool_from_(section, s_key.concluded)
+        _scp_if_set_str_for_(section, s_key.TIME_LAST_READ, str(dt.now()))  # fixme move to function
+        search_queued = _scp_if_get_bool_from_(section, s_key.QUEUED)
+        search_running = _scp_if_get_bool_from_(section, s_key.RUNNING)
+        search_stopped = _scp_if_get_bool_from_(section, s_key.STOPPED)
+        search_concluded = _scp_if_get_bool_from_(section, s_key.CONCLUDED)
         return search_queued, search_running, search_stopped, search_concluded
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
@@ -1065,7 +1069,7 @@ def _scp_if_get_search_state_for_(section) -> tuple:
 
 def _scp_if_get_search_term_for_(section: str) -> str:
     try:
-        search_term = _scp_if_get_str_at_key_(section, s_key.term)
+        search_term = _scp_if_get_str_at_key_(section, s_key.TERM)
         return search_term if value_provided_for_(search_term) else section
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
@@ -1073,7 +1077,7 @@ def _scp_if_get_search_term_for_(section: str) -> str:
 
 def _scp_if_increment_result_added_count_for_(section: str) -> None:
     event = f'incrementing result added count for \'{section}\''
-    key = s_key.results_added_count
+    key = s_key.RESULTS_ADDED_COUNT
     try:  # parser surface abstraction depth = 1
         _search_parser(section)[key] = str(get_int_from_search_parser_at_(section, key) + 1)
     except Exception as e_err:
@@ -1083,9 +1087,9 @@ def _scp_if_increment_result_added_count_for_(section: str) -> None:
 
 def _scp_if_increment_search_attempt_count_for_(section: str) -> None:
     try:  # fixme bring into compliance with standard interface functions
-        search_attempt_count = _scp_if_get_int_at_key_(section, s_key.search_attempt_count)
+        search_attempt_count = _scp_if_get_int_at_key_(section, s_key.SEARCH_ATTEMPT_COUNT)
         ml.log(f'search try counter at \'{search_attempt_count}\', incrementing..')
-        _scp_if_set_int_for_(section, s_key.search_attempt_count, search_attempt_count + 1)
+        _scp_if_set_int_for_(section, s_key.SEARCH_ATTEMPT_COUNT, search_attempt_count + 1)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
 
@@ -1093,12 +1097,12 @@ def _scp_if_increment_search_attempt_count_for_(section: str) -> None:
 def _scp_if_reduce_search_expectations_for_(section: str) -> None:
     event = f'reducing search expectations for \'{section}\''
     try:
-        c_key, re_key = s_key.concluded, s_key.results_required_count
+        c_key, re_key = s_key.CONCLUDED, s_key.RESULTS_REQUIRED_COUNT
         ml.log(f'reducing search expectations for \'{section}\'')
         er_val = int(s_parser[section][re_key])
         if not er_val:
             ml.log(f'concluding search for \'{section}\'', level=ml.WARNING)
-            s_parser[section][c_key] = s_key.yes
+            s_parser[section][c_key] = s_key.YES
         er_val -= 1
         _cfg_if_set_parser_value_at_(section, re_key, er_val)  # fixme fix args
     except Exception as e_err:
@@ -1110,15 +1114,15 @@ def _scp_if_search_at_active_section_has_completed_in_(state_machine) -> bool:
     section = _stm_if_get_active_section_from_(state_machine)
     event = f'checking if search has yielded required results for \'{section}\''
     try:
-        search_attempt_count = _scp_if_get_int_at_key_(section, s_key.search_attempt_count)
-        search_attempt_count_max = _scp_if_get_int_at_key_(section, s_key.max_search_count)
-        results_added = _scp_if_get_int_at_key_(section, s_key.results_added_count)
-        results_required = _scp_if_get_int_at_key_(section, s_key.results_required_count)
+        search_attempt_count = _scp_if_get_int_at_key_(section, s_key.SEARCH_ATTEMPT_COUNT)
+        search_attempt_count_max = _scp_if_get_int_at_key_(section, s_key.MAX_SEARCH_COUNT)
+        results_added = _scp_if_get_int_at_key_(section, s_key.RESULTS_ADDED_COUNT)
+        results_required = _scp_if_get_int_at_key_(section, s_key.RESULTS_REQUIRED_COUNT)
         if results_added >= results_required:
-            _scp_if_set_end_reason_for_(section, s_key.required_result_count_found)  # enough results, concluded
+            _scp_if_set_end_reason_for_(section, s_key.REQUIRED_RESULT_COUNT_FOUND)  # enough results, concluded
             return True
         if search_attempt_count >= search_attempt_count_max:
-            _scp_if_set_end_reason_for_(section, s_key.timed_out)  # too many search attempts, conclude
+            _scp_if_set_end_reason_for_(section, s_key.TIMED_OUT)  # too many search attempts, conclude
             return True
         return False
     except Exception as e_err:
@@ -1128,8 +1132,8 @@ def _scp_if_search_at_active_section_has_completed_in_(state_machine) -> bool:
 
 def _scp_if_set_bool_for_(section: str, key: str, boolean: bool):
     try:  # parser surface abstraction depth = 1
-        _search_parser(section)[key] = s_key.yes if boolean else s_key.no
-        _search_parser(section)[s_key.time_last_written] = str(dt.now())  # don't do it
+        _search_parser(section)[key] = s_key.YES if boolean else s_key.NO
+        _search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())  # don't do it
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
 
@@ -1138,7 +1142,7 @@ def _scp_if_set_end_reason_for_(section, reason_key):
     event = f'setting end reason for \'{section}\' with reason \'{reason_key}\''
     try:  # parser surface abstraction depth = 2
         ml.log(f'search \'{section}\' can be concluded, \'{reason_key}\'')
-        _scp_if_set_str_for_(section, s_key.search_stopped_reason, reason_key)
+        _scp_if_set_str_for_(section, s_key.SEARCH_STOPPED_REASON, reason_key)
         if all_searches_concluded():
             exit_program()
     except Exception as e_err:
@@ -1150,7 +1154,7 @@ def _scp_if_set_int_for_(section: str, key: str, integer: int) -> None:
     event = f'setting int value for search parser at \'{key}\''
     try:  # parser surface abstraction depth = 1
         _search_parser(section)[key] = str(integer)
-        _search_parser(section)[s_key.time_last_written] = str(dt.now())  # don't do it
+        _search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())  # don't do it
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
@@ -1158,7 +1162,7 @@ def _scp_if_set_int_for_(section: str, key: str, integer: int) -> None:
 
 def _scp_if_set_search_id_for_(section: str, search_id: str) -> None:
     try:  # parser surface abstraction depth = 2
-        _scp_if_set_str_for_(section, s_key.id, search_id)
+        _scp_if_set_str_for_(section, s_key.ID, search_id)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
 
@@ -1166,13 +1170,13 @@ def _scp_if_set_search_id_for_(section: str, search_id: str) -> None:
 def _scp_if_set_search_ranks() -> None:
     # fixme top bug is the soft-lock this function could resolve
     try:  # parser surface abstraction depth = 2
-        sort_key = s_key.time_last_searched
+        sort_key = s_key.TIME_LAST_SEARCHED
         scp_as_dict = _scp_if_get_parser_as_sortable()
         scp_as_sorted_list_of_tuples = sorted(scp_as_dict.items(), key=lambda k: k[1][sort_key])
         number_of_sections = len(scp_as_sorted_list_of_tuples)
         for ranked_search_index in range(number_of_sections):
             section = scp_as_sorted_list_of_tuples[ranked_search_index][0]
-            _scp_if_set_str_for_(section, s_key.rank, str(ranked_search_index))
+            _scp_if_set_str_for_(section, s_key.RANK, str(ranked_search_index))
             ml.log(f'search rank \'{ranked_search_index}\' assigned to \'{section}\'')
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
@@ -1181,10 +1185,10 @@ def _scp_if_set_search_ranks() -> None:
 def _scp_if_set_search_states_for_(section, search_states) -> None:
     try:
         queued, running, stopped, concluded = search_states
-        _scp_if_set_bool_for_(section, s_key.queued, queued)
-        _scp_if_set_bool_for_(section, s_key.running, running)
-        _scp_if_set_bool_for_(section, s_key.stopped, stopped)
-        _scp_if_set_bool_for_(section, s_key.concluded, concluded)
+        _scp_if_set_bool_for_(section, s_key.QUEUED, queued)
+        _scp_if_set_bool_for_(section, s_key.RUNNING, running)
+        _scp_if_set_bool_for_(section, s_key.STOPPED, stopped)
+        _scp_if_set_bool_for_(section, s_key.CONCLUDED, concluded)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
 
@@ -1193,7 +1197,7 @@ def _scp_if_set_str_for_(section: str, key: str, string: str):
     event = f'setting str value for search parser at \'{key}\''
     try:  # parser surface abstraction depth = 0
         _search_parser(section)[key] = string
-        _search_parser(section)[s_key.time_last_written] = str(dt.now())  # don't do it
+        _search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())  # don't do it
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
@@ -1201,14 +1205,14 @@ def _scp_if_set_str_for_(section: str, key: str, string: str):
 
 def _scp_if_set_time_last_read_for_(section: str) -> None:
     try:  # parser surface abstraction depth = 2
-        _scp_if_set_str_for_(section, s_key.time_last_read, str(dt.now()))
+        _scp_if_set_str_for_(section, s_key.TIME_LAST_READ, str(dt.now()))
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
 
 
 def _scp_if_set_time_last_searched_for_(section: str) -> None:
     try:  # parser surface abstraction depth = 2
-        _scp_if_set_str_for_(section, s_key.time_last_searched, str(dt.now()))
+        _scp_if_set_str_for_(section, s_key.TIME_LAST_SEARCHED, str(dt.now()))
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
 
