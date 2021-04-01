@@ -195,10 +195,6 @@ def get_hashed_(attribute: str, detail: str) -> tuple:
     return hash_metadata(attribute), hash_metadata(detail)
 
 
-def get_queued_state_for_(section) -> bool:
-    return get_search_state_for_(section)[0]  # FIXME p3, not used
-
-
 def get_keywords_to_add_from_(section: str) -> list:
     kw_to_add_csv = get_str_from_search_parser_at_(section, s_key.KEYWORDS_ADD)
     event = f'building keywords to add from \'{section}\' into iterable'
@@ -217,6 +213,10 @@ def get_keywords_to_skip_from_(section: str) -> list:
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
+
+
+def get_queued_state_for_(section) -> bool:
+    return get_search_state_for_(section)[0]  # FIXME p3, not used
 
 
 def get_running_state_for_(section) -> bool:
