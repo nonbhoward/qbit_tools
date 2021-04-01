@@ -498,7 +498,7 @@ def get_search_state_for_(section) -> tuple:
     event = f'getting search state for \'{section}\''
     try:
         # TODO print_search_state_for_(section) here
-        return _scp_if_get_search_states_for_(section)
+        return _scp_if_get_search_state_for_(section)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
@@ -555,10 +555,40 @@ def hash_metadata(x: str, undo=False) -> str:
         ml.log(f'error {event}')
 
 
-def increment_search_state_at_active_section_for_(state_machine):
-    event = f'incrementing search state for \'{state_machine.active_section}\''
+def increment_search_attempt_count_for_(section: str) -> None:
+    event = f'incrementing search attempt count for \'{section}\''
     try:
-        _scp_if_increment_search_state_for_(state_machine)
+        _scp_if_increment_search_attempt_count_for_(section)
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+
+
+def increment_search_state_at_active_section_for_(state_machine):
+    section = get_active_section_from_(state_machine)
+    event = f'incrementing search state for \'{section}\''
+    try:
+        try:  # FIXME p1, worked out bugs, comment left as reminder, delete me soon
+            search_state = get_search_state_for_active_section_in_(state_machine)
+            queued, running, stopped, concluded = search_state
+            if queued:
+                queued, running = False, True
+                ml.log(f'{event} from queued to running, please wait for search to complete')
+            elif running:
+                running, stopped = False, True
+                ml.log(f'{event} from running to stopped, will be processed on next loop')
+                increment_search_attempt_count_for_(section)
+            elif stopped:
+                stopped = False
+                concluded = True if search_is_concluded_in_(state_machine) else False
+                queued = True if not concluded else False
+            elif concluded:
+                ml.log(f'search for \'{section}\' concluded, cannot increment')
+            search_states = queued, running, stopped, concluded
+            set_search_states_for_(section, search_states)
+        except Exception as e_err:
+            ml.log(e_err.args[0], level=ml.ERROR)
+            ml.log('error ' + event)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
@@ -1357,7 +1387,7 @@ def _scp_if_get_search_id_for_(section: str) -> str:
         ml.log(e_err.args[0])
 
 
-def _scp_if_get_search_states_for_(section) -> tuple:
+def _scp_if_get_search_state_for_(section) -> tuple:
     try:  # parser surface abstraction depth = 2
         _scp_if_set_str_for_(section, s_key.TIME_LAST_READ, str(dt.now()))  # FIXME move to function
         search_queued = _scp_if_get_bool_from_(section, s_key.QUEUED)
@@ -1388,51 +1418,21 @@ def _scp_if_increment_result_added_count_for_(section: str) -> None:
 
 
 def _scp_if_increment_search_attempt_count_for_(section: str) -> None:
-    event = f'incrementing search attempt count for \'{section}\''
     try:  # FIXME bring into compliance with standard interface functions
-        search_attempt_count = get_int_from_search_parser_at_(section, s_key.SEARCH_ATTEMPT_COUNT)
+        search_attempt_count = _scp_if_get_int_at_key_(section, s_key.SEARCH_ATTEMPT_COUNT)
         ml.log(f'search try counter at \'{search_attempt_count}\', incrementing..')
         _scp_if_set_int_for_(section, s_key.SEARCH_ATTEMPT_COUNT, search_attempt_count + 1)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
-
-
-def _scp_if_increment_search_state_for_(state_machine):
-    section = get_active_section_from_(state_machine)
-    event = f'incrementing search state for \'{section}\''
-    try:  # FIXME p0, working out bugs.. stripped down for now
-        search_state = _scp_if_get_search_states_for_(section)
-        queued, running, stopped, concluded = search_state
-        if queued:
-            queued, running = False, True
-            ml.log(event + f' from queued to running')
-        elif running:
-            # FIXME p1, this could increment multiple times if the main_loop is too fast?
-            running, stopped = False, True
-            ml.log(event + f' from running to stopped, will be processed on next loop')
-            _scp_if_increment_search_attempt_count_for_(section)
-        elif stopped:
-            stopped = False
-            concluded = True if search_is_concluded_in_(state_machine) else False
-            queued = True if not concluded else False
-        elif concluded:
-            ml.log(f'search for \'{section}\' concluded, cannot increment')
-        search_states = queued, running, stopped, concluded
-        _scp_if_set_search_states_for_(section, search_states)
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log('error ' + event)
 
 
 def _scp_if_ready_to_start_at_(section) -> bool:
     try:  # FIXME label arg QbitStateMachine without recursive import?
-        # FIXME p0, this allows searches to start if they are already running!
-        search_rank = get_int_from_search_parser_at_(section, s_key.RANK)  # TODO delete me
+        # FIXME p1, this allows searches to start if they are already running! does it? fixed?
         search_rank = _scp_if_get_int_at_key_(section, s_key.RANK)
         search_rank_required_to_start = _ucp_if_get_int_for_key_(u_key.RANK_REQUIRED)
         search_rank_allowed = search_rank <= search_rank_required_to_start
-        queued = _scp_if_get_search_states_for_(section)[0]
+        queued = _scp_if_get_search_state_for_(section)[0]
         if queued and search_rank_allowed:
             return True
         return False
