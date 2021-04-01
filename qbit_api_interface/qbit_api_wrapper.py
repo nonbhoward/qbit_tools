@@ -13,6 +13,7 @@ class QbitApiCaller:
         event = f'initializing \'{self.__class__.__name__}\''
         try:
             ml.log(event, announcement=True, event_completed=False)
+            self.concurrent_searches_allowed = 5
             self.qbit_client = qbittorrentapi.Client('', None, None, None)
             self.qbit_client_connected = True if self.client_is_connected() else False
             if self.qbit_client_connected:
@@ -165,7 +166,7 @@ class QbitApiCaller:
     @classmethod
     def pause_for_(cls, delay):
         event = f'pausing for seconds : \'{delay}\''
-        try:
+        try:  # FIXME p3, it makes no sense that this is in the qbit api, legacy junk
             sleep(delay)
         except Exception as e_err:
             ml.log(e_err.args[0], level=ml.ERROR)
