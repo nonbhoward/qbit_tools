@@ -155,8 +155,8 @@ class QbitConfig:
             ml.log(e_err.args[0], level=ml.ERROR)
 
     @staticmethod
-    def write_config_to_disk():
-        ml.log('writing parser configurations to disk')
+    def write_config_state_to_disk():
+        event = f'writing parser configurations to disk'
         try:
             parsers_dict = parsers.parsers_keyed_by_file_path
             for parser_path, parser in parsers_dict.items():
@@ -166,6 +166,7 @@ class QbitConfig:
                     ml.log(f'successfully written parser to disk at \'{parser_path}\'')
         except Exception as e_err:
             ml.log(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error {event}')
 
     @staticmethod
     def write_parser_section_with_key_(parser_key, value='', section='DEFAULT',
