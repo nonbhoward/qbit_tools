@@ -47,14 +47,19 @@ class QbitApiCaller:
             ml.log(f'error {event}')
 
     def create_search_job(self, pattern, plugins, category) -> tuple:
+        event = f'creating search job for pattern \'{pattern}\''
         try:
             job = self.qbit_client.search.start(pattern, plugins, category)
-            assert job is not None, 'bad search job, fix it or handle it'
+            if job is None:
+                ex_event = f'fatal, search job for \'{pattern}\' is None'
+                ml.log(ex_event, level=ml.ERROR)
+                raise ValueError(ex_event)
             count, sid, status = QbitApiCaller.get_search_info_from_(job)
             ml.log(f'qbit client created search job for \'{pattern}\'')
             return count, sid, status
         except Exception as e_err:
             ml.log(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error {event}')
 
     def dump_surface_client(self):
         event = f'dumping surface client details'
@@ -88,7 +93,7 @@ class QbitApiCaller:
         except Exception as e_err:
             ml.log(e_err.args[0], level=ml.ERROR)
 
-    def get_local_results_count(self) -> int:
+    def get_count_of_local_results(self) -> int:
         try:  # TODO move log statements to core interface?
             local_result_count = 0
             if self.qbit_client.torrents.info().data:
@@ -120,6 +125,27 @@ class QbitApiCaller:
             ml.log(e_err.args[0], level=ml.ERROR)
             ml.log(f'error {event}')
 
+    def get_search_properties_for_(self, search_id) -> tuple:
+        event = f'getting search status for \'{search_id}\''
+        search_count, search_status = 0, ''
+        try:  # TODO i'd like to clean this up
+            search_statuses_list = self.qbit_client.search_status(search_id=search_id)
+            assert isinstance(search_statuses_list, SearchStatusesList), TypeError('bad type for api search status')
+            search_statuses_list_data = search_statuses_list.data
+            for search_status_list_data in search_statuses_list_data:
+                if search_id == str(search_status_list_data.id):
+                    search_count = str(search_status_list_data.total)
+                    search_id = str(search_status_list_data.id)
+                    search_status = search_status_list_data.status
+                    break
+            search_properties = search_count, search_id, search_status
+            if search_properties is None:
+                raise Exception(f'bad search properties for search id \'{search_id}\'')
+            return search_properties
+        except Exception as e_err:
+            ml.log(e_err.args[0], level=ml.ERROR)
+            ml.log(f'error {event}')
+
     def get_search_results(self, search_id, filename_regex,
                            metadata_filename_key, use_filename_regex_filter=False) -> list:
         event = f'getting search results for \'{search_id}\''
@@ -138,27 +164,6 @@ class QbitApiCaller:
                 assert filtered_results is not None, 'bad filtered results, fix it or handle it'
                 results = filtered_results
             return results
-        except Exception as e_err:
-            ml.log(e_err.args[0], level=ml.ERROR)
-            ml.log(f'error {event}')
-
-    def get_search_properties_for_(self, search_id) -> tuple:
-        event = f'getting search status for \'{search_id}\''
-        search_count, search_status = 0, ''
-        try:  # TODO i'd like to clean this up
-            search_statuses_list = self.qbit_client.search_status(search_id=search_id)
-            assert isinstance(search_statuses_list, SearchStatusesList), TypeError('bad type for api search status')
-            search_statuses_list_data = search_statuses_list.data
-            for search_status_list_data in search_statuses_list_data:
-                if search_id == str(search_status_list_data.id):
-                    search_count = str(search_status_list_data.total)
-                    search_id = str(search_status_list_data.id)
-                    search_status = search_status_list_data.status
-                    break
-            search_properties = search_count, search_id, search_status
-            if search_properties is None:
-                raise Exception(f'bad search properties for search id \'{search_id}\'')
-            return search_properties
         except Exception as e_err:
             ml.log(e_err.args[0], level=ml.ERROR)
             ml.log(f'error {event}')
