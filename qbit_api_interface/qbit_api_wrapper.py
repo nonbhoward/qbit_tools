@@ -130,7 +130,10 @@ class QbitApiCaller:
         search_count, search_status = 0, ''
         try:  # TODO i'd like to clean this up
             search_statuses_list = self.qbit_client.search_status(search_id=search_id)
-            assert isinstance(search_statuses_list, SearchStatusesList), TypeError('bad type for api search status')
+            if not isinstance(search_statuses_list, SearchStatusesList):
+                ex_event = f'bad type for api search status for \'{search_id}\''
+                ml.log(ex_event)
+                raise ValueError(ex_event)
             search_statuses_list_data = search_statuses_list.data
             for search_status_list_data in search_statuses_list_data:
                 if search_id == str(search_status_list_data.id):
@@ -140,7 +143,9 @@ class QbitApiCaller:
                     break
             search_properties = search_count, search_id, search_status
             if search_properties is None:
-                raise Exception(f'bad search properties for search id \'{search_id}\'')
+                ex_event = f'bad search properties for search id \'{search_id}\''
+                ml.log(ex_event)
+                raise ValueError(ex_event)
             return search_properties
         except Exception as e_err:
             ml.log(e_err.args[0], level=ml.ERROR)
