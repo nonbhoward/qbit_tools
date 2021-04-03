@@ -99,20 +99,6 @@ class QbitConfig:
         except Exception as e_err:
             print(e_err.args[0])
 
-    @staticmethod
-    def get_search_parser_as_sortable() -> dict:
-        try:
-            parser = parsers.search_parser
-            assert parser is not None, ml.log('no parser chosen!')
-            parser_dict = dict()
-            for section in parser.sections():
-                parser_dict[section] = dict()
-                for section_key in parser[section]:
-                    parser_dict[section][section_key] = parser[section][section_key]
-            return parser_dict
-        except Exception as e_err:
-            ml.log(e_err.args[0], level=ml.ERROR)
-
     def is_search_key_provided_for_(self, section, regex=False, seed=False, size=False) -> bool:
         try:
             sp = self.get_parser_for_(search=True)[section]
