@@ -53,13 +53,14 @@ def get_tuple_of_hashed_values_for_(attribute: str, detail: str) -> tuple:
     return hash_metadata(attribute), hash_metadata(detail)
 
 
-def hash_metadata(x: str, undo=False) -> str:
+def hash_metadata(x: str, undo=False, verbose=False) -> str:
     offset = get_int_from_user_preference_for_(u_key.UNI_SHIFT)
     event = f'hashing metadata with offset \'{offset}\' for \'{x}\''
     try:
         _undo = -1 if undo else 1
         _hash = ''.join([chr(ord(e) + int(offset)) * _undo for e in str(x) if x])
-        ml.log(f'hashing..\n\t\'{x}\'\n\t\'{_hash}\'')
+        if verbose:
+            ml.log(f'hashing..\n\t\'{x}\'\n\t\'{_hash}\'')
         return _hash
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
@@ -103,9 +104,10 @@ def none_value_(value) -> bool:
         ml.log(f'error {event}')
 
 
-def pause_on_event(pause_type: str) -> None:
+def pause_on_event(pause_type: str, quiet=False) -> None:
     delay = get_int_from_user_preference_for_(pause_type)
-    ml.log(f'waiting \'{delay}\' seconds due to user config key \'{str(pause_type)}\'')
+    if not quiet:
+        ml.log(f'waiting \'{delay}\' seconds due to user config key \'{str(pause_type)}\'')
     q_api.pause_for_(delay)  # FIXME p3, refactor this, it is silly
 
 
@@ -187,7 +189,7 @@ def add_successful_for_(result: dict, section: str) -> bool:
     ml.log(f'local machine has {count_before_add_attempt} stored results before add attempt..')
     url = get_result_metadata_at_key_(result, m_key.URL)
     add_result_from_(url, get_add_mode_for_(section))
-    pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
+    pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD, quiet=True)
     results_added_count = get_local_results_count() - count_before_add_attempt
     successfully_added = True if results_added_count else False
     if successfully_added:
@@ -222,7 +224,7 @@ def enough_results_found_in_(results_filtered: list, section: str) -> bool:
         assert results_filtered is not None, ml.log(f'filtered results should not be None', ml.ERROR)
         if results_found_count < get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT):
             ml.log(f'not enough results were found! \'{results_found_count}\' results '
-                   f'found, consider adjusting search parameters', level=ml.WARNING)
+                   f'found, consider adjusting search and filter parameters', level=ml.WARNING)
             return False
         ml.log(f'search yielded adequate results, \'{results_found_count}\' results found')
         return True
@@ -231,19 +233,20 @@ def enough_results_found_in_(results_filtered: list, section: str) -> bool:
         ml.log(f'error {event}')
 
 
-def previously_found_(result: dict, verbose_log=True) -> bool:
+def previously_found_(result: dict, verbose=False) -> bool:
     result_name = build_metadata_guid_from_(result)
+    results_added_or_failed = [*ma_parser.sections(), *mf_parser.sections()]
     event = f'checking if previously found result \'{result}\''
     try:
-        added_or_failed = [*ma_parser.sections(), *mf_parser.sections()]
-        if result_name in added_or_failed:
-            if verbose_log:  # FIXME p4, pull this out to some surface object init
+        if result_name in results_added_or_failed:
+            if verbose:  # FIXME p4, pull this out to some surface object init
                 ml.log(f'old result found, skipping \'{result_name}\'', level=ml.WARNING)
             return True
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
-    ml.log(f'new result found \'{result_name}\'')
+    if verbose:
+        ml.log(f'new result found \'{result_name}\'')
     return False
 
 
@@ -396,7 +399,7 @@ def conclude_search_for_active_section_in_(state_machine) -> None:
     set_bool_for_(get_active_section_from_(state_machine), s_key.CONCLUDED, True)
 
 
-def filter_results_in_(state_machine, found=True, sort=True) -> list:
+def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> list:
     results_filtered_and_sorted = list()
     section = get_active_section_from_(state_machine)
     seeds_min = get_int_from_search_parser_at_(section, s_key.MIN_SEED)
@@ -415,9 +418,10 @@ def filter_results_in_(state_machine, found=True, sort=True) -> list:
             result_seeds = int(get_result_metadata_at_key_(result_unfiltered, m_key.SUPPLY))  # FIXME p2, fetch int natively
             enough_seeds = True if result_seeds > seeds_min else False
             if not enough_seeds:
-                ml.log(f'required seeds \'{seeds_min}\' not met by result with '
-                       f'\'{result_seeds}\' seeds, result : \'{result_name}\'',
-                       level=ml.WARNING)
+                if verbose:
+                    ml.log(f'required seeds \'{seeds_min}\' not met by result with '
+                           f'\'{result_seeds}\' seeds, result : \'{result_name}\'',
+                           level=ml.WARNING)
                 write_new_metadata_section_from_(result_unfiltered)  # remember this result
                 continue  # filter this result
         if filter_provided_for_(megabytes_min) or filter_provided_for_(megabytes_max):
@@ -430,9 +434,10 @@ def filter_results_in_(state_machine, found=True, sort=True) -> list:
             else:
                 file_size_in_range = True if bytes_result > bytes_min else False
             if not file_size_in_range:
-                ml.log(f'size requirement \'{megabytes_min}\'mib to \'{megabytes_max}\'mib not met by '
-                       f'result with size \'{megabytes_result}\'mib, result: \'{result_name}\'',
-                       level=ml.WARNING)
+                if verbose:
+                    ml.log(f'size requirement \'{megabytes_min}\'mib to \'{megabytes_max}\'mib not met by '
+                           f'result with size \'{megabytes_result}\'mib, result: \'{result_name}\'',
+                           level=ml.WARNING)
                 write_new_metadata_section_from_(result_unfiltered)  # remember this result
                 continue  # filter this result
         if filter_provided_for_(keywords_to_add):
@@ -440,6 +445,9 @@ def filter_results_in_(state_machine, found=True, sort=True) -> list:
             ml.log(f'filtering results using add keywords \'{keywords_to_add}\'')
             filename = get_result_metadata_at_key_(result_unfiltered, m_key.NAME)
             if keyword_in_(filename, keywords_to_skip) or not keyword_in_(filename, keywords_to_add):
+                if verbose:
+                    ml.log(f'keyword requirements have not been met by '
+                           f'\'{result_name}\'', level=ml.WARNING)
                 write_new_metadata_section_from_(result_unfiltered)  # remember this result
                 continue  # filter this result
         ml.log(f'result \'{result_name}\' meets all requirements')
@@ -875,7 +883,7 @@ def _api_if_get_search_properties_for_(search_id: str) -> tuple:
 
 def _cfg_if_set_parser_value_at_(section: str, parser_key: str, value,
                                  mp=None, search=True, settings=False):
-    try:  # todo deprecate cfg interface methods
+    try:  # todo deprecate this func
         if mp:
             QConf.write_parser_section_with_key_(parser_key, value, section, mp)
         elif settings:
@@ -887,10 +895,12 @@ def _cfg_if_set_parser_value_at_(section: str, parser_key: str, value,
 
 
 def _cfg_if_write_parsers_to_disk():
-    try:  # todo deprecate cfg interface methods
-        QConf.write_config_to_disk()
+    event = f'writing parsers to disk'
+    try:
+        QConf.write_config_state_to_disk()
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
 
 
 ### ### ### ### ### ### ### ### ### ### ### ### cfg if ### ### ### ### ### ### ### ### ### ### ### ###
@@ -985,7 +995,6 @@ def _mdp_if_previously_found_(result: dict, verbose_log=True) -> bool:
             if verbose_log:
                 ml.log(f'old result found, skipping \'{result_name}\'', level=ml.WARNING)
             return True
-        ml.log(f'new result found \'{result_name}\'')
         return False
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
