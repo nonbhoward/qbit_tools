@@ -123,11 +123,11 @@ def print_search_ids_from_(active_search_ids: dict) -> None:
 def set_search_ranks() -> None:
     try:  # fixme top bug is the soft-lock this function could resolve
         scp_as_dict = get_search_parser_as_sortable()
-        scp_as_sorted_list_of_tuples = sorted(scp_as_dict.items(), key=lambda k: k[1][s_key.time_last_searched])
+        scp_as_sorted_list_of_tuples = sorted(scp_as_dict.items(), key=lambda k: k[1][s_key.TIME_LAST_SEARCHED])
         number_of_sections = len(scp_as_sorted_list_of_tuples)
         for ranked_search_index in range(number_of_sections):
             section = scp_as_sorted_list_of_tuples[ranked_search_index][0]
-            _scp_if_set_str_for_(section, s_key.rank, str(ranked_search_index))
+            _scp_if_set_str_for_(section, s_key.RANK, str(ranked_search_index))
             ml.log(f'search rank \'{ranked_search_index}\' assigned to \'{section}\'')
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
@@ -1403,8 +1403,8 @@ def _stm_if_search_is_stored_in_(state_machine) -> bool:
     # FIXME hierarchy status < search_id < section < state_machine could be reduced
     try:  # machine surface abstraction depth = 1
         search_count, search_id, search_status = _stm_if_get_search_properties_from_(state_machine)
-        active_search_ids = _stm_if_get_active_search_dict_from_(state_machine)
-        return True if search_id in active_search_ids else False
+        active_search_dict = _stm_if_get_active_search_dict_from_(state_machine)
+        return True if search_id in active_search_dict[state_machine.active_section]['id'] else False
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
 
@@ -1466,7 +1466,7 @@ def _user_configuration(section=empty):
         if section:
             if section != default:
                 ml.log(f'the section value \'{section}\' may be an issue', level=ml.WARNING)
-        ml.log(f'ignoring user section \'{section}\'.. setting to \'{default}\'')
+        # ml.log(f'ignoring user section \'{section}\'.. setting to \'{default}\'')  # FIXME p3, too spammy
         section = default  # FIXME p3, this is a dumb patch, fix it later
         return u_parser[section] if not empty_(section) else u_parser
     except Exception as e_err:
