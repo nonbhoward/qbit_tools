@@ -345,7 +345,7 @@ def ready_to_start_at_(section: str) -> bool:
         ml.log(f'error {event}')
 
 
-def set_search_states_for_(section: str, *search_states) -> None:
+def set_search_states_for_(section: str, search_states) -> None:
     _scp_if_set_search_states_for_(section, search_states)
     event = f'extracting search states from tuple'
     try:
@@ -931,16 +931,15 @@ def _metadata_failed_parser(section=empty) -> RawConfigParser:
 
 
 def _mdp_if_create_section_for_(mp: RawConfigParser, hashed_result: dict) -> None:
-    hashed_result_guid = hashed_result[hash_metadata(m_key.GUID)]  # FIXME p0, get this out of low lvl ifs
+    hashed_result_guid = hashed_result[hash_metadata(m_key.GUID)]  # FIXME p2, get this out of low lvl ifs
     event = f'creating metadata parser section'
     try:
         if mp.has_section(hashed_result_guid):
             ml.log(f'metadata parser already has section \'{hashed_result_guid}\'', level=ml.ERROR)
             return
         mp.add_section(hashed_result_guid)
-        ml.log(f'section \'{hashed_result_guid}\' added to metadata', announcement=True)
-        for h_attr, h_dtl in hashed_result.items():
-            _cfg_if_set_parser_value_at_(hashed_result_guid, h_attr, h_dtl, mp)
+        for hashed_attribute, hashed_detail in hashed_result.items():
+            _cfg_if_set_parser_value_at_(hashed_result_guid, hashed_attribute, hashed_detail, mp)
         return
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
