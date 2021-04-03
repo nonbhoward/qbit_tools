@@ -13,7 +13,7 @@ u_key = QConf.get_keyring_for_(settings=True)
 
 
 def main_loop():
-    ml.log('\n\nmain loop has started..', announcement=True)
+    ml.log('main loop has started..', announcement=True)
     qsm = start_application_and_return_state_machine()
     while True:
         ml.log(f'new loop starting at {datetime.now()}', announcement=True)
