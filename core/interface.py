@@ -424,18 +424,17 @@ def search_is_stopped_at_active_section_in_(state_machine) -> bool:
 
 
 def search_queue_is_full_in_(state_machine) -> bool:
-    active_search_ids = get_active_search_ids_from_(state_machine)
-    # FIXME p0, active_search_ids should be a dict as arg for func below
+    active_search_dict = get_active_search_dict_from_(state_machine)
     section = get_active_section_from_(state_machine)
     event = f'checking if search queue full'
     try:
-        active_searches_running = len(active_search_ids)
+        active_searches_running = len(active_search_dict)
         if active_searches_running < q_api.concurrent_searches_allowed:
             ml.log(f'search queue is not full, '
                    f'\'{q_api.concurrent_searches_allowed - active_searches_running}\' '
                    f'spaces available')
             if active_searches_running:
-                print_search_ids_from_(active_search_ids)
+                print_search_ids_from_(active_search_dict)
             return False
         ml.log(f'search queue is full, cannot add \'{section}\'', level=ml.WARNING)
         return True
@@ -449,15 +448,28 @@ def search_started_for_(state_machine) -> bool:
                    get_active_sections_from_(state_machine) else False
 
 
+def set_search_ranks() -> None:
+    try:  # fixme top bug is the soft-lock this function could resolve
+        scp_as_dict = get_search_parser_as_sortable()
+        scp_as_sorted_list_of_tuples = sorted(scp_as_dict.items(), key=lambda k: k[1][s_key.TIME_LAST_SEARCHED])
+        number_of_sections = len(scp_as_sorted_list_of_tuples)
+        for ranked_search_index in range(number_of_sections):
+            section = scp_as_sorted_list_of_tuples[ranked_search_index][0]
+            _scp_if_set_str_for_(section, s_key.RANK, str(ranked_search_index))
+            ml.log(f'search rank \'{ranked_search_index}\' assigned to \'{section}\'')
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+
+
 def set_search_states_for_(section, *search_states) -> None:
-    _scp_if_set_search_states_for_(section, *search_states)
+    _scp_if_set_search_states_for_(section, search_states)
     event = f'extracting search states from tuple'
     try:
         ml.log(f'search state for \'{section}\': '
-                     f'\n\tqueued: {search_states[0]}'
-                     f'\n\trunning: {search_states[1]}'
-                     f'\n\tstopped: {search_states[2]}'
-                     f'\n\tconcluded: {search_states[3]}', announcement=True)
+               f'\n\tqueued: {search_states[0]}'
+               f'\n\trunning: {search_states[1]}'
+               f'\n\tstopped: {search_states[2]}'
+               f'\n\tconcluded: {search_states[3]}', announcement=True)
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
@@ -568,8 +580,8 @@ def create_search_job_for_(pattern: str, plugins: str, category: str):
     return _api_if_create_search_job_for_(pattern, plugins, category)
 
 
-def get_active_search_ids_from_(state_machine) -> list:
-    return _stm_if_get_active_search_ids_from_(state_machine)
+def get_active_search_dict_from_(state_machine) -> dict:
+    return _stm_if_get_active_search_dict_from_(state_machine)
 
 
 def get_active_section_from_(state_machine) -> str:
@@ -632,12 +644,32 @@ def get_int_from_user_preference_for_(key):
     return _ucp_if_get_int_for_key_(key)
 
 
+def get_search_parser() -> RawConfigParser:
+    return _search_parser()
+
+
 def get_str_from_search_parser_at_(section, key) -> str:
     return _scp_if_get_str_at_key_(section, key)
 
 
 def get_search_id_from_active_section_in_(state_machine) -> str:
     return _stm_if_get_search_id_from_active_section_in_(state_machine)
+
+
+def get_search_parser_as_sortable() -> dict:
+    event = f'getting search parser as sortable'
+    try:
+        search_parser = get_search_parser()
+        parser_as_sortable = dict()
+        for search_parser_section in search_parser.sections():
+            parser_as_sortable[search_parser_section] = dict()
+            for section_key in search_parser[search_parser_section]:
+                parser_as_sortable[search_parser_section][section_key] = \
+                    search_parser[search_parser_section][section_key]
+        return parser_as_sortable
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
 
 
 def get_search_properties_from_(state_machine) -> tuple:
@@ -702,10 +734,6 @@ def set_active_section_to_(section: str, state_machine) -> None:
 
 def set_bool_for_(section: str, key: str, boolean: bool):
     _scp_if_set_bool_for_(section, key, boolean)
-
-
-def set_search_ranks() -> None:
-    _scp_if_set_search_ranks()  # todo save this to the state machine instance
 
 
 def set_time_last_read_for_(section: str) -> None:
@@ -1040,15 +1068,6 @@ def _scp_if_get_str_at_key_(section: str, key: str) -> str:
         ml.log(f'error {event}')
 
 
-def _scp_if_get_parser_as_sortable() -> dict:
-    event = f'getting search parser as sortable'
-    try:  # fixme remove/replace this function
-        return QConf.get_search_parser_as_sortable()
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
-
-
 def _scp_if_get_search_id_for_(section: str) -> str:
     try:
         search_id = _scp_if_get_str_at_key_(section, s_key.ID)
@@ -1169,21 +1188,6 @@ def _scp_if_set_search_id_for_(section: str, search_id: str) -> None:
         ml.log(e_err.args[0], level=ml.ERROR)
 
 
-def _scp_if_set_search_ranks() -> None:
-    # fixme top bug is the soft-lock this function could resolve
-    try:  # parser surface abstraction depth = 2
-        sort_key = s_key.TIME_LAST_SEARCHED
-        scp_as_dict = _scp_if_get_parser_as_sortable()
-        scp_as_sorted_list_of_tuples = sorted(scp_as_dict.items(), key=lambda k: k[1][sort_key])
-        number_of_sections = len(scp_as_sorted_list_of_tuples)
-        for ranked_search_index in range(number_of_sections):
-            section = scp_as_sorted_list_of_tuples[ranked_search_index][0]
-            _scp_if_set_str_for_(section, s_key.RANK, str(ranked_search_index))
-            ml.log(f'search rank \'{ranked_search_index}\' assigned to \'{section}\'')
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-
-
 def _scp_if_set_search_states_for_(section, search_states) -> None:
     try:
         queued, running, stopped, concluded = search_states
@@ -1245,15 +1249,10 @@ def _stm_if_add_search_properties_to_(state_machine, search_properties: tuple) -
         ml.log(f'error {event}')
 
 
-def _stm_if_get_active_search_ids_from_(state_machine) -> list:
-    event = f'getting active search id values from state machine'
+def _stm_if_get_active_search_dict_from_(state_machine) -> dict:
+    event = f'getting active search dict from state machine'
     try:  # machine surface abstraction depth = 1
-        # ALTERNATIVE return state_machine.active_sections
-        active_search_ids = list()
-        for section in state_machine.active_sections:
-            section_id = _stm_if_get_search_id_from_(state_machine, section)
-            active_search_ids.append(section_id)
-        return active_search_ids
+        return state_machine.active_sections
     except Exception as e_err:
         ml.log(f'error {event}')
         ml.log(e_err.args[0])
@@ -1385,7 +1384,7 @@ def _stm_if_search_is_stored_in_(state_machine) -> bool:
     # FIXME hierarchy status < search_id < section < state_machine could be reduced
     try:  # machine surface abstraction depth = 1
         search_count, search_id, search_status = _stm_if_get_search_properties_from_(state_machine)
-        active_search_ids = _stm_if_get_active_search_ids_from_(state_machine)
+        active_search_ids = _stm_if_get_active_search_dict_from_(state_machine)
         return True if search_id in active_search_ids else False
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
