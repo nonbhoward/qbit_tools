@@ -404,7 +404,7 @@ def conclude_search_for_active_section_in_(state_machine) -> None:
 def delete_section_from_active_searches_in_(state_machine) -> None:
     event = f'deleting active section \'{state_machine.active_section}\' from state machine'
     try:
-        del state_machine.active_section
+        del state_machine.active_sections[state_machine.active_section]
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
@@ -505,8 +505,9 @@ def increment_search_state_at_active_section_for_(state_machine) -> None:
 
 
 def ready_to_start_at_active_section_in_(state_machine) -> bool:
-    return ready_to_start_at_(get_active_section_from_(state_machine)) \
-        if not search_queue_is_full_in_(state_machine) else False
+    ready_to_start = ready_to_start_at_(state_machine.active_section)
+    queue_full = search_queue_is_full_in_(state_machine)
+    return ready_to_start if not queue_full else False
 
 
 def reset_search_state_at_active_section_for_(state_machine) -> None:
@@ -527,6 +528,10 @@ def save_results_to_(state_machine, save_results_filtered=True) -> None:
     save_search_results_unfiltered_to_(state_machine)
     if save_results_filtered:
         save_search_results_filtered_to_(state_machine)
+
+
+def search_is_concluded_at_active_section_in_(state_machine) -> bool:
+    return get_bool_from_search_parser_at_(state_machine.active_section, s_key.CONCLUDED)
 
 
 def search_is_running_at_active_section_in_(state_machine) -> bool:
@@ -756,7 +761,7 @@ def search_is_stopped_in_(state_machine) -> bool:
 
 
 def search_is_stored_in_(state_machine) -> bool:
-    return _stm_if_search_is_stored_in_(state_machine)
+    return _stm_if_api_search_is_stored_in_(state_machine)
 
 
 def set_active_section_to_(section: str, state_machine) -> None:
@@ -775,8 +780,8 @@ def set_time_last_searched_for_(section: str) -> None:
     _scp_if_set_time_last_searched_for_(section)
 
 
-def update_search_properties_for_(state_machine) -> None:
-    _stm_if_update_search_properties_for_(state_machine)
+def update_search_properties_from_api_for_(state_machine) -> None:
+    _stm_if_update_search_properties_from_api_for_(state_machine)
 
 
 def write_parsers_to_disk() -> None:
@@ -787,13 +792,15 @@ def write_search_id_to_search_parser_at_(section: str, search_id: str) -> None:
     _scp_if_set_str_for_(section, s_key.ID, search_id)
 
 
-### ### ### ### ### ### ### ### ### ### ### ### WRP IF ### ### ### ### ### ### ### ### ### ### ### ###
-#                                       WRAPPER INTERFACE ABOVE                                      #
-### ### ### ### ### ### ### ### ### ### ### ### WRP IF ### ### ### ### ### ### ### ### ### ### ### ###
+### ### ### ### ### ### ### ### ### ### ### ## WRAPPERS ## ### ### ### ### ### ### ### ### ### ### ###
+# NEXT                                      WRAPPERS ABOVE                                           #
+### ### ### ### ### ### ### ### ### ### ### ## WRAPPERS ## ### ### ### ### ### ### ### ### ### ### ###
+
 
 ### ### ### ### ### ### ### ### ### ### ### ## EXTERNAL ## ### ### ### ### ### ### ### ### ### ### ###
 ### ### ### ### ### ### ### ### ### ### ### # INTERFACES # ### ### ### ### ### ### ### ### ### ### ###
 ### ### ### ### ### ### ### ### ### ### ### # START HERE # ### ### ### ### ### ### ### ### ### ### ###
+
 
 ### ### ### ### ### ### ### ### ### ### ### ### API IF ### ### ### ### ### ### ### ### ### ### ### ###
 # NEXT                                   API INTERFACE BELOW                                         #
@@ -801,44 +808,22 @@ def write_search_id_to_search_parser_at_(section: str, search_id: str) -> None:
 
 
 def _api_if_add_result_from_(url: str, is_paused: bool) -> None:
-    event = f'calling api to add result from url'
-    try:  # api surface abstraction level = 0
-        q_api.add_result_from_(url, is_paused)
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
+    q_api.add_result_from_(url, is_paused)
 
 
 def _api_if_create_search_job_for_(pattern: str, plugins: str, category: str) -> tuple:
-    event = f'calling api to create search job for pattern, plugins, and category'
-    try:  # api surface abstraction level = 0
-        count, sid, status = q_api.create_search_job(pattern, plugins, category)
-        ml.log(f'qbit client created search job for \'{pattern}\'')
-        return count, sid, status
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
+    return q_api.create_search_job(pattern, plugins, category)
 
 
 def _api_if_get_connection_time_start() -> dt:
-    event = f'calling api to get connection time start'
-    try:  # api surface abstraction level = 0
-        return q_api.get_connection_time_start()
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
+    return q_api.get_connection_time_start()
 
 
 def _api_if_get_local_results_count() -> int:
-    event = f'calling api to get local results count'
-    try:  # api surface abstraction level = 0
-        return q_api.get_count_of_local_results()
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
+    return q_api.get_count_of_local_results()
 
 
-def _api_if_get_search_properties_at_(section: str) -> tuple:
+def _api_if_get_search_properties_at_(section: str) -> tuple:  # FIXME multiple calls
     search_id = _scp_if_get_search_id_for_(section)
     if empty_(search_id):
         ml.log(f'search id empty at \'{section}\'', level=ml.WARNING)
@@ -847,25 +832,21 @@ def _api_if_get_search_properties_at_(section: str) -> tuple:
 
 
 def _api_if_get_search_results_for_(state_machine) -> list:
-    event = f'calling api to get search results for search id'
     search_id = get_search_id_from_active_section_in_(state_machine)
+    if empty_(search_id):
+        ex_event = f'search id for active section \'{state_machine.active_section}\' is empty string'
+        ml.log(ex_event, level=ml.WARNING)
+        raise ValueError(ex_event)
     results = q_api.get_result_object_at_(search_id)
-    try:  # api surface abstraction level = 0
-        if results is None:  # fyi this could cause permanent fatal errors depending on search id handling
-            raise ValueError('unexpected empty results')
-        return results[m_key.RESULTS]
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
+    if none_value_(results):
+        ex_event = f'result object from api is None'
+        ml.log(ex_event, level=ml.ERROR)
+        raise ValueError(ex_event)
+    return results[m_key.RESULTS]
 
 
 def _api_if_get_search_properties_for_(search_id: str) -> tuple:
-    event = f'calling api to get search properties for'
-    try:  # api surface abstraction depth = 0
-        return q_api.get_search_properties_for_(search_id=search_id)
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
+    return q_api.get_search_properties_for_(search_id=search_id)
 
 
 ### ### ### ### ### ### ### ### ### ### ### ### API IF ### ### ### ### ### ### ### ### ### ### ### ###
@@ -878,7 +859,7 @@ def _api_if_get_search_properties_for_(search_id: str) -> tuple:
 
 
 def _cfg_if_set_parser_value_at_(section: str, parser_key: str, value,
-                                 mp=None, search=True, settings=False):
+                                 mp=None, search=True, settings=False):  # FIXME multiple calls
     try:  # todo deprecate this func
         if mp:
             QConf.write_parser_section_with_key_(parser_key, value, section, mp)
@@ -891,12 +872,7 @@ def _cfg_if_set_parser_value_at_(section: str, parser_key: str, value,
 
 
 def _cfg_if_write_parsers_to_disk():
-    event = f'writing parsers to disk'
-    try:
-        QConf.write_config_state_to_disk()
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
+    QConf.write_config_state_to_disk()
 
 
 ### ### ### ### ### ### ### ### ### ### ### ### CFG IF ### ### ### ### ### ### ### ### ### ### ### ###
@@ -953,7 +929,7 @@ def _mdp_if_get_all_sections_from_metadata_parsers() -> tuple:
         ml.log(e_err.args[0])
 
 
-def _mdp_if_get_metadata_from_(parser: RawConfigParser) -> dict:
+def _mdp_if_get_metadata_from_(parser: RawConfigParser) -> dict:  # FIXME no calls
     event = f'getting metadata from parser'
     try:
         ml.log('fetching results from disk', event_completed=False)
@@ -978,7 +954,7 @@ def _mdp_if_get_result_metadata_at_key_(key: str, result: dict) -> str:  # QConf
         ml.log(f'error {event}')
 
 
-def _mdp_if_previously_found_(result: dict, verbose_log=True) -> bool:
+def _mdp_if_previously_found_(result: dict, verbose_log=True) -> bool:  # FIXME no calls
     event = f'checking if previously found result \'{result}\''
     try:
         result_name = build_metadata_guid_from_(result)
@@ -993,7 +969,7 @@ def _mdp_if_previously_found_(result: dict, verbose_log=True) -> bool:
         ml.log(f'error {event}')
 
 
-def _mdp_if_write_metadata_from_(result: dict, added=False) -> None:
+def _mdp_if_write_metadata_from_(result: dict, added=False) -> None:  # FIXME no calls
     try:
         pass
     except Exception as e_err:
@@ -1009,7 +985,7 @@ def _mdp_if_write_metadata_from_(result: dict, added=False) -> None:
 ### ### ### ### ### ### ### ### ### ### ### ### SCP IF ### ### ### ### ### ### ### ### ### ### ### ###
 
 
-def _search_parser(section=empty):
+def _search_parser(section=empty):  # FIXME excessive calls
     event = f'getting search parser for \'{section}\''
     try:  # parser surface abstraction depth = 0
         if not empty_(section):
@@ -1036,7 +1012,7 @@ def _scp_if_get_all_sections_from_search_parser() -> list:
         ml.log(e_err.args[0])
 
 
-def _scp_if_get_bool_from_(section: str, key: str) -> bool:
+def _scp_if_get_bool_from_(section: str, key: str) -> bool:  # FIXME multiple calls
     try:  # parser surface abstraction depth = 1
         return _search_parser(section).getboolean(key)
     except Exception as e_err:
@@ -1054,7 +1030,7 @@ def _scp_if_get_bool_at_key_(section: str, key: str) -> bool:
         ml.log(f'error {event}')
 
 
-def _scp_if_get_int_at_key_(section: str, key: str) -> int:
+def _scp_if_get_int_at_key_(section: str, key: str) -> int:  # FIXME multiple calls
     event = f'getting int value for search parser at \'{key}\''
     try:  # parser surface abstraction depth = 1
         integer_as_str = _scp_if_get_str_at_key_(section, key)
@@ -1067,7 +1043,7 @@ def _scp_if_get_int_at_key_(section: str, key: str) -> int:
         ml.log(f'error {event}')
 
 
-def _scp_if_get_str_at_key_(section: str, key: str) -> str:
+def _scp_if_get_str_at_key_(section: str, key: str) -> str:  # FIXME multiple calls
     event = f'getting str value for search parser at \'{key}\''
     try:  # parser surface abstraction depth = 1
         string = str(_search_parser(section)[key])
@@ -1160,7 +1136,7 @@ def _scp_if_search_at_active_section_has_completed_in_(state_machine) -> bool:
         ml.log(f'error {event}')
 
 
-def _scp_if_set_bool_for_(section: str, key: str, boolean: bool):
+def _scp_if_set_bool_for_(section: str, key: str, boolean: bool):  # FIXME multiple calls
     try:  # parser surface abstraction depth = 1
         _search_parser(section)[key] = s_key.YES if boolean else s_key.NO
         _search_parser(section)[s_key.TIME_LAST_WRITTEN] = str(dt.now())  # don't do it
@@ -1168,7 +1144,7 @@ def _scp_if_set_bool_for_(section: str, key: str, boolean: bool):
         ml.log(e_err.args[0], level=ml.ERROR)
 
 
-def _scp_if_set_end_reason_for_(section, reason_key):
+def _scp_if_set_end_reason_for_(section, reason_key):  # FIXME multiple calls
     event = f'setting end reason for \'{section}\' with reason \'{reason_key}\''
     try:  # parser surface abstraction depth = 2
         ml.log(f'search \'{section}\' can be concluded, \'{reason_key}\'')
@@ -1190,7 +1166,7 @@ def _scp_if_set_int_for_(section: str, key: str, integer: int) -> None:
         ml.log(f'error {event}')
 
 
-def _scp_if_set_search_id_for_(section: str, search_id: str) -> None:
+def _scp_if_set_search_id_for_(section: str, search_id: str) -> None:  # FIXME no calls
     try:  # parser surface abstraction depth = 2
         _scp_if_set_str_for_(section, s_key.ID, search_id)
     except Exception as e_err:
@@ -1208,7 +1184,7 @@ def _scp_if_set_search_states_for_(section, search_states) -> None:
         ml.log(e_err.args[0], level=ml.ERROR)
 
 
-def _scp_if_set_str_for_(section: str, key: str, string: str):
+def _scp_if_set_str_for_(section: str, key: str, string: str):  # FIXME multiple calls
     event = f'setting str value for search parser at \'{key}\''
     try:  # parser surface abstraction depth = 0
         _search_parser(section)[key] = string
@@ -1254,7 +1230,7 @@ def _stm_if_add_search_properties_to_(state_machine, search_properties: tuple) -
         ml.log(f'error {event}')
 
 
-def _stm_if_get_active_search_dict_from_(state_machine) -> dict:
+def _stm_if_get_active_search_dict_from_(state_machine) -> dict:  # FIXME multiple calls
     event = f'getting active search dict from state machine'
     try:  # machine surface abstraction depth = 1
         return state_machine.active_sections
@@ -1263,7 +1239,7 @@ def _stm_if_get_active_search_dict_from_(state_machine) -> dict:
         ml.log(e_err.args[0])
 
 
-def _stm_if_get_active_section_from_(state_machine) -> str:
+def _stm_if_get_active_section_from_(state_machine) -> str:  # FIXME multiple calls
     event = f'getting active section from state machine'
     try:  # machine surface abstraction depth = 0
         return state_machine.active_section
@@ -1281,7 +1257,7 @@ def _stm_if_get_active_sections_from_(state_machine) -> list:
         ml.log(e_err.args[0])
 
 
-def _stm_if_get_active_section_search_id_from_(state_machine) -> str:
+def _stm_if_get_active_section_search_id_from_(state_machine) -> str:  # FIXME no calls
     try:  # machine surface abstraction depth = 1
         section = _stm_if_get_active_section_from_(state_machine)
         return state_machine.active_sections[section]['id']
@@ -1302,7 +1278,7 @@ def _stm_if_get_results_filtered_from_(state_machine):
         ml.log(f'error {event}')
 
 
-def _stm_if_get_search_id_from_(state_machine, section) -> str:
+def _stm_if_get_search_id_from_(state_machine, section) -> str:  # FIXME multiple calls
     try:  # machine surface abstraction depth = 0
         return state_machine.active_sections[section]['id']
     except Exception as e_err:
@@ -1317,7 +1293,7 @@ def _stm_if_get_search_id_from_active_section_in_(state_machine) -> str:
         ml.log(e_err.args[0])
 
 
-def _stm_if_get_search_properties_from_(state_machine) -> tuple:
+def _stm_if_get_search_properties_from_(state_machine) -> tuple:  # FIXME multiple calls
     # todo just noting this object has two surfaces, could be useful
     try:  # machine surface abstraction depth = 0
         if 'count' in state_machine.active_section:
@@ -1361,18 +1337,19 @@ def _stm_if_save_filtered_search_results_to_(state_machine):
 def _stm_if_save_unfiltered_search_results_to_(state_machine):
     section = _stm_if_get_active_section_from_(state_machine)
     try:  # machine surface abstraction depth = 0
-        unfiltered_results = _api_if_get_search_results_for_(state_machine)
-        update_search_properties_for_(state_machine)
+        unfiltered_results = get_search_results_for_(state_machine)
+        update_search_properties_from_api_for_(state_machine)
         state_machine.active_sections[section]['unfiltered_results'] = unfiltered_results
     except Exception as e_err:
         ml.log(e_err.args[0])
 
 
-def _stm_if_search_is_stored_in_(state_machine) -> bool:
+def _stm_if_api_search_is_stored_in_(state_machine) -> bool:
+    section = state_machine.active_section
     try:  # machine surface abstraction depth = 1
-        search_count, search_id, search_status = _stm_if_get_search_properties_from_(state_machine)
+        search_count, search_id, search_status = _api_if_get_search_properties_at_(section)
         active_search_dict = _stm_if_get_active_search_dict_from_(state_machine)
-        return True if search_id in active_search_dict[state_machine.active_section]['id'] else False
+        return True if search_id in active_search_dict[section]['id'] else False
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
 
@@ -1384,13 +1361,14 @@ def _stm_if_set_active_section_to_(section: str, state_machine):
         ml.log(e_err.args[0])
 
 
-def _stm_if_update_search_properties_for_(state_machine):
+def _stm_if_update_search_properties_from_api_for_(state_machine) -> None:
     section = _stm_if_get_active_section_from_(state_machine)
     count, sid, status = _api_if_get_search_properties_at_(section)
     try:
-        state_machine.active_sections[section]['count'] = count
-        state_machine.active_sections[section]['id'] = sid
-        state_machine.active_sections[section]['status'] = status
+        if not none_value_(count):
+            state_machine.active_sections[section]['count'] = count
+            # state_machine.active_sections[section]['id'] = sid  # no need to update search id
+            state_machine.active_sections[section]['status'] = status
     except Exception as e_err:
         ml.log(e_err.args[0])
 
@@ -1404,7 +1382,7 @@ def _stm_if_update_search_properties_for_(state_machine):
 ### ### ### ### ### ### ### ### ### ### ### ### UCP IF ### ### ### ### ### ### ### ### ### ### ### ###
 
 
-def _user_configuration(section=empty):
+def _user_configuration(section=empty):  # FIXME multiple calls
     event = f'getting user config parser at \'{section}\'' if not empty_(section) else f'getting user config parser'
     try:
         if section:
@@ -1440,7 +1418,7 @@ def _ucp_if_get_int_for_key_(key: str) -> int:
         ml.log(f'error {event}')
 
 
-def _ucp_if_get_str_for_key_(key: str) -> str:
+def _ucp_if_get_str_for_key_(key: str) -> str:  # FIXME no calls
     event = f'getting str from user configuration parser with key \'{key}\''
     try:
         val = _user_configuration(default)[key]
