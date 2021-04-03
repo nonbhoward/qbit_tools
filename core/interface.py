@@ -19,11 +19,7 @@ unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
 def all_searches_concluded() -> bool:
     concluded_bools = [True if get_bool_from_(section, s_key.CONCLUDED) else False
                        for section in get_all_sections_from_search_parser()]
-    if concluded_bools and all(concluded_bools):
-        ml.log(f'all searches concluded', level=ml.WARNING)
-        return True
-    ml.log(f'all searches not concluded')
-    return False
+    return True if concluded_bools and all(concluded_bools) else False
 
 
 def check_for_empty_string_to_replace_with_no_data_in_(string: str) -> str:
