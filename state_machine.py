@@ -18,7 +18,7 @@ from core.interface import set_active_section_to_
 from core.interface import set_search_ranks
 from core.interface import start_search_with_
 from core.interface import u_key  # FIXME refactor this out, no keys belong in the state machine
-from core.interface import update_search_properties_for_
+from core.interface import update_search_properties_from_api_for_
 from core.interface import write_parsers_to_disk
 
 
@@ -62,14 +62,14 @@ class QbitStateManager:
             ml.log(f'error {event}')
 
     def manage_state_updates_at_active_section(self) -> None:
-        update_search_properties_for_(self)
+        update_search_properties_from_api_for_(self)
         event = f'managing state updates at active section : \'{self.active_section}\''
         try:
-            if ready_to_start_at_active_section_in_(self):
+            if ready_to_start_at_active_section_in_(self):  # parser check
                 start_search_with_(self)
-            elif search_is_running_at_active_section_in_(self):
+            elif search_is_running_at_active_section_in_(self):  # state machine check driven by api
                 pass  # if running, continue passing until stopped
-            elif search_is_stopped_at_active_section_in_(self):
+            elif search_is_stopped_at_active_section_in_(self):  # state machine check driven by api
                 if active_section_is_in_memory_of_(self):
                     ml.log(f'processing search results for {self.active_section}', announcement=True)
                     save_results_to_(self)
@@ -78,7 +78,7 @@ class QbitStateManager:
                         conclude_search_for_active_section_in_(self)
                         return  # don't reset the search
                 reset_search_state_at_active_section_for_(self)
-            elif search_is_concluded_at_active_section_in_(self):
+            elif search_is_concluded_at_active_section_in_(self):  # parser check
                 pass  # if concluded, pass forever
             else:
                 ml.log(f'header \'{self.active_section}\' is restricted from starting by search '
