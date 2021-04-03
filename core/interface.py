@@ -462,28 +462,24 @@ def get_search_term_for_active_section_in_(state_machine) -> str:
 def increment_search_state_at_active_section_for_(state_machine) -> None:
     section = get_active_section_from_(state_machine)
     event = f'incrementing search state for \'{section}\''
-    try:
-        try:  # fixme p1, worked out bugs, comment left as reminder, delete me soon
-            search_state = get_search_state_for_active_section_in_(state_machine)
-            queued, running, stopped, concluded = search_state
-            if queued:
-                queued, running = False, True
-                ml.log(f'{event} from queued to running, please wait for search to complete')
-            elif running:
-                running, stopped = False, True
-                ml.log(f'{event} from running to stopped, will be processed on next loop')
-                increment_search_attempt_count_for_(section)
-            elif stopped:
-                stopped = False
-                concluded = True if search_is_concluded_in_(state_machine) else False
-                queued = True if not concluded else False
-            elif concluded:
-                ml.log(f'search for \'{section}\' concluded, cannot increment')
-            search_states = queued, running, stopped, concluded
-            set_search_states_for_(section, search_states)
-        except Exception as e_err:
-            ml.log(e_err.args[0], level=ml.ERROR)
-            ml.log('error ' + event)
+    try:  # fixme p1, worked out bugs, comment left as reminder, delete me soon
+        search_state = get_search_state_for_active_section_in_(state_machine)
+        queued, running, stopped, concluded = search_state
+        if queued:
+            queued, running = False, True
+            ml.log(f'{event} from queued to running, please wait for search to complete')
+        elif running:
+            running, stopped = False, True
+            ml.log(f'{event} from running to stopped, will be processed on next loop')
+            increment_search_attempt_count_for_(section)
+        elif stopped:
+            stopped = False
+            concluded = True if search_is_concluded_in_(state_machine) else False
+            queued = True if not concluded else False
+        elif concluded:
+            ml.log(f'search for \'{section}\' concluded, cannot increment')
+        search_states = queued, running, stopped, concluded
+        set_search_states_for_(section, search_states)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
@@ -501,7 +497,7 @@ def reset_search_state_at_active_section_for_(state_machine) -> None:
     try:
         queued, running, stopped, concluded = True, False, False, False
         search_states = queued, running, stopped, concluded
-        set_search_states_for_(section, *search_states)
+        set_search_states_for_(section, search_states)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
