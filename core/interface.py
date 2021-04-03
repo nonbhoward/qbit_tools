@@ -45,12 +45,12 @@ def filter_provided_for_(parser_val) -> bool:
     return False if zero_or_neg_one_(parser_val) else True
 
 
-def get_hashed_(attribute: str, detail: str) -> tuple:
-    return hash_metadata(attribute), hash_metadata(detail)
-
-
 def get_search_rank_required_to_start() -> int:
     return get_int_from_user_preference_for_(u_key.RANK_REQUIRED)
+
+
+def get_tuple_of_hashed_values_for_(attribute: str, detail: str) -> tuple:
+    return hash_metadata(attribute), hash_metadata(detail)
 
 
 def hash_metadata(x: str, undo=False) -> str:
@@ -133,28 +133,28 @@ def set_search_ranks() -> None:
         ml.log(e_err.args[0], level=ml.ERROR)
 
 
-def validate_metadata_and_type_for_(metadata_attribute: str, metadata_detail: str) -> tuple:
+def validate_metadata_and_type_for_(metadata_attribute_key_string: str, metadata_detail_value: str) -> tuple:
     expected_value_types = [int, str]
-    parser_key, parser_value = metadata_attribute, metadata_detail
-    event = f'validating metadata and type for \'{parser_value}\' at \'{parser_key}\''
+    event = f'validating metadata detail value/type for ' \
+            f'\'{metadata_detail_value}\' at \'{metadata_attribute_key_string}\''
     try:
-        parser_value_type = type(parser_value)
-        if parser_value_type not in expected_value_types:
-            ex_event = f'unexpected parser value type \'{parser_value_type}\''
+        metadata_detail_value_type = type(metadata_detail_value)
+        if metadata_detail_value_type not in expected_value_types:
+            ex_event = f'unexpected metadata detail value type \'{metadata_detail_value_type}\''
             ml.log(ex_event, level=ml.ERROR)
             raise TypeError(ex_event)
-        if parser_value_type is int:
+        if metadata_detail_value_type is int:
             event = f'converting int to string'
             try:
-                parser_value = str(parser_value)
+                metadata_detail_value = str(metadata_detail_value)
             except Exception as e_err:
                 ml.log(e_err.args[0], level=ml.ERROR)
                 ml.log(f'error {event}')
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
-    parser_value = check_for_empty_string_to_replace_with_no_data_in_(parser_value)
-    return parser_key, parser_value
+    metadata_detail_value = check_for_empty_string_to_replace_with_no_data_in_(metadata_detail_value)
+    return metadata_attribute_key_string, metadata_detail_value
 
 
 def value_provided_for_(value: str) -> bool:
@@ -207,8 +207,8 @@ def convert_to_hashed_metadata_from_(result: dict) -> dict:
     event = f'building hashed metadata from result'
     try:
         result[hash_metadata(m_key.GUID)] = hash_metadata(build_metadata_guid_from_(result))
-        return dict({get_hashed_(validate_metadata_and_type_for_(attr, dtl)[0],
-                                 validate_metadata_and_type_for_(attr, dtl)[1])
+        return dict({get_tuple_of_hashed_values_for_(validate_metadata_and_type_for_(attr, dtl)[0],
+                                                     validate_metadata_and_type_for_(attr, dtl)[1])
                      for attr, dtl in result.items()})
     except Exception as e_err:
         ml.log(f'error {event}')
