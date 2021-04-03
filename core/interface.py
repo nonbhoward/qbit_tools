@@ -16,39 +16,6 @@ u_parser_at_default = u_parser[u_key.DEFAULT]
 unicode_offset = u_parser_at_default[u_key.UNI_SHIFT]
 
 
-def active_section_is_in_memory_of_(state_machine):
-    return True if get_active_section_from_(state_machine) in \
-                   get_active_sections_from_(state_machine) else False
-
-
-def add_filtered_results_stored_in_(state_machine):
-    section = get_active_section_from_(state_machine)
-    for result in get_results_filtered_from_(state_machine):
-        result_name = get_result_metadata_at_key_(result, m_key.NAME)
-        if search_is_concluded_in_(state_machine):
-            return  # FIXME p2, is this state reachable? should it be?
-        if add_successful_for_(section, result):  # FIXME p0, sometimes this adds two values
-            write_new_metadata_section_from_(result, added=True)
-            if enough_results_added_for_(section):
-                ml.log(f'enough results added for \'{section}\'')
-                return  # desired result count added, stop adding
-            continue  # result added, go to next
-        ml.log(f'client failed to add \'{result_name}\'', level=ml.WARNING)
-
-
-def add_successful_for_(section: str, result: dict) -> bool:
-    count_before_add_attempt = get_local_results_count()
-    ml.log(f'local machine has {count_before_add_attempt} stored results before add attempt..')
-    url = get_result_metadata_at_key_(result, m_key.URL)
-    add_result_from_(url, get_add_mode_for_(section))
-    pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
-    results_added_count = get_local_results_count() - count_before_add_attempt
-    successfully_added = True if results_added_count else False
-    if successfully_added:
-        increment_result_added_count_for_(section)
-    return successfully_added
-
-
 def all_searches_concluded() -> bool:
     concluded_bools = [True if get_bool_from_(section, s_key.CONCLUDED) else False
                        for section in get_all_sections_from_search_parser()]
@@ -69,10 +36,6 @@ def build_metadata_guid_from_(result: dict) -> str:
 
 def check_for_empty_string_to_replace_with_no_data_in_(value: str) -> str:
     return 'NO DATA' if empty_(value) else value
-
-
-def conclude_search_for_active_section_in_(state_machine) -> None:
-    set_bool_for_(get_active_section_from_(state_machine), s_key.CONCLUDED, True)
 
 
 def convert_to_hashed_metadata_from_(result: dict) -> dict:
@@ -96,33 +59,7 @@ def empty_(string: str) -> bool:
         ml.log(f'error {event}')
 
 
-def enough_results_added_for_(section: str) -> bool:
-    event = f'comparing results added to results required'
-    try:
-        return True if get_int_from_search_parser_at_(section, s_key.RESULTS_ADDED_COUNT) >= \
-                       get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT) else False
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
-
-
-def enough_results_found_in_(section: str, filtered_results: list) -> bool:
-    found_results_count = 0 if none_value_(filtered_results) else len(filtered_results)
-    event = f'checking if filtered_results is valid and has a length'
-    try:
-        assert filtered_results is not None, ml.log(f'filtered_results should not be None', ml.ERROR)
-        if found_results_count < get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT):
-            ml.log(f'not enough results were found! \'{found_results_count}\' results '
-                   f'found, consider adjusting search parameters', level=ml.WARNING)
-            return False
-        ml.log(f'search yielded adequate results, \'{found_results_count}\' results found')
-        return True
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
-
-
-def exit_program():
+def exit_program() -> None:
     ml.log(f'exiting program')
     write_parsers_to_disk()
     exit()
@@ -132,111 +69,12 @@ def filter_provided_for_(parser_val) -> bool:
     return False if zero_or_neg_one_(parser_val) else True
 
 
-def filter_results_in_(state_machine, found=True, sort=True):
-    results_filtered_and_sorted = list()
-    section = get_active_section_from_(state_machine)
-    seeds_min = get_int_from_search_parser_at_(section, s_key.MIN_SEED)
-    bytes_min = get_int_from_search_parser_at_(section, s_key.SIZE_MIN_BYTES)
-    bytes_max = get_int_from_search_parser_at_(section, s_key.SIZE_MAX_BYTES)
-    megabytes_min = mega(bytes_min)
-    megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
-    keywords_to_add = get_keywords_to_add_from_(section)
-    keywords_to_skip = get_keywords_to_skip_from_(section)
-    results_filtered = list()
-    for result_unfiltered in get_results_unfiltered_from_(state_machine):
-        result_name = get_result_metadata_at_key_(result_unfiltered, m_key.NAME)
-        if found and previously_found_(result_unfiltered):
-            continue  # filter this result
-        if filter_provided_for_(seeds_min):
-            result_seeds = int(get_result_metadata_at_key_(result_unfiltered, m_key.SUPPLY))  # FIXME p2, fetch int natively
-            enough_seeds = True if result_seeds > seeds_min else False
-            if not enough_seeds:
-                ml.log(f'required seeds \'{seeds_min}\' not met by result with '
-                       f'\'{result_seeds}\' seeds, result : \'{result_name}\'',
-                       level=ml.WARNING)
-                write_new_metadata_section_from_(result_unfiltered)  # remember this result
-                continue  # filter this result
-        if filter_provided_for_(megabytes_min) or filter_provided_for_(megabytes_max):
-            bytes_result = int(get_result_metadata_at_key_(result_unfiltered, m_key.SIZE))
-            megabytes_result = mega(bytes_result)
-            if filter_provided_for_(megabytes_min) and filter_provided_for_(megabytes_max):
-                file_size_in_range = True if bytes_max > bytes_result > bytes_min else False
-            elif not filter_provided_for_(megabytes_min) and filter_provided_for_(megabytes_max):
-                file_size_in_range = True if bytes_max > bytes_result else False
-            else:
-                file_size_in_range = True if bytes_result > bytes_min else False
-            if not file_size_in_range:
-                ml.log(f'size requirement \'{megabytes_min}\'mib to \'{megabytes_max}\'mib not met by '
-                       f'result with size \'{megabytes_result}\'mib, result: \'{result_name}\'',
-                       level=ml.WARNING)
-                write_new_metadata_section_from_(result_unfiltered)  # remember this result
-                continue  # filter this result
-        if filter_provided_for_(keywords_to_add):
-            # fixme p0, entry point for continued implementation of add/skip keyword paradigm
-            ml.log(f'filtering results using add keywords \'{keywords_to_add}\'')
-            filename = get_result_metadata_at_key_(result_unfiltered, m_key.NAME)
-            if keyword_in_(filename, keywords_to_skip) or not keyword_in_(filename, keywords_to_add):
-                write_new_metadata_section_from_(result_unfiltered)  # remember this result
-                continue  # filter this result
-        ml.log(f'result \'{result_name}\' meets all requirements')
-        results_filtered.append(result_unfiltered)
-    if sort:
-        ml.log(f'sorting results for \'{section}\'')
-        results_filtered_and_sorted = sort_(results_filtered)
-    reduce_search_expectations_if_not_enough_results_found_in_(section, results_filtered_and_sorted)
-    return results_filtered_and_sorted
-
-
-def get_concluded_state_for_(section) -> bool:
-    return get_search_state_for_(section)[3]  # FIXME p3, not used
-
-
 def get_hashed_(attribute: str, detail: str) -> tuple:
     return hash_metadata(attribute), hash_metadata(detail)
 
 
-def get_keywords_to_add_from_(section: str) -> list:
-    kw_to_add_csv = get_str_from_search_parser_at_(section, s_key.KEYWORDS_ADD)
-    event = f'building keywords to add from \'{section}\' into iterable'
-    try:
-        return [kw.strip() for kw in kw_to_add_csv.split(sep=',')]
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-        ml.log(f'error {event}')
-
-
-def get_keywords_to_skip_from_(section: str) -> list:
-    kw_to_skip_csv = get_str_from_search_parser_at_(section, s_key.KEYWORDS_SKIP)
-    event = f'building keywords to skip from \'{section}\' into iterable'
-    try:
-        return [kw.strip() for kw in kw_to_skip_csv.split(sep=',')]
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-        ml.log(f'error {event}')
-
-
-def get_queued_state_for_(section) -> bool:
-    return get_search_state_for_(section)[0]  # FIXME p3, not used
-
-
-def get_running_state_for_(section) -> bool:
-    return get_search_state_for_(section)[1]  # FIXME not used
-
-
 def get_search_rank_required_to_start() -> int:
     return get_int_from_user_preference_for_(u_key.RANK_REQUIRED)
-
-
-def get_search_state_for_active_section_in_(state_machine) -> tuple:
-    return get_search_state_for_(get_active_section_from_(state_machine))
-
-
-def get_search_term_for_active_section_in_(state_machine) -> str:
-    return get_search_term_for_(get_active_section_from_(state_machine))
-
-
-def get_stopped_state_for_(section) -> bool:
-    return get_search_state_for_(section)[2]  # FIXME not used
 
 
 def hash_metadata(x: str, undo=False) -> str:
@@ -247,36 +85,6 @@ def hash_metadata(x: str, undo=False) -> str:
         _hash = ''.join([chr(ord(e) + int(offset)) * _undo for e in str(x) if x])
         ml.log(f'hashing..\n\t\'{x}\'\n\t\'{_hash}\'')
         return _hash
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
-
-
-def increment_search_state_at_active_section_for_(state_machine):
-    section = get_active_section_from_(state_machine)
-    event = f'incrementing search state for \'{section}\''
-    try:
-        try:  # fixme p1, worked out bugs, comment left as reminder, delete me soon
-            search_state = get_search_state_for_active_section_in_(state_machine)
-            queued, running, stopped, concluded = search_state
-            if queued:
-                queued, running = False, True
-                ml.log(f'{event} from queued to running, please wait for search to complete')
-            elif running:
-                running, stopped = False, True
-                ml.log(f'{event} from running to stopped, will be processed on next loop')
-                increment_search_attempt_count_for_(section)
-            elif stopped:
-                stopped = False
-                concluded = True if search_is_concluded_in_(state_machine) else False
-                queued = True if not concluded else False
-            elif concluded:
-                ml.log(f'search for \'{section}\' concluded, cannot increment')
-            search_states = queued, running, stopped, concluded
-            set_search_states_for_(section, search_states)
-        except Exception as e_err:
-            ml.log(e_err.args[0], level=ml.ERROR)
-            ml.log('error ' + event)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
@@ -352,7 +160,176 @@ def print_search_ids_from_(active_search_ids: dict) -> None:
         ml.log(f'error {event}')
 
 
-def print_search_state_for_(section):
+def set_search_ranks() -> None:
+    try:  # fixme top bug is the soft-lock this function could resolve
+        scp_as_dict = get_search_parser_as_sortable()
+        scp_as_sorted_list_of_tuples = sorted(scp_as_dict.items(), key=lambda k: k[1][s_key.time_last_searched])
+        number_of_sections = len(scp_as_sorted_list_of_tuples)
+        for ranked_search_index in range(number_of_sections):
+            section = scp_as_sorted_list_of_tuples[ranked_search_index][0]
+            _scp_if_set_str_for_(section, s_key.rank, str(ranked_search_index))
+            ml.log(f'search rank \'{ranked_search_index}\' assigned to \'{section}\'')
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.error)
+
+
+def sort_(results: list) -> list:
+    event = f'sorting results'
+    try:  # TODO dynamic sort values
+        return sorted(results, key=lambda k: k[m_key.SUPPLY], reverse=True)
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+
+
+def validate_metadata_and_type_for_(attr: str, dtl: str) -> tuple:
+    expected_value_types = [int, str]
+    parser_key, parser_value = attr, dtl
+    event = f'validating metadata and type for \'{parser_value}\' at \'{parser_key}\''
+    try:
+        parser_value_type = type(parser_value)
+        if parser_value_type not in expected_value_types:
+            ex_event = f'unexpected parser value type \'{parser_value_type}\''
+            ml.log(ex_event, level=ml.ERROR)
+            raise TypeError(ex_event)
+        if parser_value_type is int:
+            event = f'converting int to string'
+            try:
+                parser_value = str(parser_value)
+            except Exception as e_err:
+                ml.log(e_err.args[0], level=ml.ERROR)
+                ml.log(f'error {event}')
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+    parser_value = check_for_empty_string_to_replace_with_no_data_in_(parser_value)
+    return parser_key, parser_value
+
+
+def value_provided_for_(value_to_check: str) -> bool:
+    event = f'checking if value provided for \'{value_to_check}\''
+    try:  # TODO could this be combined with the filter checker?
+        return False if value_to_check == '0' else True
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+
+
+def write_new_metadata_section_from_(result: dict, added=False) -> None:
+    create_metadata_section_for_(ma_parser if added else mf_parser,
+                                 convert_to_hashed_metadata_from_(result))
+
+
+def zero_or_neg_one_(parser_val: int) -> bool:
+    event = f'checking if parser value is zero or negative one'
+    try:
+        return True if parser_val == -1 or parser_val == 0 else False
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+        ml.log(f'error {event}')
+
+
+### ### ### ### ### ### ### ### ### ### ## results handlers ## ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                       results handlers below                                       #
+#                                                                                                    #
+### ### ### ### ### ### ### ### ### ### ## results handlers ## ### ### ### ### ### ### ### ### ### ###
+
+
+def add_successful_for_(section: str, result: dict) -> bool:
+    count_before_add_attempt = get_local_results_count()
+    ml.log(f'local machine has {count_before_add_attempt} stored results before add attempt..')
+    url = get_result_metadata_at_key_(result, m_key.URL)
+    add_result_from_(url, get_add_mode_for_(section))
+    pause_on_event(u_key.WAIT_FOR_SEARCH_RESULT_ADD)
+    results_added_count = get_local_results_count() - count_before_add_attempt
+    successfully_added = True if results_added_count else False
+    if successfully_added:
+        increment_result_added_count_for_(section)
+    return successfully_added
+
+
+def enough_results_found_in_(section: str, filtered_results: list) -> bool:
+    found_results_count = 0 if none_value_(filtered_results) else len(filtered_results)
+    event = f'checking if filtered_results is valid and has a length'
+    try:
+        assert filtered_results is not None, ml.log(f'filtered_results should not be None', ml.ERROR)
+        if found_results_count < get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT):
+            ml.log(f'not enough results were found! \'{found_results_count}\' results '
+                   f'found, consider adjusting search parameters', level=ml.WARNING)
+            return False
+        ml.log(f'search yielded adequate results, \'{found_results_count}\' results found')
+        return True
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+
+
+def reduce_search_expectations_if_not_enough_results_found_in_(section: str, results_filtered: list) -> None:
+    if not enough_results_found_in_(section, results_filtered):
+        _scp_if_reduce_search_expectations_for_(section)
+
+
+### ### ### ### ### ### ### ### ### ### ## results handlers ## ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                       results handlers above                                       #
+#                                                                                                    #
+### ### ### ### ### ### ### ### ### ### ## results handlers ## ### ### ### ### ### ### ### ### ### ###
+
+### ### ### ### ### ### ### ### ### ### ## section handlers ## ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                       section handlers below                                       #
+#                                                                                                    #
+### ### ### ### ### ### ### ### ### ### ## section handlers ## ### ### ### ### ### ### ### ### ### ###
+
+
+def enough_results_added_for_(section: str) -> bool:
+    event = f'comparing results added to results required'
+    try:
+        return True if get_int_from_search_parser_at_(section, s_key.RESULTS_ADDED_COUNT) >= \
+                       get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT) else False
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+
+
+def get_concluded_state_for_(section: str) -> bool:
+    return get_search_state_for_(section)[3]  # FIXME p3, not used
+
+
+def get_keywords_to_add_from_(section: str) -> list:
+    kw_to_add_csv = get_str_from_search_parser_at_(section, s_key.KEYWORDS_ADD)
+    event = f'building keywords to add from \'{section}\' into iterable'
+    try:
+        return [kw.strip() for kw in kw_to_add_csv.split(sep=',')]
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+        ml.log(f'error {event}')
+
+
+def get_keywords_to_skip_from_(section: str) -> list:
+    kw_to_skip_csv = get_str_from_search_parser_at_(section, s_key.KEYWORDS_SKIP)
+    event = f'building keywords to skip from \'{section}\' into iterable'
+    try:
+        return [kw.strip() for kw in kw_to_skip_csv.split(sep=',')]
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+        ml.log(f'error {event}')
+
+
+def get_queued_state_for_(section: str) -> bool:
+    return get_search_state_for_(section)[0]  # FIXME p3, not used
+
+
+def get_running_state_for_(section: str) -> bool:
+    return get_search_state_for_(section)[1]  # FIXME not used
+
+
+def get_stopped_state_for_(section: str) -> bool:
+    return get_search_state_for_(section)[2]  # FIXME not used
+
+
+def print_search_state_for_(section: str) -> None:
     search_queued, search_running, search_stopped, search_concluded = get_search_state_for_(section)
     ml.log(f'search state for \'{section}\': '
            f'\n\tqueued: {search_queued}'
@@ -372,14 +349,153 @@ def ready_to_start_at_(section: str) -> bool:
         ml.log(f'error {event}')
 
 
+def set_search_states_for_(section: str, *search_states) -> None:
+    _scp_if_set_search_states_for_(section, search_states)
+    event = f'extracting search states from tuple'
+    try:
+        ml.log(f'search state for \'{section}\': '
+               f'\n\tqueued: {search_states[0]}'
+               f'\n\trunning: {search_states[1]}'
+               f'\n\tstopped: {search_states[2]}'
+               f'\n\tconcluded: {search_states[3]}', announcement=True)
+    except Exception as e_err:
+        ml.log(e_err.args[0])
+        ml.log(f'error {event}')
+
+
+### ### ### ### ### ### ### ### ### ### ## section handlers ## ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                       section handlers above                                       #
+#                                                                                                    #
+### ### ### ### ### ### ### ### ### ### ## section handlers ## ### ### ### ### ### ### ### ### ### ###
+
+### ### ### ### ### ### ### ### ### ### state machine handlers ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                    state machine handlers below                                    #
+#                                                                                                    #
+### ### ### ### ### ### ### ### ### ### state machine handlers ### ### ### ### ### ### ### ### ### ###
+
+
+def active_section_is_in_memory_of_(state_machine) -> bool:
+    return True if get_active_section_from_(state_machine) in \
+                   get_active_sections_from_(state_machine) else False
+
+
+def add_filtered_results_stored_in_(state_machine) -> None:
+    section = get_active_section_from_(state_machine)
+    for result in get_results_filtered_from_(state_machine):
+        result_name = get_result_metadata_at_key_(result, m_key.NAME)
+        if search_is_concluded_in_(state_machine):
+            return  # FIXME p2, is this state reachable? should it be?
+        if add_successful_for_(section, result):  # FIXME p0, sometimes this adds two values
+            write_new_metadata_section_from_(result, added=True)
+            if enough_results_added_for_(section):
+                ml.log(f'enough results added for \'{section}\'')
+                return  # desired result count added, stop adding
+            continue  # result added, go to next
+        ml.log(f'client failed to add \'{result_name}\'', level=ml.WARNING)
+
+
+def conclude_search_for_active_section_in_(state_machine) -> None:
+    set_bool_for_(get_active_section_from_(state_machine), s_key.CONCLUDED, True)
+
+
+def filter_results_in_(state_machine, found=True, sort=True) -> list:
+    results_filtered_and_sorted = list()
+    section = get_active_section_from_(state_machine)
+    seeds_min = get_int_from_search_parser_at_(section, s_key.MIN_SEED)
+    bytes_min = get_int_from_search_parser_at_(section, s_key.SIZE_MIN_BYTES)
+    bytes_max = get_int_from_search_parser_at_(section, s_key.SIZE_MAX_BYTES)
+    megabytes_min = mega(bytes_min)
+    megabytes_max = mega(bytes_max) if bytes_max != -1 else bytes_max
+    keywords_to_add = get_keywords_to_add_from_(section)
+    keywords_to_skip = get_keywords_to_skip_from_(section)
+    results_filtered = list()
+    for result_unfiltered in get_results_unfiltered_from_(state_machine):
+        result_name = get_result_metadata_at_key_(result_unfiltered, m_key.NAME)
+        if found and previously_found_(result_unfiltered):
+            continue  # filter this result
+        if filter_provided_for_(seeds_min):
+            result_seeds = int(get_result_metadata_at_key_(result_unfiltered, m_key.SUPPLY))  # FIXME p2, fetch int natively
+            enough_seeds = True if result_seeds > seeds_min else False
+            if not enough_seeds:
+                ml.log(f'required seeds \'{seeds_min}\' not met by result with '
+                       f'\'{result_seeds}\' seeds, result : \'{result_name}\'',
+                       level=ml.WARNING)
+                write_new_metadata_section_from_(result_unfiltered)  # remember this result
+                continue  # filter this result
+        if filter_provided_for_(megabytes_min) or filter_provided_for_(megabytes_max):
+            bytes_result = int(get_result_metadata_at_key_(result_unfiltered, m_key.SIZE))
+            megabytes_result = mega(bytes_result)
+            if filter_provided_for_(megabytes_min) and filter_provided_for_(megabytes_max):
+                file_size_in_range = True if bytes_max > bytes_result > bytes_min else False
+            elif not filter_provided_for_(megabytes_min) and filter_provided_for_(megabytes_max):
+                file_size_in_range = True if bytes_max > bytes_result else False
+            else:
+                file_size_in_range = True if bytes_result > bytes_min else False
+            if not file_size_in_range:
+                ml.log(f'size requirement \'{megabytes_min}\'mib to \'{megabytes_max}\'mib not met by '
+                       f'result with size \'{megabytes_result}\'mib, result: \'{result_name}\'',
+                       level=ml.WARNING)
+                write_new_metadata_section_from_(result_unfiltered)  # remember this result
+                continue  # filter this result
+        if filter_provided_for_(keywords_to_add):
+            # fixme p0, entry point for continued implementation of add/skip keyword paradigm
+            ml.log(f'filtering results using add keywords \'{keywords_to_add}\'')
+            filename = get_result_metadata_at_key_(result_unfiltered, m_key.NAME)
+            if keyword_in_(filename, keywords_to_skip) or not keyword_in_(filename, keywords_to_add):
+                write_new_metadata_section_from_(result_unfiltered)  # remember this result
+                continue  # filter this result
+        ml.log(f'result \'{result_name}\' meets all requirements')
+        results_filtered.append(result_unfiltered)
+    if sort:
+        ml.log(f'sorting results for \'{section}\'')
+        results_filtered_and_sorted = sort_(results_filtered)
+    reduce_search_expectations_if_not_enough_results_found_in_(section, results_filtered_and_sorted)
+    return results_filtered_and_sorted
+
+
+def get_search_state_for_active_section_in_(state_machine) -> tuple:
+    return get_search_state_for_(get_active_section_from_(state_machine))
+
+
+def get_search_term_for_active_section_in_(state_machine) -> str:
+    return get_search_term_for_(get_active_section_from_(state_machine))
+
+
+def increment_search_state_at_active_section_for_(state_machine) -> None:
+    section = get_active_section_from_(state_machine)
+    event = f'incrementing search state for \'{section}\''
+    try:
+        try:  # fixme p1, worked out bugs, comment left as reminder, delete me soon
+            search_state = get_search_state_for_active_section_in_(state_machine)
+            queued, running, stopped, concluded = search_state
+            if queued:
+                queued, running = False, True
+                ml.log(f'{event} from queued to running, please wait for search to complete')
+            elif running:
+                running, stopped = False, True
+                ml.log(f'{event} from running to stopped, will be processed on next loop')
+                increment_search_attempt_count_for_(section)
+            elif stopped:
+                stopped = False
+                concluded = True if search_is_concluded_in_(state_machine) else False
+                queued = True if not concluded else False
+            elif concluded:
+                ml.log(f'search for \'{section}\' concluded, cannot increment')
+            search_states = queued, running, stopped, concluded
+            set_search_states_for_(section, search_states)
+        except Exception as e_err:
+            ml.log(e_err.args[0], level=ml.ERROR)
+            ml.log('error ' + event)
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+
+
 def ready_to_start_at_active_section_in_(state_machine) -> bool:
     return ready_to_start_at_(get_active_section_from_(state_machine)) \
         if not search_queue_is_full_in_(state_machine) else False
-
-
-def reduce_search_expectations_if_not_enough_results_found_in_(section: str, results_filtered: list) -> None:
-    if not enough_results_found_in_(section, results_filtered):
-        _scp_if_reduce_search_expectations_for_(section)
 
 
 def reset_search_state_at_active_section_for_(state_machine) -> None:
@@ -448,47 +564,11 @@ def search_started_for_(state_machine) -> bool:
                    get_active_sections_from_(state_machine) else False
 
 
-def set_search_ranks() -> None:
-    try:  # fixme top bug is the soft-lock this function could resolve
-        scp_as_dict = get_search_parser_as_sortable()
-        scp_as_sorted_list_of_tuples = sorted(scp_as_dict.items(), key=lambda k: k[1][s_key.TIME_LAST_SEARCHED])
-        number_of_sections = len(scp_as_sorted_list_of_tuples)
-        for ranked_search_index in range(number_of_sections):
-            section = scp_as_sorted_list_of_tuples[ranked_search_index][0]
-            _scp_if_set_str_for_(section, s_key.RANK, str(ranked_search_index))
-            ml.log(f'search rank \'{ranked_search_index}\' assigned to \'{section}\'')
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-
-
-def set_search_states_for_(section, *search_states) -> None:
-    _scp_if_set_search_states_for_(section, search_states)
-    event = f'extracting search states from tuple'
-    try:
-        ml.log(f'search state for \'{section}\': '
-               f'\n\tqueued: {search_states[0]}'
-               f'\n\trunning: {search_states[1]}'
-               f'\n\tstopped: {search_states[2]}'
-               f'\n\tconcluded: {search_states[3]}', announcement=True)
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-        ml.log(f'error {event}')
-
-
 def set_time_last_searched_for_active_section_in_(state_machine) -> None:
     set_time_last_searched_for_(get_active_section_from_(state_machine))
 
 
-def sort_(results: list) -> list:
-    event = f'sorting results'
-    try:  # TODO dynamic sort values
-        return sorted(results, key=lambda k: k[m_key.SUPPLY], reverse=True)
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
-
-
-def start_search_with_(state_machine):
+def start_search_with_(state_machine) -> None:
     section = get_active_section_from_(state_machine)
     search_term = get_search_term_for_active_section_in_(state_machine)
     search_properties = create_search_job_for_(search_term, 'all', 'all')
@@ -510,52 +590,11 @@ def start_search_with_(state_machine):
     reset_search_state_at_active_section_for_(state_machine)
 
 
-def validate_metadata_and_type_for_(attr: str, dtl: str) -> tuple:
-    expected_value_types = [int, str]
-    parser_key, parser_value = attr, dtl
-    event = f'validating metadata and type for \'{parser_value}\' at \'{parser_key}\''
-    try:
-        parser_value_type = type(parser_value)
-        if parser_value_type not in expected_value_types:
-            ex_event = f'unexpected parser value type \'{parser_value_type}\''
-            ml.log(ex_event, level=ml.ERROR)
-            raise TypeError(ex_event)
-        if parser_value_type is int:
-            event = f'converting int to string'
-            try:
-                parser_value = str(parser_value)
-            except Exception as e_err:
-                ml.log(e_err.args[0], level=ml.ERROR)
-                ml.log(f'error {event}')
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
-    parser_value = check_for_empty_string_to_replace_with_no_data_in_(parser_value)
-    return parser_key, parser_value
-
-
-def value_provided_for_(value_to_check) -> bool:
-    event = f'checking if value provided for \'{value_to_check}\''
-    try:  # TODO could this be combined with the filter checker?
-        return False if value_to_check == '0' else True
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
-
-
-def write_new_metadata_section_from_(result: dict, added=False) -> None:
-    create_metadata_section_for_(ma_parser if added else mf_parser,
-                                 convert_to_hashed_metadata_from_(result))
-
-
-def zero_or_neg_one_(parser_val) -> bool:
-    event = f'checking if parser value is zero or negative one'
-    try:
-        return True if parser_val == -1 or parser_val == 0 else False
-    except Exception as e_err:
-        ml.log(e_err.args[0])
-        ml.log(f'error {event}')
-
+### ### ### ### ### ### ### ### ### ### state machine handlers ### ### ### ### ### ### ### ### ### ###
+#                                                                                                    #
+#                                    state machine handlers above                                    #
+#                                                                                                    #
+### ### ### ### ### ### ### ### ### ### state machine handlers ### ### ### ### ### ### ### ### ### ###
 
 ### ### ### ### ### ### ### ### ### ### ### ### wrp if ### ### ### ### ### ### ### ### ### ### ### ###
 #                                                                                                    #
@@ -564,7 +603,7 @@ def zero_or_neg_one_(parser_val) -> bool:
 ### ### ### ### ### ### ### ### ### ### ### ### wrp if ### ### ### ### ### ### ### ### ### ### ### ###
 
 
-def add_result_from_(url: str, is_paused: bool):
+def add_result_from_(url: str, is_paused: bool) -> None:
     _api_if_add_result_from_(url, is_paused)
 
 
@@ -576,7 +615,7 @@ def create_metadata_section_for_(mp: RawConfigParser, hashed_result: dict) -> No
     _mdp_if_create_section_for_(mp, hashed_result)
 
 
-def create_search_job_for_(pattern: str, plugins: str, category: str):
+def create_search_job_for_(pattern: str, plugins: str, category: str) -> tuple:
     return _api_if_create_search_job_for_(pattern, plugins, category)
 
 
@@ -612,15 +651,15 @@ def get_bool_from_(section: str, key: str) -> bool:
     return _scp_if_get_bool_from_(section, key)
 
 
-def get_connection_time_start():
+def get_connection_time_start() -> dt:
     return _api_if_get_connection_time_start()
 
 
-def get_bool_from_search_parser_at_(section, key) -> bool:
+def get_bool_from_search_parser_at_(section: str, key: str) -> bool:
     return _scp_if_get_bool_at_key_(section, key)  # FIXME p3, not used
 
 
-def get_int_from_search_parser_at_(section, key) -> int:
+def get_int_from_search_parser_at_(section: str, key: str) -> int:
     return _scp_if_get_int_at_key_(section, key)
 
 
@@ -640,7 +679,7 @@ def get_results_unfiltered_from_(state_machine):
     return _stm_if_get_results_unfiltered_from_(state_machine)
 
 
-def get_int_from_user_preference_for_(key):
+def get_int_from_user_preference_for_(key: str):
     return _ucp_if_get_int_for_key_(key)
 
 
@@ -648,7 +687,7 @@ def get_search_parser() -> RawConfigParser:
     return _search_parser()
 
 
-def get_str_from_search_parser_at_(section, key) -> str:
+def get_str_from_search_parser_at_(section: str, key: str) -> str:
     return _scp_if_get_str_at_key_(section, key)
 
 
@@ -684,7 +723,7 @@ def get_search_results_for_(state_machine) -> list:
     return _api_if_get_search_results_for_(state_machine)
 
 
-def get_search_state_for_(section) -> tuple:
+def get_search_state_for_(section: str) -> tuple:
     return _scp_if_get_search_state_for_(section)
 
 
@@ -712,11 +751,11 @@ def search_at_active_section_has_completed_in_(state_machine) -> bool:
     return _scp_if_search_at_active_section_has_completed_in_(state_machine)
 
 
-def search_is_running_at_(section) -> bool:
+def search_is_running_at_(section: str) -> bool:
     return _stm_if_search_is_running_at_(section)
 
 
-def search_is_stopped_at_(section) -> bool:
+def search_is_stopped_at_(section: str) -> bool:
     return _stm_if_search_is_stopped_at_(section)
 
 
@@ -732,7 +771,7 @@ def set_active_section_to_(section: str, state_machine) -> None:
     _stm_if_set_active_section_to_(section, state_machine)
 
 
-def set_bool_for_(section: str, key: str, boolean: bool):
+def set_bool_for_(section: str, key: str, boolean: bool) -> None:
     _scp_if_set_bool_for_(section, key, boolean)
 
 
@@ -748,11 +787,11 @@ def update_search_properties_for_(state_machine) -> None:
     _stm_if_update_search_properties_for_(state_machine)
 
 
-def write_parsers_to_disk():
+def write_parsers_to_disk() -> None:
     _cfg_if_write_parsers_to_disk()
 
 
-def write_search_id_to_search_parser_at_(section, search_id) -> None:
+def write_search_id_to_search_parser_at_(section: str, search_id: str) -> None:
     _scp_if_set_str_for_(section, s_key.ID, search_id)
 
 
@@ -769,7 +808,7 @@ def write_search_id_to_search_parser_at_(section, search_id) -> None:
 ### ### ### ### ### ### ### ### ### ### ### ### api if ### ### ### ### ### ### ### ### ### ### ### ###
 
 
-def _api_if_add_result_from_(url: str, is_paused: bool):
+def _api_if_add_result_from_(url: str, is_paused: bool) -> None:
     event = f'calling api to add result from url'
     try:  # api surface abstraction level = 0
         q_api.add_result_from_(url, is_paused)
@@ -791,7 +830,7 @@ def _api_if_create_search_job_for_(pattern: str, plugins: str, category: str) ->
         ml.log(f'error {event}')
 
 
-def _api_if_get_connection_time_start():
+def _api_if_get_connection_time_start() -> dt:
     event = f'calling api to get connection time start'
     try:  # api surface abstraction level = 0
         return q_api.get_connection_time_start()
@@ -800,7 +839,7 @@ def _api_if_get_connection_time_start():
         ml.log(f'error {event}')
 
 
-def _api_if_get_local_results_count():
+def _api_if_get_local_results_count() -> int:
     event = f'calling api to get local results count'
     try:  # api surface abstraction level = 0
         return q_api.get_local_results_count()
@@ -842,22 +881,6 @@ def _api_if_get_search_properties_for_(search_id: str) -> tuple:
 #                                         cfg interface below                                        #
 #                                                                                                    #
 ### ### ### ### ### ### ### ### ### ### ### ### cfg if ### ### ### ### ### ### ### ### ### ### ### ###
-
-
-def _cfg_if_get_parser_value_at_(section: str, key: str,
-                                 meta_add=False, meta_find=False,
-                                 search=True, settings=False):
-    try:  # todo deprecate cfg interface methods
-        if meta_add:
-            return QConf.read_parser_value_with_(key, section, meta_add=meta_add)
-        elif meta_find:
-            return QConf.read_parser_value_with_(key, section, meta_find=meta_find)
-        elif settings:
-            return QConf.read_parser_value_with_(key, section, settings=settings)
-        elif search:  # must be last since defaults True
-            return QConf.read_parser_value_with_(key, section)
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
 
 
 def _cfg_if_set_parser_value_at_(section: str, parser_key: str, value,
