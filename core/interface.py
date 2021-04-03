@@ -26,14 +26,14 @@ def all_searches_concluded() -> bool:
     return False
 
 
-def check_for_empty_string_to_replace_with_no_data_in_(value: str) -> str:
-    return 'NO DATA' if empty_(value) else value
+def check_for_empty_string_to_replace_with_no_data_in_(string: str) -> str:
+    return 'NO DATA' if empty_(string) else string
 
 
 def empty_(string: str) -> bool:
     event = f'testing for empty string'
     try:
-        return True if string == '' else False
+        return True if string == empty else False
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
@@ -70,20 +70,20 @@ def hash_metadata(x: str, undo=False) -> str:
         ml.log(f'error {event}')
 
 
-def keyword_in_(filename: str, keywords: list, require_all_kw=False) -> bool:
-    event = f'checking if keywords in filename'
+def keyword_in_(string: str, keywords: list, require_all_kw=False) -> bool:
+    event = f'checking if keywords in string'
     try:
-        kw_found_indices = [kw in lower_(filename) for kw in keywords]
+        kw_found_indices = [kw in lower_(string) for kw in keywords]
         return all(kw_found_indices) if require_all_kw else any(kw_found_indices)
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
 
 
-def lower_(filename: str) -> str:
-    event = f'converting filename to lower'
+def lower_(string: str) -> str:
+    event = f'converting string to lower'
     try:
-        return ''.join([char.lower() if char in upper else char for char in filename])
+        return ''.join([char.lower() if char in upper else char for char in string])
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
@@ -107,7 +107,7 @@ def none_value_(value) -> bool:
         ml.log(f'error {event}')
 
 
-def pause_on_event(pause_type: str):
+def pause_on_event(pause_type: str) -> None:
     delay = get_int_from_user_preference_for_(pause_type)
     ml.log(f'waiting \'{delay}\' seconds due to user config key \'{str(pause_type)}\'')
     q_api.pause_for_(delay)  # FIXME p3, refactor this, it is silly
@@ -134,12 +134,12 @@ def set_search_ranks() -> None:
             _scp_if_set_str_for_(section, s_key.rank, str(ranked_search_index))
             ml.log(f'search rank \'{ranked_search_index}\' assigned to \'{section}\'')
     except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.error)
+        ml.log(e_err.args[0], level=ml.ERROR)
 
 
-def validate_metadata_and_type_for_(attr: str, dtl: str) -> tuple:
+def validate_metadata_and_type_for_(metadata_attribute: str, metadata_detail: str) -> tuple:
     expected_value_types = [int, str]
-    parser_key, parser_value = attr, dtl
+    parser_key, parser_value = metadata_attribute, metadata_detail
     event = f'validating metadata and type for \'{parser_value}\' at \'{parser_key}\''
     try:
         parser_value_type = type(parser_value)
@@ -161,19 +161,19 @@ def validate_metadata_and_type_for_(attr: str, dtl: str) -> tuple:
     return parser_key, parser_value
 
 
-def value_provided_for_(value_to_check: str) -> bool:
-    event = f'checking if value provided for \'{value_to_check}\''
+def value_provided_for_(value: str) -> bool:
+    event = f'checking if value provided for \'{value}\''
     try:  # TODO could this be combined with the filter checker?
-        return False if value_to_check == '0' else True
+        return False if value == '0' else True
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
 
 
-def zero_or_neg_one_(parser_val: int) -> bool:
+def zero_or_neg_one_(parser_value: int) -> bool:
     event = f'checking if parser value is zero or negative one'
     try:
-        return True if parser_val == -1 or parser_val == 0 else False
+        return True if parser_value == -1 or parser_value == 0 else False
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
