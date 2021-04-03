@@ -26,28 +26,8 @@ def all_searches_concluded() -> bool:
     return False
 
 
-def build_metadata_guid_from_(result: dict) -> str:
-    name, url = \
-        get_result_metadata_at_key_(result, m_key.NAME), get_result_metadata_at_key_(result, m_key.URL)
-    if empty_(url):
-        raise ValueError(f'empty url!')
-    return f'{hash_metadata(name)} @ {hash_metadata(url)}'
-
-
 def check_for_empty_string_to_replace_with_no_data_in_(value: str) -> str:
     return 'NO DATA' if empty_(value) else value
-
-
-def convert_to_hashed_metadata_from_(result: dict) -> dict:
-    event = f'building hashed metadata from result'
-    try:
-        result[hash_metadata(m_key.GUID)] = hash_metadata(build_metadata_guid_from_(result))
-        return dict({get_hashed_(validate_metadata_and_type_for_(attr, dtl)[0],
-                                 validate_metadata_and_type_for_(attr, dtl)[1])
-                     for attr, dtl in result.items()})
-    except Exception as e_err:
-        ml.log(f'error {event}')
-        ml.log(e_err.args[0])
 
 
 def empty_(string: str) -> bool:
@@ -133,22 +113,6 @@ def pause_on_event(pause_type: str):
     q_api.pause_for_(delay)  # FIXME p3, refactor this, it is silly
 
 
-def previously_found_(result: dict, verbose_log=True) -> bool:
-    result_name = build_metadata_guid_from_(result)
-    event = f'checking if previously found result \'{result}\''
-    try:
-        added_or_failed = [*ma_parser.sections(), *mf_parser.sections()]
-        if result_name in added_or_failed:
-            if verbose_log:  # FIXME p4, pull this out to some surface object init
-                ml.log(f'old result found, skipping \'{result_name}\'', level=ml.WARNING)
-            return True
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
-    ml.log(f'new result found \'{result_name}\'')
-    return False
-
-
 def print_search_ids_from_(active_search_ids: dict) -> None:
     event = f'printing search ids from active search ids'
     ml.log('active search headers are..')
@@ -171,15 +135,6 @@ def set_search_ranks() -> None:
             ml.log(f'search rank \'{ranked_search_index}\' assigned to \'{section}\'')
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.error)
-
-
-def sort_(results: list) -> list:
-    event = f'sorting results'
-    try:  # TODO dynamic sort values
-        return sorted(results, key=lambda k: k[m_key.SUPPLY], reverse=True)
-    except Exception as e_err:
-        ml.log(e_err.args[0], level=ml.ERROR)
-        ml.log(f'error {event}')
 
 
 def validate_metadata_and_type_for_(attr: str, dtl: str) -> tuple:
@@ -215,11 +170,6 @@ def value_provided_for_(value_to_check: str) -> bool:
         ml.log(f'error {event}')
 
 
-def write_new_metadata_section_from_(result: dict, added=False) -> None:
-    create_metadata_section_for_(ma_parser if added else mf_parser,
-                                 convert_to_hashed_metadata_from_(result))
-
-
 def zero_or_neg_one_(parser_val: int) -> bool:
     event = f'checking if parser value is zero or negative one'
     try:
@@ -236,7 +186,7 @@ def zero_or_neg_one_(parser_val: int) -> bool:
 ### ### ### ### ### ### ### ### ### ### ## results handlers ## ### ### ### ### ### ### ### ### ### ###
 
 
-def add_successful_for_(section: str, result: dict) -> bool:
+def add_successful_for_(result: dict, section: str) -> bool:
     count_before_add_attempt = get_local_results_count()
     ml.log(f'local machine has {count_before_add_attempt} stored results before add attempt..')
     url = get_result_metadata_at_key_(result, m_key.URL)
@@ -249,7 +199,27 @@ def add_successful_for_(section: str, result: dict) -> bool:
     return successfully_added
 
 
-def enough_results_found_in_(section: str, filtered_results: list) -> bool:
+def build_metadata_guid_from_(result: dict) -> str:
+    name, url = \
+        get_result_metadata_at_key_(result, m_key.NAME), get_result_metadata_at_key_(result, m_key.URL)
+    if empty_(url):
+        raise ValueError(f'empty url!')
+    return f'{hash_metadata(name)} @ {hash_metadata(url)}'
+
+
+def convert_to_hashed_metadata_from_(result: dict) -> dict:
+    event = f'building hashed metadata from result'
+    try:
+        result[hash_metadata(m_key.GUID)] = hash_metadata(build_metadata_guid_from_(result))
+        return dict({get_hashed_(validate_metadata_and_type_for_(attr, dtl)[0],
+                                 validate_metadata_and_type_for_(attr, dtl)[1])
+                     for attr, dtl in result.items()})
+    except Exception as e_err:
+        ml.log(f'error {event}')
+        ml.log(e_err.args[0])
+
+
+def enough_results_found_in_(filtered_results: list, section: str) -> bool:
     found_results_count = 0 if none_value_(filtered_results) else len(filtered_results)
     event = f'checking if filtered_results is valid and has a length'
     try:
@@ -265,9 +235,39 @@ def enough_results_found_in_(section: str, filtered_results: list) -> bool:
         ml.log(f'error {event}')
 
 
-def reduce_search_expectations_if_not_enough_results_found_in_(section: str, results_filtered: list) -> None:
-    if not enough_results_found_in_(section, results_filtered):
+def previously_found_(result: dict, verbose_log=True) -> bool:
+    result_name = build_metadata_guid_from_(result)
+    event = f'checking if previously found result \'{result}\''
+    try:
+        added_or_failed = [*ma_parser.sections(), *mf_parser.sections()]
+        if result_name in added_or_failed:
+            if verbose_log:  # FIXME p4, pull this out to some surface object init
+                ml.log(f'old result found, skipping \'{result_name}\'', level=ml.WARNING)
+            return True
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+    ml.log(f'new result found \'{result_name}\'')
+    return False
+
+
+def reduce_search_expectations_if_not_enough_results_found_in_(results_filtered: list, section: str) -> None:
+    if not enough_results_found_in_(results_filtered, section):
         _scp_if_reduce_search_expectations_for_(section)
+
+
+def sort_(results: list) -> list:
+    event = f'sorting results'
+    try:  # TODO dynamic sort values
+        return sorted(results, key=lambda k: k[m_key.SUPPLY], reverse=True)
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+
+
+def write_new_metadata_section_from_(result: dict, added=False) -> None:
+    create_metadata_section_for_(ma_parser if added else mf_parser,
+                                 convert_to_hashed_metadata_from_(result))
 
 
 ### ### ### ### ### ### ### ### ### ### ## results handlers ## ### ### ### ### ### ### ### ### ### ###
@@ -387,7 +387,7 @@ def add_filtered_results_stored_in_(state_machine) -> None:
         result_name = get_result_metadata_at_key_(result, m_key.NAME)
         if search_is_concluded_in_(state_machine):
             return  # FIXME p2, is this state reachable? should it be?
-        if add_successful_for_(section, result):  # FIXME p0, sometimes this adds two values
+        if add_successful_for_(result, section):  # FIXME p0, sometimes this adds two values
             write_new_metadata_section_from_(result, added=True)
             if enough_results_added_for_(section):
                 ml.log(f'enough results added for \'{section}\'')
@@ -451,7 +451,7 @@ def filter_results_in_(state_machine, found=True, sort=True) -> list:
     if sort:
         ml.log(f'sorting results for \'{section}\'')
         results_filtered_and_sorted = sort_(results_filtered)
-    reduce_search_expectations_if_not_enough_results_found_in_(section, results_filtered_and_sorted)
+    reduce_search_expectations_if_not_enough_results_found_in_(results_filtered_and_sorted, section)
     return results_filtered_and_sorted
 
 
