@@ -219,16 +219,16 @@ def convert_to_hashed_metadata_from_(result: dict) -> dict:
         ml.log(e_err.args[0])
 
 
-def enough_results_found_in_(filtered_results: list, section: str) -> bool:
-    found_results_count = 0 if none_value_(filtered_results) else len(filtered_results)
+def enough_results_found_in_(results_filtered: list, section: str) -> bool:
+    results_found_count = 0 if none_value_(results_filtered) else len(results_filtered)
     event = f'checking if filtered_results is valid and has a length'
     try:
-        assert filtered_results is not None, ml.log(f'filtered_results should not be None', ml.ERROR)
-        if found_results_count < get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT):
-            ml.log(f'not enough results were found! \'{found_results_count}\' results '
+        assert results_filtered is not None, ml.log(f'filtered results should not be None', ml.ERROR)
+        if results_found_count < get_int_from_search_parser_at_(section, s_key.RESULTS_REQUIRED_COUNT):
+            ml.log(f'not enough results were found! \'{results_found_count}\' results '
                    f'found, consider adjusting search parameters', level=ml.WARNING)
             return False
-        ml.log(f'search yielded adequate results, \'{found_results_count}\' results found')
+        ml.log(f'search yielded adequate results, \'{results_found_count}\' results found')
         return True
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
