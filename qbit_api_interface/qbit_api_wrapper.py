@@ -82,7 +82,7 @@ class QbitApiCaller:
             ml.log(e_err.args[0], level=ml.ERROR)
             ml.log(f'error {event}')
 
-    def get_connection_time_start(self):
+    def get_connection_time_start(self) -> dt:
         try:
             return self.connection_time_start
         except Exception as e_err:
