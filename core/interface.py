@@ -812,9 +812,7 @@ def _api_if_add_result_from_(url: str, is_paused: bool) -> None:
 def _api_if_create_search_job_for_(pattern: str, plugins: str, category: str) -> tuple:
     event = f'calling api to create search job for pattern, plugins, and category'
     try:  # api surface abstraction level = 0
-        job = q_api.qbit_client.search.start(pattern, plugins, category)
-        assert job is not None, 'bad search job, fix it or handle it'
-        count, sid, status = q_api.get_search_info_from_(job)
+        count, sid, status = q_api.create_search_job(pattern, plugins, category)
         ml.log(f'qbit client created search job for \'{pattern}\'')
         return count, sid, status
     except Exception as e_err:
@@ -834,7 +832,7 @@ def _api_if_get_connection_time_start() -> dt:
 def _api_if_get_local_results_count() -> int:
     event = f'calling api to get local results count'
     try:  # api surface abstraction level = 0
-        return q_api.get_local_results_count()
+        return q_api.get_count_of_local_results()
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
         ml.log(f'error {event}')
