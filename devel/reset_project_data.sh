@@ -9,9 +9,9 @@ git status
 if [ -f 'event.log' ]
 then
   echo 'removing event.log'
-	rm event.log
+  rm event.log
 else
-	echo 'event.log does not exist, continuing..'
+  echo 'event.log does not exist, continuing..'
 fi
 echo 'restoring metadata_added.cfg'
 git restore data_meta/metadata_added.cfg
