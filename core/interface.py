@@ -41,9 +41,14 @@ def empty_(string: str) -> bool:
 
 
 def exit_program() -> None:
-    ml.log(f'exiting program', announcement=True)
     write_parsers_to_disk()
-    exit()
+    event = f'exiting program'
+    try:
+        ml.log(event, announcement=True)
+        exit()
+    except RuntimeError as r_err:
+        ml.log(r_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
 
 
 def filter_provided_for_(parser_val) -> bool:
