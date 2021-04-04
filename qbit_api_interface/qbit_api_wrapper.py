@@ -55,7 +55,6 @@ class QbitApiCaller:
                 ml.log(ex_event, level=ml.ERROR)
                 raise ValueError(ex_event)
             count, sid, status = QbitApiCaller.get_search_info_from_(job)
-            ml.log(f'qbit client created search job for \'{pattern}\'')
             return count, sid, status
         except Exception as e_err:
             ml.log(e_err.args[0], level=ml.ERROR)
@@ -128,8 +127,8 @@ class QbitApiCaller:
             ml.log(f'error {event}')
 
     def get_search_properties_for_(self, search_id) -> tuple:
-        event = f'getting search status for \'{search_id}\''
         search_count, search_status = 0, ''
+        event = f'getting search status for \'{search_id}\''
         try:  # TODO i'd like to clean this up
             search_statuses_list = self.qbit_client.search_status(search_id=search_id)
             if not isinstance(search_statuses_list, SearchStatusesList):
