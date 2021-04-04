@@ -398,7 +398,8 @@ def active_section_is_in_memory_of_(state_machine) -> bool:
 
 def add_filtered_results_stored_in_(state_machine) -> None:
     section = get_active_section_from_(state_machine)
-    for result in get_results_filtered_from_(state_machine):
+    results_filtered = get_results_filtered_from_(state_machine)
+    for result in results_filtered:
         result_name = get_result_metadata_at_key_(result, m_key.NAME)
         if search_is_concluded_at_active_section_in_(state_machine):
             return  # FIXME p2, is this state reachable? should it be?
@@ -473,12 +474,11 @@ def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> l
                 write_new_metadata_section_from_(result_unfiltered)  # remember this result
                 continue  # filter this result
         if filter_provided_for_(keywords_to_add):
-            # fixme p1, entry point for continued implementation of add/skip keyword paradigm
-            if idx == 0:
+            if idx == 0:  # FIXME p2, this does nothing, rework
                 ml.log(f'filtering results for \'{section}\' using add keywords \'{keywords_to_add}\'')
             filename = get_result_metadata_at_key_(result_unfiltered, m_key.NAME)
             if keyword_in_(filename, keywords_to_skip) or not keyword_in_(filename, keywords_to_add):
-                if True:  # FIXME p1, replace True with verbose flag
+                if True:  # FIXME p1, replace True with verbose flag, forces log
                     ml.log(f'keyword requirements have not been met by '
                            f'\'{result_name}\'', level=ml.WARNING)
                 write_new_metadata_section_from_(result_unfiltered)  # remember this result
