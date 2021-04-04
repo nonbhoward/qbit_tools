@@ -160,7 +160,7 @@ class QbitConfig:
         try:
             parsers_dict = parsers.parsers_keyed_by_file_path
             for parser_path, parser in parsers_dict.items():
-                with open(parser_path, 'w') as parser_to_write:
+                with open(parser_path, 'w', encoding='utf-8') as parser_to_write:
                     parser.write(parser_to_write)
                     ml.log(f'parser update for {parser}')
                     ml.log(f'successfully written parser to disk at \'{parser_path}\'')
