@@ -161,7 +161,10 @@ class Parsers:  # Configuration.Parser.Parsers
         try:  # TODO does this work as expected?
             for parser_path in parser_paths:
                 rcp = RawConfigParser()
-                rcp.read(parser_path)
+                # FIXME p1, on Windows, rcp.read() cannot read
+                #  metadata_failed.cfg after it is populated from
+                #  a previous run
+                rcp.read(parser_path, encoding='utf-8')
                 assert _parser_has_sections(rcp), ml.log(f'fatal exception {rcp} has no sections')
                 parsers[parser_path] = rcp
             return parsers

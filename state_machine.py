@@ -6,19 +6,20 @@ from core.interface import conclude_search_for_active_section_in_
 from core.interface import exit_program
 from core.interface import get_all_sections_from_search_parser
 from core.interface import get_connection_time_start
-from core.interface import get_search_state_for_active_section_in_
-from core.interface import increment_search_state_at_active_section_for_
+from core.interface import increment_search_attempt_count_in_
 from core.interface import pause_on_event
 from core.interface import ready_to_start_at_active_section_in_
 from core.interface import reset_search_state_at_active_section_for_
 from core.interface import save_results_to_
 from core.interface import search_at_active_section_has_completed_in_
+from core.interface import search_is_concluded_at_active_section_in_
 from core.interface import search_is_running_at_active_section_in_
 from core.interface import search_is_stopped_at_active_section_in_
 from core.interface import set_active_section_to_
 from core.interface import set_search_ranks
 from core.interface import start_search_with_
 from core.interface import u_key  # FIXME refactor this out, no keys belong in the state machine
+from core.interface import update_search_properties_from_api_for_
 from core.interface import write_parsers_to_disk
 
 
@@ -49,40 +50,40 @@ class QbitStateManager:
     def initiate_and_monitor_searches(self) -> None:
         event = f'initiating and monitoring searches'
         try:  # note, this is the entry point for state machine
-            set_search_ranks()
             search_parser_sections = get_all_sections_from_search_parser()
             for section in search_parser_sections:
                 set_active_section_to_(section, self)
                 self.manage_state_updates_at_active_section()
+                write_parsers_to_disk()
             if all_searches_concluded():
                 exit_program()
-            write_parsers_to_disk()
+            set_search_ranks()
         except Exception as e_err:
             ml.log(e_err.args[0], level=ml.ERROR)
             ml.log(f'error {event}')
 
     def manage_state_updates_at_active_section(self) -> None:
+        update_search_properties_from_api_for_(self)
         event = f'managing state updates at active section : \'{self.active_section}\''
         try:
-            search_queued, search_running, search_stopped, search_concluded = \
-                get_search_state_for_active_section_in_(self)
-            if ready_to_start_at_active_section_in_(self):
+            if ready_to_start_at_active_section_in_(self):  # parser check
                 start_search_with_(self)
-            elif search_is_running_at_active_section_in_(self):
-                pass  # if running, do nothing til stopped
-            elif search_is_stopped_at_active_section_in_(self):
+            elif search_is_running_at_active_section_in_(self):  # state machine check driven by api
+                pass  # if running, continue passing until stopped
+            elif search_is_stopped_at_active_section_in_(self):  # state machine check driven by api
                 if active_section_is_in_memory_of_(self):
+                    ml.log(f'processing search results for {self.active_section}', announcement=True)
                     save_results_to_(self)
                     add_filtered_results_stored_in_(self)
-                if search_at_active_section_has_completed_in_(self):
-                    conclude_search_for_active_section_in_(self)
-                    return  # don't reset the search
+                    increment_search_attempt_count_in_(self)
+                    if search_at_active_section_has_completed_in_(self):
+                        conclude_search_for_active_section_in_(self)
+                        return  # do not reset the search
                 reset_search_state_at_active_section_for_(self)
-            elif search_concluded:  # FIXME refactor to match
-                pass  # if concluded, do nothing forever
+            elif search_is_concluded_at_active_section_in_(self):  # parser check
+                return  # if concluded, pass forever (could also return)
             else:
-                ml.log(f'header \'{self.active_section}\' is restricted from starting by search '
-                       f'rank and/or search queue, this is by design', level=ml.WARNING)
+                reset_search_state_at_active_section_for_(self)
             pause_on_event(u_key.WAIT_FOR_SEARCH_STATUS_CHECK)
         except Exception as e_err:
             ml.log(e_err.args[0], level=ml.ERROR)
