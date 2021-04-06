@@ -23,7 +23,7 @@ from core.interface import update_search_properties_from_api_for_
 from core.interface import write_parsers_to_disk
 
 
-class QbitStateManager:
+class QbitStateMachine:
     def __init__(self, verbose=True):
         event = f'initializing \'{self.__class__.__name__}\''
         try:
