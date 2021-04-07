@@ -3,7 +3,7 @@ from minimalog.minimal_log import MinimalLog
 from os import getcwd as cwd, listdir as ls
 from os.path import exists
 from pathlib import Path
-from state_machine import QbitStateManager
+from state_machine import QbitStateMachine
 from core.interface import QConf
 from core.interface import pause_on_event
 from subprocess import run as launch
@@ -47,12 +47,12 @@ def start_application_and_return_state_machine():
             ml.log('unsupported OS')
             exit()
         if application_is_running(app):
-            return QbitStateManager()
+            return QbitStateMachine()
         if not exists(app):
             ml.log('install qbittorrent')
             exit()
         launch(app)
-        return QbitStateManager()
+        return QbitStateMachine()
     except Exception as e_err:
         ml.log(f'error starting application and fetching state machine')
         ml.log(e_err.args[0], level=ml.ERROR)
