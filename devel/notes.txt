@@ -88,3 +88,8 @@
 		when to go to 4? if the thresholds set in searches.cfg are met for that search header
         4. concluded
 		once entered, never leave this state without manual intervention
+[SECTION : ANOMALISTIC LOG EVENTS OF NOTE]
+	2021-04-08 23:47:32,357 : WARNING : interface : 490 : filter_results_in_ : 
+	keyword requirements have not been met by '\u7406\u67e5\u5fb7·\u6731\u7ef4
+	\u5c14\u7684\u54c0\u6b4c(\u84dd\u5149\u56fd\u82f1\u53cc\u97f3\u8f68\u53cc\
+	u5b57)'
