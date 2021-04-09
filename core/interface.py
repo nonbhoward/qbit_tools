@@ -87,10 +87,10 @@ def hash_metadata(x: str, undo=False, verbose=False) -> str:
 def keyword_in_(state_machine, string: str, keywords: list) -> bool:
     event = f'checking if keywords in string'
     section = get_active_section_from_(state_machine)
-    require_all_kw = get_bool_from_search_parser_at_(section, s_key.KEYWORDS_ADD_REQUIRE_ALL_TERMS)
+    require_all = get_bool_from_search_parser_at_(section, s_key.KEYWORD_FILTERS_REQUIRE_ALL_TERMS)
     try:
         kw_found_indices = [kw in lower_(string) for kw in keywords]
-        return all(kw_found_indices) if require_all_kw else any(kw_found_indices)
+        return all(kw_found_indices) if require_all else any(kw_found_indices)
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
