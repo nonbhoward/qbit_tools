@@ -1,5 +1,5 @@
-### as of 2021-04-04 current status of main branch on win10 is functional after major refactor
-### as of 2021-04-04 current status of main branch on linux is unknown after major refactor
+### main branch on win10 is functional after major refactor
+### main branch on linux is functional after major refactor
 
 # a brief project summary follows
 ### core.interface.py
