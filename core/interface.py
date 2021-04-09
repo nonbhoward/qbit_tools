@@ -84,8 +84,10 @@ def hash_metadata(x: str, undo=False, verbose=False) -> str:
         ml.log(f'error {event}')
 
 
-def keyword_in_(string: str, keywords: list, require_all_kw=False) -> bool:
+def keyword_in_(state_machine, string: str, keywords: list) -> bool:
     event = f'checking if keywords in string'
+    section = get_active_section_from_(state_machine)
+    require_all_kw = get_bool_from_search_parser_at_(section, s_key.KEYWORDS_ADD_REQUIRE_ALL_TERMS)
     try:
         kw_found_indices = [kw in lower_(string) for kw in keywords]
         return all(kw_found_indices) if require_all_kw else any(kw_found_indices)
@@ -482,7 +484,8 @@ def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> l
             if idx == 0:  # FIXME p2, this does nothing, rework
                 ml.log(f'filtering results for \'{section}\' using add keywords \'{keywords_to_add}\'')
             filename = get_result_metadata_at_key_(result_unfiltered, m_key.NAME)
-            if keyword_in_(filename, keywords_to_skip) or not keyword_in_(filename, keywords_to_add):
+            if keyword_in_(state_machine, filename, keywords_to_skip) or \
+                    not keyword_in_(state_machine, filename, keywords_to_add):
                 if True:  # FIXME p1, replace True with verbose flag, forces log
                     ml.log(f'keyword requirements have not been met by '
                            f'\'{result_name}\'', level=ml.WARNING)
