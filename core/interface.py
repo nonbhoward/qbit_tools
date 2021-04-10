@@ -40,6 +40,15 @@ def empty_(string: str) -> bool:
         ml.log(f'error {event}')
 
 
+def empty_list_(test_list: list) -> bool:
+    event = f'testing for empty list'
+    try:
+        return True if list == [] else False
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+
+
 def exit_program() -> None:
     write_parsers_to_disk()
     event = f'exiting program'
@@ -1368,9 +1377,8 @@ def _stm_if_save_filtered_search_results_to_(state_machine):
     # fixme p0, interface function relies on wrapper function, should be opposite
     section = _stm_if_get_active_section_from_(state_machine)
     try:  # machine surface abstraction depth = 0
-        filtered_results = filter_results_in_(state_machine)
-        # sm_if_update_search_properties_for_(state_machine)  # tODO delete me
-        state_machine.active_sections[section]['filtered_results'] = filtered_results
+        results_filtered = filter_results_in_(state_machine)
+        state_machine.active_sections[section]['filtered_results'] = results_filtered
     except Exception as e_err:
         ml.log(e_err.args[0])
 
@@ -1378,9 +1386,10 @@ def _stm_if_save_filtered_search_results_to_(state_machine):
 def _stm_if_save_unfiltered_search_results_to_(state_machine):
     section = _stm_if_get_active_section_from_(state_machine)
     try:  # machine surface abstraction depth = 0
-        unfiltered_results = get_search_results_for_(state_machine)
+        results_from_search = get_search_results_for_(state_machine)
+        results_unfiltered = results_from_search if not none_value_(results_from_search) else []
         update_search_properties_from_api_for_(state_machine)
-        state_machine.active_sections[section]['unfiltered_results'] = unfiltered_results
+        state_machine.active_sections[section]['unfiltered_results'] = results_unfiltered
     except Exception as e_err:
         ml.log(e_err.args[0])
 
