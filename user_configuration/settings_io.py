@@ -95,7 +95,8 @@ class QbitConfig:
     @classmethod
     def get_result_metadata_at_key_(cls, key: str, result: dict):
         try:
-            return int(result[key]) if _is_int_(result[key]) else result[key]
+            metadata_string = result[key]
+            return int(metadata_string) if _is_int_(metadata_string) else metadata_string
         except Exception as e_err:
             print(e_err.args[0])
 
@@ -189,6 +190,8 @@ class QbitConfig:
 
 def _is_int_(value) -> bool:
     try:
+        if value == '':
+            return False
         for char in list(str(value)):
             if char not in digits_or_sign:
                 return False
