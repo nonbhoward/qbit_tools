@@ -355,15 +355,17 @@ def ready_to_start_at_(section: str) -> bool:
     queued = get_search_state_from_parser_for_(section)[0]
     event = f'checking if search is queued and rank is allowed'
     try:
+        if not queued:
+            ml.log(f'search ')
+            return False
         rank = get_search_rank_for_(section)
         required_rank = get_search_rank_required_to_start()
         search_rank_allowed = rank <= required_rank
-        if not queued:
-            return False
+        ml.log(f'the required rank to start a search is LTE \'{required_rank}\'')
         if not search_rank_allowed:
-            ml.log(f'the required rank to start a search is LTE \'{required_rank}\'')
-            ml.log(f'search at \'{section}\' is disallowed due to search rank \'{rank}\'')
+            ml.log(f'search rank \'{rank}\' at \'{section}\' is disallowed')
             return False
+        ml.log(f'search rank \'{rank}\' at \'{section}\' is allowed')
         return True
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
