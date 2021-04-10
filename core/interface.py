@@ -469,7 +469,7 @@ def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> l
         if found and previously_found_(result_unfiltered):
             continue  # filter this result
         if filter_provided_for_(seeds_min):
-            result_seeds = int(get_result_metadata_at_key_(result_unfiltered, m_key.SUPPLY))  # FIXME p2, fetch int natively
+            result_seeds = get_result_metadata_at_key_(result_unfiltered, m_key.SUPPLY)
             enough_seeds = True if result_seeds > seeds_min else False
             if not enough_seeds:
                 if verbose:
@@ -479,7 +479,7 @@ def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> l
                 write_new_metadata_section_from_(result_unfiltered)  # remember this result
                 continue  # filter this result
         if filter_provided_for_(megabytes_min) or filter_provided_for_(megabytes_max):
-            bytes_result = int(get_result_metadata_at_key_(result_unfiltered, m_key.SIZE))
+            bytes_result = get_result_metadata_at_key_(result_unfiltered, m_key.SIZE)
             megabytes_result = mega(bytes_result)
             if filter_provided_for_(megabytes_min) and filter_provided_for_(megabytes_max):
                 file_size_in_range = True if bytes_max > bytes_result > bytes_min else False
@@ -729,8 +729,8 @@ def get_local_results_count() -> int:
     return _api_if_get_local_results_count()
 
 
-def get_result_metadata_at_key_(result_unfiltered, key: str) -> str:
-    return _mdp_if_get_result_metadata_at_key_(key, result_unfiltered)
+def get_result_metadata_at_key_(result_unfiltered, key: str):
+    return _mdp_if_get_result_metadata_at_key_(result_unfiltered, key)
 
 
 def get_results_filtered_from_(state_machine) -> list:
@@ -1000,9 +1000,9 @@ def _mdp_if_get_metadata_from_(parser: RawConfigParser) -> dict:  # FIXME no cal
         ml.log(f'error {event}')
 
 
-def _mdp_if_get_result_metadata_at_key_(key: str, result: dict) -> str:  # QConf
+def _mdp_if_get_result_metadata_at_key_(result: dict, key: str):  # QConf
     event = f'getting result metadata at key \'{key}\''
-    try:  # fixme should this interface to QConf be re-thought?
+    try:
         return QConf.get_result_metadata_at_key_(key, result)
     except Exception as e_err:
         ml.log(e_err.args[0], level=ml.ERROR)
