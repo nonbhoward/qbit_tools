@@ -483,7 +483,7 @@ def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> l
                            f'\'{result_name}\'', level=ml.WARNING)
                 write_new_metadata_section_from_(result_unfiltered)  # remember this result
                 continue  # filter this result
-        ml.log(f'result \'{result_name}\' meets all requirements')
+        ml.log(f'result meets all requirements : \'{result_name}\'')
         results_filtered.append(result_unfiltered)
     if sort:
         ml.log(f'sorting results for \'{section}\'')
