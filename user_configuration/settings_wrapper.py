@@ -53,6 +53,7 @@ class SearchParserKeys:  # Configuration.HardCoded.KeyRing.SearchDetailKeys
         self.EMPTY = ''
         self.ID = 'search_id'
         self.KEYWORDS_ADD = 'add_titles_containing'
+        self.KEYWORD_FILTERS_REQUIRE_ALL_TERMS = 'keyword_filters_require_all_terms'
         self.KEYWORDS_SKIP = 'skip_titles_containing'
         self.MAX_SEARCH_COUNT = 'maximum_search_attempt_count'
         self.MIN_SEED = 'minimum_seed_count'

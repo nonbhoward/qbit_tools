@@ -40,10 +40,24 @@ def empty_(string: str) -> bool:
         ml.log(f'error {event}')
 
 
+def empty_list_(test_list: list) -> bool:
+    event = f'testing for empty list'
+    try:
+        return True if list == [] else False
+    except Exception as e_err:
+        ml.log(e_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
+
+
 def exit_program() -> None:
-    ml.log(f'exiting program', announcement=True)
     write_parsers_to_disk()
-    exit()
+    event = f'exiting program'
+    try:
+        ml.log(event, announcement=True)
+        exit()
+    except RuntimeError as r_err:
+        ml.log(r_err.args[0], level=ml.ERROR)
+        ml.log(f'error {event}')
 
 
 def filter_provided_for_(parser_val) -> bool:
@@ -79,11 +93,13 @@ def hash_metadata(x: str, undo=False, verbose=False) -> str:
         ml.log(f'error {event}')
 
 
-def keyword_in_(string: str, keywords: list, require_all_kw=False) -> bool:
+def keyword_in_(state_machine, string: str, keywords: list) -> bool:
     event = f'checking if keywords in string'
+    section = get_active_section_from_(state_machine)
+    require_all = get_bool_from_search_parser_at_(section, s_key.KEYWORD_FILTERS_REQUIRE_ALL_TERMS)
     try:
         kw_found_indices = [kw in lower_(string) for kw in keywords]
-        return all(kw_found_indices) if require_all_kw else any(kw_found_indices)
+        return all(kw_found_indices) if require_all else any(kw_found_indices)
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
@@ -482,7 +498,8 @@ def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> l
             if idx == 0:  # FIXME p2, this does nothing, rework
                 ml.log(f'filtering results for \'{section}\' using add keywords \'{keywords_to_add}\'')
             filename = get_result_metadata_at_key_(result_unfiltered, m_key.NAME)
-            if keyword_in_(filename, keywords_to_skip) or not keyword_in_(filename, keywords_to_add):
+            if keyword_in_(state_machine, filename, keywords_to_skip) or \
+                    not keyword_in_(state_machine, filename, keywords_to_add):
                 if True:  # FIXME p1, replace True with verbose flag, forces log
                     ml.log(f'keyword requirements have not been met by '
                            f'\'{result_name}\'', level=ml.WARNING)
@@ -1365,9 +1382,8 @@ def _stm_if_save_filtered_search_results_to_(state_machine):
     # fixme p0, interface function relies on wrapper function, should be opposite
     section = _stm_if_get_active_section_from_(state_machine)
     try:  # machine surface abstraction depth = 0
-        filtered_results = filter_results_in_(state_machine)
-        # sm_if_update_search_properties_for_(state_machine)  # tODO delete me
-        state_machine.active_sections[section]['filtered_results'] = filtered_results
+        results_filtered = filter_results_in_(state_machine)
+        state_machine.active_sections[section]['filtered_results'] = results_filtered
     except Exception as e_err:
         ml.log(e_err.args[0])
 
@@ -1375,9 +1391,10 @@ def _stm_if_save_filtered_search_results_to_(state_machine):
 def _stm_if_save_unfiltered_search_results_to_(state_machine):
     section = _stm_if_get_active_section_from_(state_machine)
     try:  # machine surface abstraction depth = 0
-        unfiltered_results = get_search_results_for_(state_machine)
+        results_from_search = get_search_results_for_(state_machine)
+        results_unfiltered = results_from_search if not none_value_(results_from_search) else []
         update_search_properties_from_api_for_(state_machine)
-        state_machine.active_sections[section]['unfiltered_results'] = unfiltered_results
+        state_machine.active_sections[section]['unfiltered_results'] = results_unfiltered
     except Exception as e_err:
         ml.log(e_err.args[0])
 

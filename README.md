@@ -1,5 +1,5 @@
-### as of 2021-04-03 current status of main branch is functional with minor bugs
-### use release version 0.1 for stable experience until new version is released
+### main branch on win10 is functional after major refactor
+### main branch on linux is functional after major refactor
 
 # a brief project summary follows
 ### core.interface.py

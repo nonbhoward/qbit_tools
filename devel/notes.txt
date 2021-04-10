@@ -1,0 +1,95 @@
+[SECTION : TODO]
+	TODOs focusing on program function  # TODO document current efforts
+		-4. implement a metadata statistics section that reports count, stats, etc
+		-2. set required minimum values in EDIT_SETTINGS_HERE.cfg
+		-1. draw a block diagram of module relationships
+		00. could check against added results and prevent attempting to add them again, spamming the log
+		+2. implement avg seed count
+	TODOs focusing on program organization  # TODO document current efforts
+		00. extend settings_wrapper with function calls to replace keyring concept
+		+1. delete unused functions
+
+[SECTION : BUG]
+	BUGS, DOCUMENTED (each section sorted by priority)
+		00. sometimes add_result adds two results for one magnet..
+			..causing a desync with the metadata parser
+		+1. add_result adds to expected_add_count - 1 instead of expected_add_count
+	BUGS, IN TESTING
+	    -1. search_attempt_count is incrementing too often
+			fix in place, resolved?
+		+0. metadata parsers aren't always building section names
+			resolved, function overlap
+		+0. resolve optionality for result filtering and how to handle defaults
+			resolved by adding function state_machine_interface.filter_provided_by_
+		+1. work out metadata read/write
+			believe this is resolved
+		+1. implement add_mode, rename to add_state? renamed to add_paused
+		+2. refactor parsers/keys as globally scoped? success
+			this was a large milestone
+		+2. conclusion state never reached
+			bug fix may be in place, same as for 0, testing
+		+5. interpolation issue with configparser
+			bug fix in place, testing
+	BUG LOG, RESOLVED
+		-5. remove concluded results from search ranking algo
+		-3. instead of update search states so freely, increment or reset only
+		-2. after processing results, searches are not re-queued
+		-2. search rank soft-lock
+			search rank + conclusion state do not play well together
+		-1. not all children of Exception have message attribute..
+		-1. after 10 failed attempts, search processing stops
+		00. after adding a single result, the processing code crashes
+			bug fix in place, testing, suspect it was the rogue return
+		00. search queueing and search rank is fucked
+		00. results added count does it work?
+		+1. prioritize searches based on when they were last-run
+		+1. maximize results by framing section header terms as permutations bookended AND delimited by permissive regex aka .*
+		+1. make sure getters handle all key/parser fetches
+		+2. make sure setters handle all key/parser fetches
+		+2. implement size filters
+		+2. on program conclusion, the search.cfg is not updated before exit() is called
+			..could cause confusion, but doesn't matter functionally
+
+[SECTION : SEARCH ID MANAGEMENT]
+	each search id contains three search properties
+		1. count
+		2. search id
+		3. search status
+	search id generation
+		search ids are generated when a new search is created
+		search ids are then stored in the state machine under their header value
+	search id management
+		search ids are used to check back in on a search that was left to run
+		as mentioned, search ids are keyed by their search parser section header
+		search ids are updated when a search changes state
+			from Running to Stopped
+		search ids are stored in the state machine..
+		..count and search status are stored in the same structure
+	search id destruction
+		search ids are destroyed when a search has finished processing
+
+[SECTION : STATE MACHINE]
+	the state machine has..
+		two actions : increment, reset
+		four states : queued, running, stopped, concluded. queued and concluded are user-defined, running and stopped are api-defined
+
+    states and transitions
+        1. queued
+            	when to go to 2? start_search -> search_status = RUNNING
+            	when to go to 3? it should be impossible to go to state 3 from 1
+            	when to go to 4? it should be impossible to go to state 4 from 1
+        2. running
+            	when to go to 1? if bad (or no) data is returned from a search results fetch, reset to 1
+            	when to go to 3? search_status = STOPPED
+            	when to go to 4? it should be impossible to go to state 4 from 2
+        3. stopped
+		when to go to 1? if bad (or no) data is returned from a search results fetch, reset to 1
+		when to go to 2? it should be impossible to go from state 3 to 2
+		when to go to 4? if the thresholds set in searches.cfg are met for that search header
+        4. concluded
+		once entered, never leave this state without manual intervention
+[SECTION : ANOMALISTIC LOG EVENTS OF NOTE]
+	2021-04-08 23:47:32,357 : WARNING : interface : 490 : filter_results_in_ : 
+	keyword requirements have not been met by '\u7406\u67e5\u5fb7·\u6731\u7ef4
+	\u5c14\u7684\u54c0\u6b4c(\u84dd\u5149\u56fd\u82f1\u53cc\u97f3\u8f68\u53cc\
+	u5b57)'
