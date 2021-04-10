@@ -362,7 +362,7 @@ def ready_to_start_at_(section: str) -> bool:
             return False
         if not search_rank_allowed:
             ml.log(f'the required rank to start a search is LTE \'{required_rank}\'')
-            ml.log(f'search at \'{section}\' is disallowed due to search rank \'{rank}\'', level=ml.WARNING)
+            ml.log(f'search at \'{section}\' is disallowed due to search rank \'{rank}\'')
             return False
         return True
     except Exception as e_err:
