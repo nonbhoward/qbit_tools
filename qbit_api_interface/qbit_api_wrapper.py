@@ -16,9 +16,11 @@ class QbitApiCaller:
             self.concurrent_searches_allowed = 5
             self.qbit_client = qbittorrentapi.Client('', None, None, None)
             self.qbit_client_connected = True if self.client_is_connected() else False
-            if self.qbit_client_connected:
-                self.dump_surface_client()
-                self.connection_time_start = dt.now()
+            if not self.qbit_client_connected:
+                ml.log(f'qbit application connection unsuccessful, ending program', level=ml.ERROR)
+                exit()
+            self.dump_surface_client()
+            self.connection_time_start = dt.now()
             ml.log(event, announcement=True, event_completed=True)
         except Exception as e_err:
             ml.log(e_err.args[0], level=ml.ERROR)
@@ -36,15 +38,14 @@ class QbitApiCaller:
         event = f'checking if connected to client'
         try:
             self.qbit_client = qbittorrentapi.Client(host=HOST, username=USER, password=PASS)
-            app_version = self.qbit_client.app_version
-            web_api_version = self.qbit_client.app_web_api_version
-            if app_version is not None and web_api_version is not None:
+            app_version = self.qbit_client.app.version
+            if app_version is not None:
                 ml.log(f'success connecting to client!')
                 return True
-            return False
         except Exception as e_err:
             ml.log(e_err.args[0], level=ml.ERROR)
             ml.log(f'error {event}')
+            return False
 
     def create_search_job(self, pattern, plugins, category) -> tuple:
         event = f'creating search job for pattern \'{pattern}\''
