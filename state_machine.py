@@ -54,7 +54,7 @@ class QbitStateMachine:
             for section in search_parser_sections:
                 set_active_section_to_(section, self)
                 self.manage_state_updates_at_active_section()
-                write_parsers_to_disk()
+            write_parsers_to_disk()
             if all_searches_concluded():
                 exit_program()
             set_search_ranks()
