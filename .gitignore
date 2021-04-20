@@ -17,4 +17,5 @@
 # folders to ignore
 __pycache__/
 .idea/
+temp/
 venv*/
