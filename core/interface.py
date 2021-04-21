@@ -467,6 +467,7 @@ def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> l
     keywords_to_skip = get_keywords_to_skip_from_(section)
     results_filtered = list()
     ml.log(f'filter priority order is : found previously, seed req, size req, add kw, skip kw')
+    ml.log(f'begin applying filters to unfiltered results')
     for idx, result_unfiltered in enumerate(get_results_unfiltered_from_(state_machine)):
         result_name = get_result_metadata_at_key_(result_unfiltered, m_key.NAME)
         if found and previously_found_(result_unfiltered):
@@ -513,6 +514,7 @@ def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> l
             continue
         ml.log(f'result meets all requirements : \'{result_name}\'')
         results_filtered.append(result_unfiltered)
+    ml.log(f'finished applying filters to unfiltered results')
     if sort:
         ml.log(f'sorting results for \'{section}\'')
         results_filtered_and_sorted = sort_(results_filtered)
