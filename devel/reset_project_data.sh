@@ -4,20 +4,25 @@ echo "deleting minimalog soft-link content"
 rm -rf ./minimalog
 echo "re-creating soft-link content from parallel directory"
 ln -s ../minimalog ./minimalog
-echo "operation finished"
+echo -e "finished soft-link operation, continuing.."
+echo ""
 git status
+echo ""
 if [ -f 'event.log' ];then
   echo 'removing event.log'
   rm event.log
 else
-  echo 'event.log does not exist, continuing..'
+  echo -e "event.log does not exist, continuing.."
 fi
+echo ""
 echo 'restoring metadata_added.cfg'
 git restore data_meta/metadata_added.cfg
 echo 'restoring metadata_failed.cfg'
 git restore data_meta/metadata_failed.cfg
 echo 'restoring search.cfg'
 git restore data_search/search.cfg
+echo -e "finished restoring cfg files to repo versions, continuing.."
+echo ""
 if [ -f './devel/search.cfg' ];then
   echo 'developer search.cfg found'
   cp ./devel/search.cfg ./data_search/search.cfg
@@ -34,5 +39,8 @@ else
   echo 'developer EDIT_SETTINGS_HERE.cfg not found'
   echo 'doing nothing'
 fi
+echo -e "finished overwriting local options with developer options, continuing.."
+echo ""
 git log --pretty=oneline -n8
+echo ""
 git status
