@@ -1331,7 +1331,7 @@ def _stm_if_get_results_filtered_from_(state_machine):
     try:  # FIXME p1, how to handle empty or None results?
         key = 'filtered_results'
         results_filtered = []
-        if key in state_machine.active_sections:
+        if key in state_machine.active_sections[section]:
             results_filtered = state_machine.active_sections[section]['filtered_results']
         else:
             ml.log(f'state machine has no key \'{key}\'')
