@@ -342,7 +342,6 @@ def get_keywords_to_skip_from_(section: str) -> list:
 
 
 def get_state_concluded_for_(section: str) -> bool:
-    return get_search_state_from_state_machine_for_(section)
     return get_search_state_from_parser_for_(section)[3]  # FIXME p3, not used
 
 
@@ -467,18 +466,18 @@ def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> l
     keywords_to_add = get_keywords_to_add_from_(section)
     keywords_to_skip = get_keywords_to_skip_from_(section)
     results_filtered = list()
+    ml.log(f'filter priority order is : found previously, seed req, size req, add kw, skip kw')
     for idx, result_unfiltered in enumerate(get_results_unfiltered_from_(state_machine)):
         result_name = get_result_metadata_at_key_(result_unfiltered, m_key.NAME)
         if found and previously_found_(result_unfiltered):
-            continue  # filter this result
+            continue  # filter this result without spamming the log
         if filter_provided_for_(seeds_min):
             result_seeds = get_result_metadata_at_key_(result_unfiltered, m_key.SUPPLY)
             enough_seeds = True if result_seeds > seeds_min else False
             if not enough_seeds:
-                if verbose:
-                    ml.log(f'required seeds \'{seeds_min}\' not met by result with '
-                           f'\'{result_seeds}\' seeds, result : \'{result_name}\'',
-                           level=ml.WARNING)
+                ml.log(f'required seeds \'{seeds_min}\' not met by result with '
+                       f'\'{result_seeds}\' seeds, result : \'{result_name}\'',
+                       level=ml.WARNING)
                 write_new_metadata_section_from_(result_unfiltered)  # remember this result
                 continue  # filter this result
         if filter_provided_for_(megabytes_min) or filter_provided_for_(megabytes_max):
@@ -491,23 +490,27 @@ def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> l
             else:
                 file_size_in_range = True if bytes_result > bytes_min else False
             if not file_size_in_range:
-                if verbose:
-                    ml.log(f'size requirement \'{megabytes_min}\'mib to \'{megabytes_max}\'mib not met by '
-                           f'result with size \'{megabytes_result}\'mib, result: \'{result_name}\'',
-                           level=ml.WARNING)
+                ml.log(f'size requirement \'{megabytes_min}\'mib to \'{megabytes_max}\'mib not met by '
+                       f'result with size \'{megabytes_result}\'mib, result: \'{result_name}\'',
+                       level=ml.WARNING)
                 write_new_metadata_section_from_(result_unfiltered)  # remember this result
                 continue  # filter this result
         if filter_provided_for_(keywords_to_add):
-            if idx == 0:  # FIXME p2, this does nothing, rework
-                ml.log(f'filtering results for \'{section}\' using add keywords \'{keywords_to_add}\'')
             filename = get_result_metadata_at_key_(result_unfiltered, m_key.NAME)
-            if keyword_in_(state_machine, filename, keywords_to_skip) or \
-                    not keyword_in_(state_machine, filename, keywords_to_add):
-                if True:  # FIXME p1, replace True with verbose flag, forces log
-                    ml.log(f'keyword requirements have not been met by '
-                           f'\'{result_name}\'', level=ml.WARNING)
+            keywords_to_add_found = keyword_in_(state_machine, filename, keywords_to_add)
+            if not keywords_to_add_found:
+                ml.log(f'add keywords \'{keywords_to_add}\' were not found in '
+                       f'\'{result_name}\'', level=ml.WARNING)
                 write_new_metadata_section_from_(result_unfiltered)  # remember this result
                 continue  # filter this result
+        if filter_provided_for_(keywords_to_skip):
+            filename = get_result_metadata_at_key_(result_unfiltered, m_key.NAME)
+            keywords_to_skip_found = keyword_in_(state_machine, filename, keywords_to_skip)
+            if keywords_to_skip_found:
+                ml.log(f'skip keywords \'{keywords_to_skip}\' were found in '
+                       f'\'{result_name}\'', level=ml.WARNING)
+            write_new_metadata_section_from_(result_unfiltered)   # remember this result
+            continue
         ml.log(f'result meets all requirements : \'{result_name}\'')
         results_filtered.append(result_unfiltered)
     if sort:
