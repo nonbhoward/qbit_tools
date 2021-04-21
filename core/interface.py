@@ -517,6 +517,9 @@ def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> l
         ml.log(f'sorting results for \'{section}\'')
         results_filtered_and_sorted = sort_(results_filtered)
     reduce_search_expectations_if_not_enough_results_found_in_(results_filtered_and_sorted, section)
+    if len(results_filtered_and_sorted) < 1:
+        ml.log(f'found no results matching provided filters! either all results were '
+               f'filtered or all results were already known', level=ml.WARNING)
     return results_filtered_and_sorted
 
 
