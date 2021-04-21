@@ -1329,7 +1329,12 @@ def _stm_if_get_results_filtered_from_(state_machine):
     event = f'getting filtered results from state machine'
     section = _stm_if_get_active_section_from_(state_machine)
     try:  # FIXME p1, how to handle empty or None results?
-        results_filtered = state_machine.active_sections[section]['filtered_results']
+        key = 'filtered_results'
+        results_filtered = []
+        if key in state_machine.active_sections:
+            results_filtered = state_machine.active_sections[section]['filtered_results']
+        else:
+            ml.log(f'state machine has no key \'{key}\'')
         if len(results_filtered) < 1:
             ml.log(f'filtered results contains nothing', level=ml.WARNING)
         return results_filtered
