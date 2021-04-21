@@ -1,12 +1,13 @@
 #!/bin/bash
 clear
+echo "#  #  #  #  PRINTING INITIAL STATUS CHECK  #  #  #  #"
+git status
+echo ""
 echo "deleting minimalog soft-link content"
 rm -rf ./minimalog
 echo "re-creating soft-link content from parallel directory"
 ln -s ../minimalog ./minimalog
 echo -e "finished soft-link operation, continuing.."
-echo ""
-git status
 echo ""
 if [ -f 'event.log' ];then
   echo 'removing event.log'
@@ -14,6 +15,7 @@ if [ -f 'event.log' ];then
 else
   echo -e "event.log does not exist, continuing.."
 fi
+echo -e "finished log file deletion, continuing.."
 echo ""
 echo 'restoring metadata_added.cfg'
 git restore data_meta/metadata_added.cfg
@@ -41,6 +43,9 @@ else
 fi
 echo -e "finished overwriting local options with developer options, continuing.."
 echo ""
+echo "#  #  #  #  PRINTING MOST RECENT CHANGES TO THE PROJECT  #  #  #  #"
+echo ""
 git log --pretty=oneline -n8
 echo ""
+echo "#  #  #  #  PRINTING FINAL STATUS CHECK  #  #  #  #"
 git status
