@@ -13,7 +13,7 @@ if [ -f 'event.log' ];then
   echo 'removing event.log'
   rm event.log
 else
-  echo -e "event.log does not exist, continuing.."
+  echo -e "event.log does not exist"
 fi
 echo -e "finished log file deletion, continuing.."
 echo ""
