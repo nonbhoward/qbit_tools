@@ -420,6 +420,9 @@ def active_section_is_in_memory_of_(state_machine) -> bool:
 def add_filtered_results_stored_in_(state_machine) -> None:
     section = get_active_section_from_(state_machine)
     results_filtered = get_results_filtered_from_(state_machine)
+    if len(results_filtered) < 1:
+        ml.log(f'no filtered results, skipping add attempt', level=ml.WARNING)
+        return  # either no results, or they were all filtered
     for result in results_filtered:
         result_name = get_result_metadata_at_key_(result, m_key.NAME)
         if search_is_concluded_at_active_section_in_(state_machine):
@@ -1323,7 +1326,10 @@ def _stm_if_get_results_filtered_from_(state_machine):
     event = f'getting filtered results from state machine'
     section = _stm_if_get_active_section_from_(state_machine)
     try:  # FIXME p1, how to handle empty or None results?
-        return state_machine.active_sections[section]['filtered_results']
+        results_filtered = state_machine.active_sections[section]['filtered_results']
+        if len(results_filtered) < 1:
+            ml.log(f'filtered results contains nothing', level=ml.WARNING)
+        return results_filtered
         # if results_filtered is None:
         #     ml.log(f'invalid search results at \'{section}\'', level=ml.WARNING)
         #     reset_search_state_at_active_section_for_(state_machine)
