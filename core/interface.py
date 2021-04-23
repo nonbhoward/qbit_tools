@@ -1329,7 +1329,7 @@ def _stm_if_get_results_filtered_from_(state_machine):
     event = f'getting filtered results from state machine'
     section = _stm_if_get_active_section_from_(state_machine)
     try:  # FIXME p1, how to handle empty or None results?
-        results_filtered = state_machine.active_sections[section]['filtered_results']
+        results_filtered = state_machine.active_sections[section]['results_filtered']
         if len(results_filtered) < 1:
             ml.log(f'filtered results contains nothing', level=ml.WARNING)
         return results_filtered
@@ -1374,7 +1374,7 @@ def _stm_if_get_results_unfiltered_from_(state_machine):
     section = _stm_if_get_active_section_from_(state_machine)
     event = f'getting results unfiltered from state machine'
     try:
-        return state_machine.active_sections[section]['unfiltered_results']
+        return state_machine.active_sections[section]['results_unfiltered']
     except Exception as e_err:
         ml.log(e_err.args[0])
         ml.log(f'error {event}')
@@ -1392,7 +1392,7 @@ def _stm_if_save_filtered_search_results_to_(state_machine):
     section = _stm_if_get_active_section_from_(state_machine)
     try:  # machine surface abstraction depth = 0
         results_filtered = filter_results_in_(state_machine)
-        state_machine.active_sections[section]['filtered_results'] = results_filtered
+        state_machine.active_sections[section]['results_filtered'] = results_filtered
     except Exception as e_err:
         ml.log(e_err.args[0])
 
@@ -1403,7 +1403,7 @@ def _stm_if_save_unfiltered_search_results_to_(state_machine):
         results_from_search = get_search_results_for_(state_machine)
         results_unfiltered = results_from_search if not none_value_(results_from_search) else []
         update_search_properties_from_api_for_(state_machine)
-        state_machine.active_sections[section]['unfiltered_results'] = results_unfiltered
+        state_machine.active_sections[section]['results_unfiltered'] = results_unfiltered
     except Exception as e_err:
         ml.log(e_err.args[0])
 
