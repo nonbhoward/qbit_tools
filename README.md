@@ -1,5 +1,5 @@
-### main branch on win10 is functional after major refactor
-### main branch on linux is functional after major refactor
+### main branch on win10 is unknown after major refactor
+### main branch on linux is non-functional after major refactor
 
 # a brief project summary follows
 ### core.interface.py

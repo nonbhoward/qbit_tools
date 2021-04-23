@@ -467,6 +467,7 @@ def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> l
     keywords_to_skip = get_keywords_to_skip_from_(section)
     results_filtered = list()
     ml.log(f'filter priority order is : found previously, seed req, size req, add kw, skip kw')
+    ml.log(f'begin applying filters to unfiltered results')
     for idx, result_unfiltered in enumerate(get_results_unfiltered_from_(state_machine)):
         result_name = get_result_metadata_at_key_(result_unfiltered, m_key.NAME)
         if found and previously_found_(result_unfiltered):
@@ -513,10 +514,14 @@ def filter_results_in_(state_machine, found=True, sort=True, verbose=False) -> l
             continue
         ml.log(f'result meets all requirements : \'{result_name}\'')
         results_filtered.append(result_unfiltered)
+    ml.log(f'finished applying filters to unfiltered results')
     if sort:
         ml.log(f'sorting results for \'{section}\'')
         results_filtered_and_sorted = sort_(results_filtered)
     reduce_search_expectations_if_not_enough_results_found_in_(results_filtered_and_sorted, section)
+    if len(results_filtered_and_sorted) < 1:
+        ml.log(f'found no results matching provided filters! either all results were '
+               f'filtered or all results were already known', level=ml.WARNING)
     return results_filtered_and_sorted
 
 
@@ -1329,7 +1334,12 @@ def _stm_if_get_results_filtered_from_(state_machine):
     event = f'getting filtered results from state machine'
     section = _stm_if_get_active_section_from_(state_machine)
     try:  # FIXME p1, how to handle empty or None results?
-        results_filtered = state_machine.active_sections[section]['results_filtered']
+        key = 'filtered_results'
+        results_filtered = []
+        if key in state_machine.active_sections[section]:
+            results_filtered = state_machine.active_sections[section]['results_filtered']
+        else:
+            ml.log(f'state machine has no key \'{key}\'')
         if len(results_filtered) < 1:
             ml.log(f'filtered results contains nothing', level=ml.WARNING)
         return results_filtered
